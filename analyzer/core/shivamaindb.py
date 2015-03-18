@@ -12,6 +12,7 @@ import shivanotifyerrors
 import ssdeep
 import MySQLdb as mdb
 
+import logging
 
 def main():
     fetchfromtempdb = "SELECT `id`, `ssdeep`, `length` FROM `spam` WHERE 1"
@@ -534,6 +535,46 @@ def update(tempid, mainid):
                     shivanotifyerrors.notifydeveloper("[-] Error (Module shivamaindb.py) - insert_relay %s" % e)
              
 
+
+def retrieve(limit, offset):
+    """retrieve list e-mails stored in database
+
+    Keyword arguments:
+    limit -- integer
+    offset -- integer
+    """
+    resultlist = []    
+    fetchidsquery = "SELECT `id` FROM `spam` WHERE 1 LIMIT " + str(limit) + " OFFSET " + str(offset)
+
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(fetchidsquery)
+        result = mainDb.fetchall()
+
+        for record in result:
+            mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'links':[],  'date': '' }
+            query = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length` FROM `spam` WHERE `id` = '" + record[0] + "'"
+            mailFields['s_id'] = record[0]
+            mainDb.execute(query);
+
+            current_record = mainDb.fetchall()[0]
+            
+            mailFields['from'] = current_record[0] 
+            mailFields['subject'] = current_record[1]
+            mailFields['to'] = current_record[2]
+            mailFields['text'] = current_record[3]
+            mailFields['html'] = current_record[4]
+            mailFields['totalCounter'] = current_record[5]
+            mailFields['ssdeep'] = current_record[6]
+            mailFields['headers'] = current_record[7]
+            mailFields['len'] = current_record[8]
+            
+
+            resultlist.append(mailFields)
+        return resultlist
+    except mdb.Error, e:
+        print e
+    
 if __name__ == '__main__':
     tempDb = shivadbconfig.dbconnect()
     mainDb = shivadbconfig.dbconnectmain()
