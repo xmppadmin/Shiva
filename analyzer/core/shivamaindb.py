@@ -535,7 +535,11 @@ def update(tempid, mainid):
                     shivanotifyerrors.notifydeveloper("[-] Error (Module shivamaindb.py) - insert_relay %s" % e)
              
 
-
+"""
+retrieve spam from database
+limit - integer, how many records should be retrieved
+offset - integer, offset to start from
+"""
 def retrieve(limit, offset):
     """retrieve list e-mails stored in database
 
@@ -544,7 +548,7 @@ def retrieve(limit, offset):
     offset -- integer
     """
     resultlist = []    
-    fetchidsquery = "SELECT `id` FROM `spam` WHERE 1 LIMIT " + str(limit) + " OFFSET " + str(offset)
+    fetchidsquery = "SELECT `id` FROM `spam` WHERE 1 ORDER BY `id` LIMIT " + str(limit) + " OFFSET " + str(offset)
 
     try:
         mainDb = shivadbconfig.dbconnectmain()
@@ -552,10 +556,12 @@ def retrieve(limit, offset):
         result = mainDb.fetchall()
 
         for record in result:
-            mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'links':[],  'date': '' }
-            query = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length` FROM `spam` WHERE `id` = '" + record[0] + "'"
+            mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'attachmentFileType':[], 'links':[],  'date': '' }
+            
+            """fetch basic spam information from database"""
+            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length` FROM `spam` WHERE `id` = '" + record[0] + "'"
             mailFields['s_id'] = record[0]
-            mainDb.execute(query);
+            mainDb.execute(spamquery)
 
             current_record = mainDb.fetchall()[0]
             
@@ -569,7 +575,22 @@ def retrieve(limit, offset):
             mailFields['headers'] = current_record[7]
             mailFields['len'] = current_record[8]
             
-
+            """fetch links for current spam"""
+            linksquery = "SELECT `hyperLink` FROM `links` WHERE `spam_id` = '" + record[0] + "'"
+            mainDb.execute(linksquery);
+            links = mainDb.fetchall()
+            mailFields['links'] = links
+            
+            """fetch attachments for current spam"""
+            attachmentsquery = "SELECT `attachment_file_name`,`attachment_file_path`,`attachment_file_type` FROM `attachment` WHERE `spam_id` = '" + record[0] + "'"
+            mainDb.execute(attachmentsquery);
+            attachments = mainDb.fetchall()
+            for row in attachments:
+                mailFields['attachmentFileName'] = row[0]
+                mailFields['attachmentFilePath'] = row[1]
+                mailFields['attachmentFileType'] = row[2]
+            
+            
             resultlist.append(mailFields)
         return resultlist
     except mdb.Error, e:
