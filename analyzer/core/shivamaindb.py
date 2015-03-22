@@ -586,9 +586,9 @@ def retrieve(limit, offset):
             mainDb.execute(attachmentsquery);
             attachments = mainDb.fetchall()
             for row in attachments:
-                mailFields['attachmentFileName'] = row[0]
-                mailFields['attachmentFilePath'] = row[1]
-                mailFields['attachmentFileType'] = row[2]
+                mailFields['attachmentFileName'].append(row[0]) 
+                mailFields['attachmentFilePath'].append(row[1])
+                mailFields['attachmentFileType'].append(row[2])
             
             
             resultlist.append(mailFields)

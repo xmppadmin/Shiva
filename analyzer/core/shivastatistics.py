@@ -1,5 +1,7 @@
 import signal
 import logging
+import re
+
 import matplotlib.pyplot as plot
 import numpy as np
 
@@ -29,6 +31,45 @@ class Rule0(MailClassificationRule):
         
     def apply_rule(self, mailFields):
         return 0
+
+class ContainsUrlRule(MailClassificationRule):
+    def __init__(self):
+        self.rulename = "contain URL"
+        
+    def apply_rule(self, mailFields):
+        return 1 if len(mailFields['links']) > 0  else 0
+
+
+class ContainsImageAttachmentRule(MailClassificationRule):
+    def __init__(self):
+        self.rulename = "contain image"
+        
+    def apply_rule(self, mailFields):
+        for suffix in mailFields['attachmentFileType']:
+            if re.match(r".*(jpg|jpeg|png|gif|swf)$", suffix, re.IGNORECASE):
+                return 1
+        return 0
+
+class ContainsExecutableAttachmentRule(MailClassificationRule):
+    def __init__(self):
+        self.rulename = "contain exec file"
+        
+    def apply_rule(self, mailFields):
+        for suffix in mailFields['attachmentFileType']:
+            if re.match(r".*(sh|exe)$", suffix, re.IGNORECASE):
+                return 1
+        return 0
+
+class ContainsDocumentAttachmentRule(MailClassificationRule):
+    def __init__(self):
+        self.rulename = "contain document"
+        
+    def apply_rule(self, mailFields):
+        for suffix in mailFields['attachmentFileType']:
+            if re.match(r".*(doc|docx|pdf)$", suffix, re.IGNORECASE):
+                return 1
+        return 0
+
     
 """Class represents list of MailClassificationRules to be
    applied on mail
@@ -70,17 +111,10 @@ class MailClassificationRuleList(object):
     
 """setup rules"""
 rulelist = MailClassificationRuleList()
-rulelist.add_rule(Rule0())
-rulelist.add_rule(Rule1())
-rulelist.add_rule(Rule0())
-rulelist.add_rule(Rule1())
-rulelist.add_rule(Rule1())
-rulelist.add_rule(Rule1())
-rulelist.add_rule(Rule1())
-rulelist.add_rule(Rule1())
-rulelist.add_rule(Rule1())
-
-
+rulelist.add_rule(ContainsImageAttachmentRule())
+rulelist.add_rule(ContainsExecutableAttachmentRule())
+rulelist.add_rule(ContainsDocumentAttachmentRule())
+rulelist.add_rule(ContainsUrlRule())
 
 
 def main():
@@ -99,7 +133,9 @@ each mail in the database
 """
 def generate_statistics():
     statmatrix = [];
+    statmatrixunique = []
     statmatrix.append(rulelist.get_rule_names())
+    statmatrixunique.append(rulelist.get_rule_names())
     recordcount = 0
     while True:
         records = shivamaindb.retrieve(10, recordcount)
@@ -117,10 +153,10 @@ def generate_statistics():
             except ValueError:
                 occurences = 1
             
-            
+            statmatrixunique.append(recordresult)
             for i in range(1, occurences):
                 statmatrix.append(recordresult)
-
+                
         
     
 #     outfile = open("stat_file.csv", "w")
@@ -132,35 +168,42 @@ def generate_statistics():
     
 
     output_graphs(statmatrix)
+    output_graphs(statmatrixunique, unique=True)
     
             
 def process_single_record(mailFields):
     return rulelist.apply_rules(mailFields)
 
-def output_graphs(statmatrix):
+def output_graphs(statmatrix, unique=False):
     aggregated = aggregate_statistics(statmatrix)
     arr = np.arange(len(statmatrix[0]))
     barwidth = 0.35
     bars = plot.bar(arr, aggregated)
     plot.xticks(arr + barwidth, arr)
     
-    colors = 'rgbkymc'
+    colors = 'rgkymcb'
     for i in range(0,len(arr)):
         bars[i].set_color(colors[i % 7])
-    
-    
-
+        
     ax = plot.subplot(111)
     box = ax.get_position()
     ax.set_position([box.x0, box.y0, box.width * 0.7, box.height])
 
     # Put a legend to the right of the current axis
-    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+#     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     """TODO dynamic scaling"""
     """TODO load settings from configuration files"""
     plot.figlegend(bars, statmatrix[0], 'center right')
-    plot.title('E-mail statistics')
-    plot.savefig("plot.png")
+    title =  'Statistics of ' + str(len(statmatrix) -1)
+    outfile = 'plot'
+    if unique:
+        outfile += '-unique'
+        title += ' unique '
+    title += ' emails'
+    outfile += '.png'
+    plot.title(title)
+    plot.savefig(outfile)
+    plot.close()
     
 def aggregate_statistics(statmatrix):
     aggregated = list();
