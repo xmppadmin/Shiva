@@ -1,5 +1,7 @@
 import signal
 import logging
+import matplotlib.pyplot as plot
+import numpy as np
 
 import shivamaindb
 from string import join
@@ -51,7 +53,7 @@ class MailClassificationRuleList(object):
     def apply_rules(self, mailFields):
         result = []
         for rule in self.rulelist:
-            result.append(str(rule.apply_rule(mailFields)))  
+            result.append(rule.apply_rule(mailFields))  
         return result 
     
     """
@@ -71,10 +73,18 @@ rulelist = MailClassificationRuleList()
 rulelist.add_rule(Rule0())
 rulelist.add_rule(Rule1())
 rulelist.add_rule(Rule0())
+rulelist.add_rule(Rule1())
+rulelist.add_rule(Rule1())
+rulelist.add_rule(Rule1())
+rulelist.add_rule(Rule1())
+rulelist.add_rule(Rule1())
+rulelist.add_rule(Rule1())
+
 
 
 
 def main():
+    logging.info("[+]Inside shivastatistics Module")
     """register asynchronous signal handler"""
     signal.signal(signal.SIGUSR2, signal_handler)
     
@@ -98,17 +108,72 @@ def generate_statistics():
         
         for record in records:
             recordcount += 1
-            statmatrix.append(process_single_record(record))
+            
+            recordresult = process_single_record(record)
+            
+            """determinate how many times was email caught"""
+            try:
+                occurences = int(record['totalCounter'])
+            except ValueError:
+                occurences = 1
+            
+            
+            for i in range(1, occurences):
+                statmatrix.append(recordresult)
+
+        
     
-    outfile = open("stat_file.csv", "w")
-    for row in statmatrix:
-        outfile.write(join(row, ","))
-        outfile.write("\n")
-    outfile.close()
+#     outfile = open("stat_file.csv", "w")
+#     for row in statmatrix:
+#         outfile.write(join(row, ","))
+#         outfile.write("\n")
+#     
+#     outfile.close()
+    
+
+    output_graphs(statmatrix)
+    
             
 def process_single_record(mailFields):
     return rulelist.apply_rules(mailFields)
 
+def output_graphs(statmatrix):
+    aggregated = aggregate_statistics(statmatrix)
+    arr = np.arange(len(statmatrix[0]))
+    barwidth = 0.35
+    bars = plot.bar(arr, aggregated)
+    plot.xticks(arr + barwidth, arr)
+    
+    colors = 'rgbkymc'
+    for i in range(0,len(arr)):
+        bars[i].set_color(colors[i % 7])
+    
+    
+
+    ax = plot.subplot(111)
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0, box.width * 0.7, box.height])
+
+    # Put a legend to the right of the current axis
+    ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    """TODO dynamic scaling"""
+    """TODO load settings from configuration files"""
+    plot.figlegend(bars, statmatrix[0], 'center right')
+    plot.title('E-mail statistics')
+    plot.savefig("plot.png")
+    
+def aggregate_statistics(statmatrix):
+    aggregated = list();
+    for i in range(0,len(statmatrix[0])):
+        aggregated.append(0);
+    
+    for row in range(1, len(statmatrix)):
+        for column in range(0, len(statmatrix[i])):
+            aggregated[column] += statmatrix[row][column]
+    
+    return aggregated
+         
+            
     
         
 
