@@ -39,7 +39,7 @@ INSTALL_PATH=$WORK_PATH/shiva
 
 prerequisites () {
     printf "\n\n[*] Checking for the prerequisites in system.\n"
-    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf")
+    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf" "libpng-dev" "libfreetype6-dev")
     
     missing_counter=0
     for needed_pkg in "${pkgs[@]}"
@@ -151,6 +151,7 @@ analyzer () {
     pip install ssdeep==3.1
     pip install docutils
     pip install python-daemon==2.0.2
+    pip install matplotlib
 
     printf "\n[*] Installing Lamson (analyzer) and creating project:\n"
     pip install lamson==1.3.4
@@ -168,6 +169,8 @@ analyzer () {
     cp -v $WORK_PATH/analyzer/config/settings.py $INSTALL_PATH/shivaAnalyzer/analyzer/config/
     
     cp -v $WORK_PATH/helpers/clearlogs.sh $INSTALL_PATH/shivaAnalyzer/analyzer/logs/
+    
+    cp -v $WORK_PATH/helpers/generate_stats.sh $INSTALL_PATH/shivaAnalyzer/bin/
     
     printf "\n[+] Setting up Shiva Analyzer done!\n"
     deactivate
