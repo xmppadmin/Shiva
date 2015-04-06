@@ -152,6 +152,7 @@ analyzer () {
     pip install docutils
     pip install python-daemon==2.0.2
     pip install matplotlib
+    pip install beautifulsoup4
 
     printf "\n[*] Installing Lamson (analyzer) and creating project:\n"
     pip install lamson==1.3.4
