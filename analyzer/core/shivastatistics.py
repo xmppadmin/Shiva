@@ -8,6 +8,8 @@ import numpy as np
 import shivamaindb
 
 from bs4 import BeautifulSoup
+from string import split
+
 TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','accountants','active','actor','ad','ads','adult','ae','aero','af','afl','ag',
 'agency','ai','aig','airforce','al','allfinanz','alsace','am','amsterdam','an','android','ao','apartments','aq','aquarelle','ar','archi','army','arpa','as',
 'asia','associates','at','attorney','au','auction','audio','auto','autos','aw','ax','axa','az','ba','band','bank','bar','barclaycard','barclays','bargains',
@@ -333,6 +335,33 @@ class RuleC8(MailClassificationRule):
                 return 1 
         return 0
             
+class RuleC9(MailClassificationRule):
+    def __init__(self):
+        self.rulename = "C9: More than three subdomains in URL"
+        
+    def apply_rule(self, mailFields):
+        if not mailFields['html']:
+            return 0
+        soup = BeautifulSoup(mailFields['html'])
+        for a_tag in soup.find_all('a'):
+            href = extractdomain(a_tag.get('href'))
+            if href and not extractip(href) and len(split(href, '.')) > 3:
+                return 1
+        return 0
+
+class RuleC10(MailClassificationRule):
+    def __init__(self):
+        self.rulename = "C10: Hyperlink with image insted of visible text, image source is IP address"
+        
+    def apply_rule(self, mailFields):
+        if not mailFields['html']:
+            return 0
+        soup = BeautifulSoup(mailFields['html'])
+        for a_tag in soup.find_all('a'):
+            for img in a_tag.find_all('img'):
+                if extractip(img.get('src')):
+                    return 1
+        return 0
 
 class RuleC11(MailClassificationRule):
     def __init__(self):
@@ -368,6 +397,8 @@ rulelist.add_rule(RuleC5())
 rulelist.add_rule(RuleC6())
 rulelist.add_rule(RuleC7())
 rulelist.add_rule(RuleC8())
+rulelist.add_rule(RuleC9())
+rulelist.add_rule(RuleC10())
 rulelist.add_rule(RuleC11())
 
 def main():
