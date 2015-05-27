@@ -369,16 +369,10 @@ def output_graphs(statmatrix, unique=False):
     for i in range(0,len(arr)):
         bars[i].set_color(colors[i % 7])
         
-    ax = plot.subplot(111)
-    box = ax.get_position()
-    ax.set_position([box.x0, box.y0, box.width * 0.7, box.height])
-
-    # Put a legend to the right of the current axis
-#     ax.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    """TODO dynamic scaling"""
     """TODO load settings from configuration files"""
-    plot.figlegend(bars, statmatrix[0], 'center right')
-    title =  'Statistics of ' + str(len(statmatrix) -1)
+
+    legend = plot.legend(bars, statmatrix[0], loc='upper center', bbox_to_anchor=(0.5,-0.1))
+    title =  'SHIVA honeypot - statistics of ' + str(len(statmatrix) -1)
     outfile = 'plot'
     if unique:
         outfile += '-unique'
@@ -386,7 +380,7 @@ def output_graphs(statmatrix, unique=False):
     title += ' emails'
     outfile += '.png'
     plot.title(title)
-    plot.savefig(outfile)
+    plot.savefig(outfile, bbox_extra_artists=(legend,), bbox_inches='tight')
     plot.close()
     
 def aggregate_statistics(statmatrix):
