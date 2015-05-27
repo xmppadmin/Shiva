@@ -6,7 +6,6 @@ import matplotlib.pyplot as plot
 import numpy as np
 
 import shivamaindb
-from string import join
 
 from bs4 import BeautifulSoup
 
@@ -91,7 +90,7 @@ class Rule0(MailClassificationRule):
 
 class ContainsUrlRule(MailClassificationRule):
     def __init__(self):
-        self.rulename = "contain URL"
+        self.rulename = "R1: Email contains URL"
         
     def apply_rule(self, mailFields):
         return 1 if len(mailFields['links']) > 0  else 0
@@ -99,7 +98,7 @@ class ContainsUrlRule(MailClassificationRule):
 
 class ContainsImageAttachmentRule(MailClassificationRule):
     def __init__(self):
-        self.rulename = "contain image"
+        self.rulename = "R2: Email contains image"
         
     def apply_rule(self, mailFields):
         for suffix in mailFields['attachmentFileType']:
@@ -109,7 +108,7 @@ class ContainsImageAttachmentRule(MailClassificationRule):
 
 class ContainsExecutableAttachmentRule(MailClassificationRule):
     def __init__(self):
-        self.rulename = "contain exec file"
+        self.rulename = "R3: Email contains executable attachment"
         
     def apply_rule(self, mailFields):
         for suffix in mailFields['attachmentFileType']:
@@ -119,7 +118,7 @@ class ContainsExecutableAttachmentRule(MailClassificationRule):
 
 class ContainsDocumentAttachmentRule(MailClassificationRule):
     def __init__(self):
-        self.rulename = "contain document"
+        self.rulename = "R4: Email contains document(doc,pdf)"
         
     def apply_rule(self, mailFields):
         for suffix in mailFields['attachmentFileType']:
@@ -165,7 +164,7 @@ class MailClassificationRuleList(object):
         
 class RuleC1(MailClassificationRule):
     def __init__(self):
-        self.rulename = "C1"
+        self.rulename = "C1: Hyperlink with visible URL, pointing to different URL"
         
     def apply_rule(self, mailFields):
         if not mailFields['html']:
@@ -184,7 +183,7 @@ class RuleC1(MailClassificationRule):
     
 class RuleC2(MailClassificationRule):
     def __init__(self):
-        self.rulename = "C2"
+        self.rulename = "C2: Hyperlink with visible text pointing to IP based URL"
         
     def apply_rule(self, mailFields):
         if not mailFields['html']:
@@ -207,14 +206,14 @@ class RuleC2(MailClassificationRule):
     
 class RuleC3(MailClassificationRule):
     def __init__(self):
-        self.rulename = "C3"
+        self.rulename = "C3: Email body in HTML format"
         
     def apply_rule(self, mailFields):
         return True if mailFields['html'] else False
 
 class RuleC5(MailClassificationRule):
     def __init__(self):
-        self.rulename = "C5"
+        self.rulename = "C5: Sender domain different from some URL in message body"
         
     def apply_rule(self, mailFields):
         if not mailFields['from'] or not mailFields['links']:
@@ -237,7 +236,7 @@ class RuleC5(MailClassificationRule):
 
 class RuleC6(MailClassificationRule):
     def __init__(self):
-        self.rulename = "C6"
+        self.rulename = "C6: Image with external domain different from URLs in email body"
         
     def apply_rule(self, mailFields):
         if not mailFields['html'] or not mailFields['links']:
@@ -258,7 +257,7 @@ class RuleC6(MailClassificationRule):
 
 class RuleC7(MailClassificationRule):
     def __init__(self):
-        self.rulename = "C7"
+        self.rulename = "C7: Image source is IP address"
         
     def apply_rule(self, mailFields):
         if not mailFields['html']:
@@ -272,7 +271,7 @@ class RuleC7(MailClassificationRule):
 
 class RuleC11(MailClassificationRule):
     def __init__(self):
-        self.rulename = "C11"
+        self.rulename = "C11: Visible text in hyperlink contains no information about destination"
         
     def apply_rule(self, mailFields):
         if not mailFields['html']:
@@ -281,7 +280,11 @@ class RuleC11(MailClassificationRule):
         for a_tag in soup.find_all('a'):
             href = extractdomain(a_tag.get('href'))
             text = extractdomain(a_tag.get_text())
-            return 1 if (not text and href) else 0
+            if (text):
+                if (href):
+                    return 0 if text.lower() == href.lower else 1
+                else:
+                    return 1
         return 0
         
 
@@ -289,10 +292,10 @@ class RuleC11(MailClassificationRule):
     
 """setup rules"""
 rulelist = MailClassificationRuleList()
+rulelist.add_rule(ContainsUrlRule())
 rulelist.add_rule(ContainsImageAttachmentRule())
 rulelist.add_rule(ContainsExecutableAttachmentRule())
 rulelist.add_rule(ContainsDocumentAttachmentRule())
-rulelist.add_rule(ContainsUrlRule())
 rulelist.add_rule(RuleC1())
 rulelist.add_rule(RuleC2())
 rulelist.add_rule(RuleC3())
@@ -363,8 +366,9 @@ def output_graphs(statmatrix, unique=False):
     arr = np.arange(len(statmatrix[0]))
     barwidth = 0.35
     bars = plot.bar(arr, aggregated)
-    plot.xticks(arr + barwidth, arr)
     
+    plot.xticks(arr + barwidth, map(lambda a: a[:a.index(':')], statmatrix[0]))
+
     colors = 'rgkymcb'
     for i in range(0,len(arr)):
         bars[i].set_color(colors[i % 7])
