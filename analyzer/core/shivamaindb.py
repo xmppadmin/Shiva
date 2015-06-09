@@ -12,7 +12,8 @@ import shivanotifyerrors
 import ssdeep
 import MySQLdb as mdb
 
-import logging
+import urllib2
+from urllib2 import HTTPError
 
 def main():
     fetchfromtempdb = "SELECT `id`, `ssdeep`, `length` FROM `spam` WHERE 1"
@@ -76,7 +77,7 @@ def insert(spam_id):
     
     attachments = "SELECT `id`, `spam_id`, `file_name`, `attach_type`, `attachmentFileMd5`, `date`, `attachment_file_path` FROM `attachments` WHERE `spam_id` = '" + str(spam_id) + "'"
     
-    url = "SELECT `id`, `spam_id`, `hyperlink`, `date` FROM `links` WHERE `spam_id` = '" + str(spam_id) + "'"
+    url = "SELECT `id`, `spam_id`, `hyperlink`, `longhyperlink`, `date` FROM `links` WHERE `spam_id` = '" + str(spam_id) + "'"
     
     sensor = "SELECT `id`, `sensorID` FROM `spam` WHERE `id` = '" + str(spam_id) + "'"
     
@@ -107,7 +108,7 @@ def insert(spam_id):
             tempDb.execute(url)
             urlrecords = tempDb.fetchall()
             for record in urlrecords:
-                mailFields['links'].append(record[2])
+                mailFields['links'].append((record[2], record[3]))
             
             # Saving 'sensor' table's data
             tempDb.execute(sensor)
@@ -179,7 +180,7 @@ def insert(spam_id):
             if len(mailFields['links']) != 0:                                     # If links are present - insert into DB
                 i = 0
                 while i < len(mailFields['links']):
-                    insert_link = "INSERT INTO links (`date`, `hyperLink`, `spam_id` ) VALUES('" + str(mailFields['date']) + "', '" + str(mailFields['links'][i]) + "', '" + str(mailFields['s_id']) + "')"
+                    insert_link = "INSERT INTO links (`date`, `hyperLink`, `longHyperLink`,`spam_id` ) VALUES('" + str(mailFields['date']) + "', '" + str(mailFields['links'][i][0]) + "', " + ("NULL" if not mailFields['links'][i][1] else "'" + str(mailFields['links'][i][1]) + "'") + ", '" + str(mailFields['s_id']) + "')"
                     i += 1
                     try:
                         mainDb.execute(insert_link)
@@ -232,7 +233,7 @@ def insert(spam_id):
 def update(tempid, mainid):
     mailFields = {'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'links':[],  'date': '', 'to': ''}
     
-    tempurls = "SELECT `hyperlink` FROM `links` WHERE `spam_id` = '" + str(tempid) + "'"
+    tempurls = "SELECT `hyperlink`, `longhyperlink` FROM `links` WHERE `spam_id` = '" + str(tempid) + "'"
     tempattachs = "SELECT `file_name`, `attachment_file_path`, `attach_type`, `attachmentFileMd5` FROM `attachments` WHERE `spam_id` = '" + str(tempid) + "'"
     tempsensors = "SELECT `sensorID` FROM `sensors` WHERE `spam_id` = '" + str(tempid) + "'"
     tempspam = "SELECT `firstSeen`, `relayCounter`, `relayTime`, `sourceIP`, `totalCounter`, `to` FROM `spam` WHERE `id` = '" + str(tempid) + "'"
@@ -242,7 +243,7 @@ def update(tempid, mainid):
         records = tempDb.fetchall()
         
         for record in records:
-            mailFields['links'].append(record[0])
+            mailFields['links'].append((record[0],record[1]))
             
             
         tempDb.execute(tempattachs)
@@ -333,7 +334,6 @@ def update(tempid, mainid):
     record = mainDb.fetchone()
     
     if record != None:
-        print "inside comparing lists: "
         recipientsdb = (record[0].encode('utf-8')).split(",")
         newrecipients = [item for item in recipients if item not in recipientsdb]
         
@@ -429,7 +429,7 @@ def update(tempid, mainid):
     # Checking for URLs
     for url in mailFields['links']:
         urlstatus = 1
-        checkURL = "SELECT `hyperLink` FROM `links` WHERE `spam_id` = '" + str(mainid) + "' AND `hyperLink` = '" + str(url) + "'"
+        checkURL = "SELECT `hyperLink` FROM `links` WHERE `spam_id` = '" + str(mainid) + "' AND `hyperLink` = '" + str(url[0]) + "'"
         try:
             mainDb.execute(checkURL)
             records = mainDb.fetchall()
@@ -442,7 +442,7 @@ def update(tempid, mainid):
             urlstatus = 0
         
         if urlstatus == 1:
-            insert_url = "INSERT INTO `links`(`date`, `hyperLink`, `spam_id`) VALUES ('" + str(mailFields['date']) + "', '" + str(url) + "', '" + str(mainid) + "')"
+            insert_url = "INSERT INTO `links`(`date`, `hyperLink`, `longHyperLink`, `spam_id`) VALUES ('" + str(mailFields['date']) + "', '" + str(url[0]) + "', " + ("NULL" if not mailFields['links'] else "'" + str(url[1]) + "'") + ", '" + str(mainid) + "')"
             try:
                 mainDb.execute(insert_url)
             except mdb.Error, e:
@@ -576,10 +576,14 @@ def retrieve(limit, offset):
             mailFields['len'] = current_record[8]
             
             """fetch links for current spam"""
-            linksquery = "SELECT `hyperLink` FROM `links` WHERE `spam_id` = '" + record[0] + "'"
+            linksquery = "SELECT `hyperLink`, `hyperLink`  FROM `links` WHERE `spam_id` = '" + record[0] + "'"
             mainDb.execute(linksquery);
             links = mainDb.fetchall()
-            mailFields['links'] = links
+            linkList = []
+            """check for possible url shortening"""
+            for link in links:
+                linkList.append((link[0],link[1]))
+            mailFields['links'] = linkList
             
             """fetch attachments for current spam"""
             attachmentsquery = "SELECT `attachment_file_name`,`attachment_file_path`,`attachment_file_type` FROM `attachment` WHERE `spam_id` = '" + record[0] + "'"

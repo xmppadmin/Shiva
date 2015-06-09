@@ -19,6 +19,10 @@ from email.utils import parseaddr
 
 import ssdeep
 
+import urllib2
+from urllib2 import HTTPError
+from bs4 import BeautifulSoup
+
 import shivaconclude
 import shivanotifyerrors
 import server
@@ -39,15 +43,28 @@ def md5checksum(filepath):
     return m.hexdigest()
   
 def linkparser(input_body):
-    """Returns a list containing URLs.
+    """Returns a list tuples (URL, re-shorten version of URL according to longurl.org).
     """
     
     
     URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
     url_list = set([mgroups[0] for mgroups in URL_REGEX_PATTERN.findall(input_body)])
-    url_list = list(set(url_list))
+    result_list = list()
     
-    return url_list
+    for link in url_list:
+        try:
+            req = urllib2.urlopen('http://api.longurl.org/v2/expand?format=xml&url=' + link)
+            content = req.read()
+            soup = BeautifulSoup(content)
+            longUlr = soup.find("long-url").getText()
+            if longUlr == link:
+                longUlr = ''
+            result_list.append((link,longUlr))
+        except HTTPError as x:
+            """ invalid url """
+            result_list.append((link,''))
+            
+    return list(set(result_list))
 
 def getfuzzyhash():
     """Returns fuzzy hash of spam.

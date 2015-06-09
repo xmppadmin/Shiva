@@ -92,12 +92,14 @@ CREATE TABLE IF NOT EXISTS `links` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` date NOT NULL,
   `hyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `longHyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `spam_id` char(32) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
   KEY `hyperLink` (`hyperLink`),
   KEY `date` (`date`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
 
 -- --------------------------------------------------------
 

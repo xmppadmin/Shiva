@@ -16,6 +16,8 @@ import server
 import shivadbconfig
 import shivanotifyerrors
 
+import shivamaindb
+
 def push():
     logging.info("[+]Inside shivapushtodb Module")
     notify = server.shivaconf.getboolean('notification', 'enabled')
@@ -90,8 +92,7 @@ def push():
         if len(record['links']) > 0:
             i = 0
             for link in record['links']:
-                insertLink = "INSERT INTO `links` (`spam_id`, `hyperlink`, `date`) VALUES ('" + str(record['s_id']) + "', '" + str(link) + "', '" + str(record['date']) + "')"
-
+                insertLink = "INSERT INTO `links` (`spam_id`, `hyperlink`, `longHyperLink`, `date`) VALUES ('" + str(record['s_id']) + "', '" + str(link[0]) + "', " + ("NULL" if not link[1] else "'" + str(link[1]) + "'") + ", '" + str(record['date']) + "')"
                 try:
                     exeSql.execute(insertLink)
                     i += 1
@@ -112,7 +113,6 @@ def push():
                 shivanotifyerrors.notifydeveloper("[-] Error (Module shivapushtodb.py) - insertSensor %s" % e)
           
     subprocess.Popen(['python', os.path.dirname(os.path.realpath(__file__)) + '/shivamaindb.py'])
-    logging.info("Shivamaindb called")
     exeSql.close()
   
 def sendfeed():
@@ -141,7 +141,7 @@ def sendfeed():
         if len(record['links']) > 0:
             for link in record['links']:
                 try:
-                    data = {"id": record['s_id'], "url": link}
+                    data = {"id": record['s_id'], "url": link[0]}
                     data = json.dumps(data)
                     hpc.publish(channel["ip_url"], data)
                 except Exception, e:
