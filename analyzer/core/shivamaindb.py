@@ -576,7 +576,7 @@ def retrieve(limit, offset):
             mailFields['len'] = current_record[8]
             
             """fetch links for current spam"""
-            linksquery = "SELECT `hyperLink`, `hyperLink`  FROM `links` WHERE `spam_id` = '" + record[0] + "'"
+            linksquery = "SELECT `hyperLink`, `longHyperLink`  FROM `links` WHERE `spam_id` = '" + record[0] + "'"
             mainDb.execute(linksquery);
             links = mainDb.fetchall()
             linkList = []

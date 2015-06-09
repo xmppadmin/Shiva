@@ -116,6 +116,17 @@ def extractalldomains(url):
                 urls.append(match)
     return urls
 
+def getfinalurls(url_tuple):
+    """return list of urls from url_tuple. Unshortened Url is alwas prefered"""
+    url_list = list()
+    if not url_tuple:
+        return url_list
+    
+    for current in url_tuple:
+        if current[0]:
+            url_list.append(current[0])
+    return url_list
+        
 class MailClassificationRule(object):
     def __init__(self):
         self.rulename = "base_rule"
@@ -178,6 +189,16 @@ class ContainsDocumentAttachmentRule(MailClassificationRule):
                 return 1
         return 0
 
+class HasShortenedUrl(MailClassificationRule):
+    def __init__(self):
+        self.rulename = "R5: At least one URL is shortened"
+        
+    def apply_rule(self, mailFields):
+        for url_tuple in mailFields['links']:
+            if url_tuple[1]:
+                print url_tuple[1]
+                return 1
+        return 0
     
 """Class represents list of MailClassificationRules to be
    applied on mail
@@ -281,7 +302,7 @@ class RuleC5(MailClassificationRule):
             return 0
         
         sender_domain = m.group()
-        for url in mailFields['links']:
+        for url in getfinalurls(mailFields['links']):
             if not samedomain(sender_domain, url):
                 return 1
         return 0
@@ -294,7 +315,7 @@ class RuleC6(MailClassificationRule):
         if not mailFields['html'] or not mailFields['links']:
             return 0
         
-        domain_list = filter(lambda url: url, (map(extractdomain, mailFields['links'])))
+        domain_list = filter(lambda url: url, (map(extractdomain, getfinalurls(mailFields['links']))))
         soup = BeautifulSoup(mailFields['html'])
         for img_tag in soup.find_all('img'):
             src_domain = extractdomain(img_tag.get('src'))
@@ -390,6 +411,7 @@ rulelist.add_rule(ContainsUrlRule())
 rulelist.add_rule(ContainsImageAttachmentRule())
 rulelist.add_rule(ContainsExecutableAttachmentRule())
 rulelist.add_rule(ContainsDocumentAttachmentRule())
+rulelist.add_rule(HasShortenedUrl())
 rulelist.add_rule(RuleC1())
 rulelist.add_rule(RuleC2())
 rulelist.add_rule(RuleC3())
