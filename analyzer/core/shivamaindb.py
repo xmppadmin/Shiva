@@ -442,7 +442,7 @@ def update(tempid, mainid):
             urlstatus = 0
         
         if urlstatus == 1:
-            insert_url = "INSERT INTO `links`(`date`, `hyperLink`, `longHyperLink`, `spam_id`) VALUES ('" + str(mailFields['date']) + "', '" + str(url[0]) + "', " + ("NULL" if not mailFields['links'] else "'" + str(url[1]) + "'") + ", '" + str(mainid) + "')"
+            insert_url = "INSERT INTO `links`(`date`, `hyperLink`, `longHyperLink`, `spam_id`) VALUES ('" + str(mailFields['date']) + "', '" + str(url[0]) + "', " + ("NULL" if not url[1] else "'" + str(url[1]) + "'") + ", '" + str(mainid) + "')"
             try:
                 mainDb.execute(insert_url)
             except mdb.Error, e:

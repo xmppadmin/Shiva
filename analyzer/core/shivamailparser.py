@@ -27,6 +27,8 @@ import shivaconclude
 import shivanotifyerrors
 import server
 
+from shivastatistics import samedomain,extractdomain
+
 
 # Global dictionary to store parsed fields of spam
 mailFields = {'headers':'', 'to':'', 'from':'', 'subject':'', 'date':'', 'firstSeen':'', 'lastSeen':'', 'firstRelayed':'', 'lastRelayed':'', 'sourceIP':'', 'sensorID':'', 'text':'', 'html':'', 'inlineFileName':[], 'inlineFile':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFile':[], 'attachmentFileMd5':[], 'links':[], 'ssdeep':'', 's_id':'', 'len':''}
@@ -57,8 +59,9 @@ def linkparser(input_body):
             content = req.read()
             soup = BeautifulSoup(content)
             longUlr = soup.find("long-url").getText()
-            if longUlr == link:
+            if samedomain(extractdomain(link), extractdomain(longUlr)):
                 longUlr = ''
+            """resolved domain is different from given"""
             result_list.append((link,longUlr))
         except HTTPError as x:
             """ invalid url """
