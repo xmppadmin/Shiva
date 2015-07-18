@@ -13,6 +13,7 @@ import ssdeep
 import shivaaddnewrecord
 import shivaprocessold
 
+import shivastatistics
 
 def main(mailFields, key, msgMailRequest):
     """Decides if a spam is new or old.
@@ -30,7 +31,6 @@ def main(mailFields, key, msgMailRequest):
     # Checking if we have any item in our global list.
     # If no item: then we will directly push spam details into the list
     # Else: Do the processing.
-
     if not records:
         shivaaddnewrecord.main(mailFields, key, msgMailRequest)
 
@@ -62,3 +62,5 @@ def main(mailFields, key, msgMailRequest):
 
         if count == len(records):
             shivaaddnewrecord.main(mailFields, key, msgMailRequest)
+            
+

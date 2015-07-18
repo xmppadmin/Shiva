@@ -8,6 +8,7 @@ import os
 import server
 import shivadbconfig
 import shivanotifyerrors
+import logging
 
 import ssdeep
 import MySQLdb as mdb
@@ -71,7 +72,7 @@ def main():
     
 def insert(spam_id):
     
-    mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'links':[],  'date': '' }
+    mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'links':[],  'date': '' , 'phishingHumanCheck' : ''}
     
     spam = "SELECT `id`, `ssdeep`, `to`, `from`, `textMessage`, `htmlMessage`, `subject`, `headers`, `sourceIP`, `sensorID`, `firstSeen`, `relayCounter`, `relayTime`, `totalCounter`, `length` FROM `spam` WHERE `id` = '" + str(spam_id) + "'"
     
@@ -539,27 +540,35 @@ def update(tempid, mainid):
 retrieve spam from database
 limit - integer, how many records should be retrieved
 offset - integer, offset to start from
+filter = ('none','phish','spam')
 """
-def retrieve(limit, offset):
+def retrieve(limit, offset, filterType="none"):
     """retrieve list e-mails stored in database
 
     Keyword arguments:
     limit -- integer
     offset -- integer
     """
-    resultlist = []    
-    fetchidsquery = "SELECT `id` FROM `spam` WHERE 1 ORDER BY `id` LIMIT " + str(limit) + " OFFSET " + str(offset)
+    resultlist = [] 
+    whereclause = '1'   
+    if filterType == 'phish':
+        whereclause = 'phishingHumanCheck is true'
+    
+    if filterType == 'spam':
+        whereclause = 'phishingHumanCheck is not true'
+
+    fetchidsquery = "SELECT `id` FROM `spam` WHERE " + whereclause + " ORDER BY `id` LIMIT " + str(limit) + " OFFSET " + str(offset)
 
     try:
         mainDb = shivadbconfig.dbconnectmain()
         mainDb.execute(fetchidsquery)
         result = mainDb.fetchall()
-
+        
         for record in result:
             mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'attachmentFileType':[], 'links':[],  'date': '' }
             
             """fetch basic spam information from database"""
-            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length` FROM `spam` WHERE `id` = '" + record[0] + "'"
+            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck` FROM `spam` WHERE `id` = '" + record[0] + "'"
             mailFields['s_id'] = record[0]
             mainDb.execute(spamquery)
 
@@ -574,6 +583,7 @@ def retrieve(limit, offset):
             mailFields['ssdeep'] = current_record[6]
             mailFields['headers'] = current_record[7]
             mailFields['len'] = current_record[8]
+            mailFields['phishingHumanCheck'] = current_record[9]
             
             """fetch links for current spam"""
             linksquery = "SELECT `hyperLink`, `longHyperLink`  FROM `links` WHERE `spam_id` = '" + record[0] + "'"

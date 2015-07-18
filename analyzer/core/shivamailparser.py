@@ -21,14 +21,15 @@ import ssdeep
 
 import urllib2
 from urllib2 import HTTPError
+from urllib2 import URLError
 from bs4 import BeautifulSoup
 
 import shivaconclude
 import shivanotifyerrors
 import server
 
-from shivastatistics import samedomain,extractdomain
 
+from phishing import samedomain,extractdomain
 
 # Global dictionary to store parsed fields of spam
 mailFields = {'headers':'', 'to':'', 'from':'', 'subject':'', 'date':'', 'firstSeen':'', 'lastSeen':'', 'firstRelayed':'', 'lastRelayed':'', 'sourceIP':'', 'sensorID':'', 'text':'', 'html':'', 'inlineFileName':[], 'inlineFile':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFile':[], 'attachmentFileMd5':[], 'links':[], 'ssdeep':'', 's_id':'', 'len':''}
@@ -63,7 +64,7 @@ def linkparser(input_body):
                 longUlr = ''
             """resolved domain is different from given"""
             result_list.append((link,longUlr))
-        except HTTPError as x:
+        except (HTTPError, URLError):
             """ invalid url """
             result_list.append((link,''))
             
@@ -287,6 +288,7 @@ def main(key, msgMailRequest):
             mailFields['links'].extend(linkparser(mailFields['text']))
 
         except Exception, e:
+            logging.critical(e.__class__.__name__)
             logging.critical("[-] Error (Module shivamailparser.py) - some issue in parsing 'links' field %s" % key)
             movebadsample(key, "[-] Error (Module shivamailparser.py) - some issue in parsing 'links' field %s %s \n" % (key, e))
             return None
@@ -297,7 +299,7 @@ def main(key, msgMailRequest):
         mailFields['lastSeen'] =  datetime.datetime.now()
         mailFields['firstRelayed'] =  datetime.datetime.now()
         mailFields['lastRelayed'] =  datetime.datetime.now()
-
+        logging.info(mailFields)
         try:
             mailFields['ssdeep'] = getfuzzyhash()
         except Exception, e:

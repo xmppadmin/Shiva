@@ -11,6 +11,8 @@ import datetime
 
 import server
 
+from learning import check_mail
+
 def main(mailFields, key, msgMailRequest):
     """Main function. 
     Stores the parsed fields as dictionary and then appends it to our
@@ -25,7 +27,18 @@ def main(mailFields, key, msgMailRequest):
     records = server.QueueReceiver.records
     source = queuepath + "/new/" + key
     filename = mailFields['s_id'] + "-" + key
-    destination = rawspampath + filename
+    
+    phish_flag = checkphishing(mailFields, key, msgMailRequest)
+
+    logging.info("ADD NEW RECORD RETURN")
+    """ TEMPORARY, DON'T ADD ANY NEW RECORDS """
+    return
+
+    if phish_flag:
+        destination = rawspampath + "/phish/" + filename
+    else:
+        destination = rawspampath + "/spam/" + filename
+        
     shutil.copy2(source, destination) # shutil.copy2() copies the meta-data too
 
     newRecord = { 'headers':mailFields['headers'], 
@@ -51,9 +64,10 @@ def main(mailFields, key, msgMailRequest):
                 'ssdeep':mailFields['ssdeep'], 
                 's_id':mailFields['s_id'], 
                 'len':mailFields['len'], 
+                'phishingHumanCheck': phish_flag,
                 'counter':1, 
                 'relayed':0 }
-
+    logging.info(str(newRecord))
     if relay_enabled is True:
         relaycounter = server.shivaconf.getint('analyzer', 'globalcounter')
 
@@ -89,3 +103,12 @@ def main(mailFields, key, msgMailRequest):
             
     records.insert(0, newRecord) #Inserting new record at the first position.
     del newRecord
+    
+def checkphishing(mailFields, key, msgMailRequest):
+    """ return True if email is considered as phishing, False otherwise"""
+    prob = check_mail(mailFields)
+    logging.info("Computed probability: " + str(prob))
+    
+    """ TODO handle computing of boundary """
+    
+    return False

@@ -28,6 +28,7 @@ from lamson.bounce import PRIMARY_STATUS_CODES, SECONDARY_STATUS_CODES, COMBINED
 import shivascheduler
 import shivamailparser
 import shivadbconfig
+import iohandler
 import MySQLdb as mdb
 
 confpath = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../shiva.conf"
@@ -251,9 +252,16 @@ class QueueReceiver(object):
         while loop with a sleep.
         """
 
+        """setup iohandler"""
+        if not one_shot: 
+            iohandler.main()
+
         logging.info("Queue receiver started on queue dir %s" %
                      (self.queue_dir))
         logging.debug("Sleeping for %d seconds..." % self.sleep)
+        
+        
+        
         shivascheduler.schedule()
         inq = queue.Queue(self.queue_dir)
         

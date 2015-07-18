@@ -12,6 +12,7 @@ import shivapushtodb
 import server
 
 def resetcounter():
+    logging.info("[+]shivascheduler.py: INSIDE SCHEDULER RESET COUNTER")
     shivapushtodb.cleanup()
     shivapushtodb.getspammeremails()
     
@@ -28,6 +29,7 @@ def resetcounter():
             shivapushtodb.sendfeed()
 
 def schedule():
+    logging.info("[+]shivascheduler.py: INSIDE SCHEDULER")
     sched = Scheduler()
     duration = server.shivaconf.getint('analyzer', 'schedulertime')
     sched.add_interval_job(resetcounter, minutes=duration)
