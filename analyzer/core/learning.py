@@ -1,5 +1,6 @@
 import pickle
 import logging
+import server
 
 from sklearn import svm
 
@@ -39,11 +40,6 @@ def learn():
     """
     samples = map(lambda a: a[1:], learning_matrix[1:])
     results = map(lambda a: a[0],  learning_matrix[1:])
-    print results
-    
-#     logging.info("LERNING: weights: " + str(len(weights)))
-#     logging.info("LERNING: results: " + str(len(results[0])))
-#     logging.info("LERNING: samples: " + str(len(samples[0])))
     
     classifier = svm.SVC(C=1.0, 
                          cache_size=200, 
@@ -70,7 +66,49 @@ def learn():
 
     
 
+def learn_spamassassin():
+    """ learn spamassassin Bayes filter on captured emails """
+    import subprocess,os,fnmatch,shlex
+    
+    logging.info('Learning - re-learning spamassassin.')
+    try:
+        retval = subprocess.call(shlex.split('spamc -K'))
+        if retval != 0:
+            logging.error('Learning: spamassassin daemon isn\'t running, exiting')
+            return
+    except subprocess.CalledProcessError:
+        logging.error('Learning: error occered during communication with spamassassin daemon.')
+        return
+    
+    rawspampath = server.shivaconf.get('analyzer', 'rawspampath')
         
+    phishing_mail_path = rawspampath + "phish/"
+    phishing_mail_count = len(fnmatch.filter(os.listdir(phishing_mail_path), '*'))
+    phishing_learn_cmd = 'sa-learn --spam ' + phishing_mail_path + '*'
+    
+    spam_mail_path = rawspampath + "spam/"
+    spam_mail_count = len(fnmatch.filter(os.listdir(spam_mail_path), '*'))
+    spam_learn_cmd = 'sa-learn --ham ' + spam_mail_path + '*'
+    
+    try:
+        logging.info('Learning: dropping old spamassassin database.')
+        retval = subprocess.call(shlex.split('sa-learn --clear'))
+        
+        logging.info('Learning: learning spamassassin Bayes filter on {} PHISHING emails in {}.'.format(phishing_mail_count, phishing_mail_path))
+        retval += subprocess.call(shlex.split(phishing_learn_cmd))
+        
+        logging.info('Learning: learning spamassassin Bayes filter on {} SPAM emails in {}.'.format(spam_mail_count, spam_mail_path))
+        retval += subprocess.call(shlex.split(spam_learn_cmd))
+        
+        if retval == 0:
+            logging.info('Learning: spamassassin successfully learned.')
+        else:
+            logging.error('Learning: error occered during spamassassin learnig process.')
+        
+    except subprocess.CalledProcessError as ex:
+        logging.error('Learning: error occered during communication with spamassassin daemon.')
+    
+    
     
 def check_mail(mailFields):
     """ 

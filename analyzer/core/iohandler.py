@@ -52,9 +52,14 @@ def SocketListener():
             generate_statistics(filterType="spam")
             continue
         
-        if re.match('^learn', content):
+        if re.match('^learn$', content):
             logging.info("IO: Learning from stored emails")
             learning.learn()
+            continue
+        
+        if re.match('^learn_spamassassin$', content):
+            logging.info("IO: Learning spamassassin Bayes filter")
+            learning.learn_spamassassin()
             continue
         
         logging.info("IO: NO action selected.")
