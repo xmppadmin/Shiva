@@ -109,6 +109,30 @@ def learn_spamassassin():
         logging.error('Learning: error occered during communication with spamassassin daemon.')
     
     
+def get_spamassassin_bayes_score(mailFields):
+    """
+    return score [0.00, 1.00] of given mail from spamassassin Bayes filter
+    """ 
+    import subprocess,shlex,re
+    
+    result = 0.00
+    
+    for currentKey in ('text','html'):
+        
+        if not mailFields[currentKey]:
+            continue
+        
+        """ TODO check communication with spamassassin daemon"""
+        p = subprocess.Popen(shlex.split('spamc --full'),stdin=subprocess.PIPE,stdout=subprocess.PIPE)
+        spamassassin_output = p.communicate(input=mailFields[currentKey])[0] 
+         
+        match_bayes = re.search('BAYES_\d\d.*\n.*score:\s+\d+\.\d+]', spamassassin_output)
+        if match_bayes:
+            match_score = re.search('\d+\.\d+]',match_bayes.group(0))
+            score = float(match_score.group(0)[:-1])
+            result = score if score > result else result
+
+    return result
     
 def check_mail(mailFields):
     """ 
@@ -119,4 +143,5 @@ def check_mail(mailFields):
     global classifier
     mailVector = shivastatistics.process_single_record(mailFields)
     result = classifier.predict_proba(mailVector[1:])
+    logging.info("Spamassassin score " + str(get_spamassassin_bayes_score(mailFields)))
     return result[0][1]
