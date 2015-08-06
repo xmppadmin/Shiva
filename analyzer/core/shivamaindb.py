@@ -577,7 +577,7 @@ def retrieve_by_ids(email_ids = []):
             mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'attachmentFileType':[], 'links':[],  'date': '' }
             
             """fetch basic spam information from database"""
-            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck` FROM `spam` WHERE `id` = '" + current_id + "'"
+            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck`,`shivaScore`,`spamassassinScore` FROM `spam` WHERE `id` = '" + current_id + "'"
             mailFields['s_id'] = current_id
             
             mainDb = shivadbconfig.dbconnectmain()
@@ -595,6 +595,8 @@ def retrieve_by_ids(email_ids = []):
             mailFields['headers'] = current_record[7]
             mailFields['len'] = current_record[8]
             mailFields['phishingHumanCheck'] = current_record[9]
+            mailFields['shivaScore'] = current_record[10]
+            mailFields['spamassassinScore'] = current_record[11]
             
             """fetch links for current spam"""
             linksquery = "SELECT `hyperLink`, `longHyperLink`  FROM `links` WHERE `spam_id` = '" + current_id + "'"
@@ -624,9 +626,10 @@ def retrieve_by_ids(email_ids = []):
     return resultlist
     
     
-def get_overview(limit=10):
+def get_overview(start=0,limit=10):
+    overview_list = []
     try:
-        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject` from `spam_overview_view` LIMIT 10"
+        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore` from `spam_overview_view` LIMIT {0} OFFSET {1}".format(str(limit),str(start))
         
         mainDb = shivadbconfig.dbconnectmain()
         mainDb.execute(overview_query)
@@ -634,7 +637,7 @@ def get_overview(limit=10):
         
         overview_list = []
         for record in result:
-            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3]})
+            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5]})
         
     except mdb.Error, e:
         print e

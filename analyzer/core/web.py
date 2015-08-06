@@ -23,10 +23,11 @@ class WebServer():
     
     def index_template(self):
         title='SHIVA honeypot: mainpage'
+        overview_title = 'Overview of last 10 emails'
         return string.join((self.header_template(title),
                              self.headline_template(title),
                              self.statistics_template(),
-                             self.overview_template(shivamaindb.get_overview()), 
+                             self.overview_template(overview_list=shivamaindb.get_overview(),title=overview_title,start=0,count=10), 
                              self.footer_template())) 
 # view email page
     @cherrypy.expose
@@ -44,7 +45,37 @@ class WebServer():
 
     
         
+# go throught all emails
+    @cherrypy.expose
+    def list_emails(self,start=0,count=30):
+        title='SHIVA honeypot: list emails'
+        headline_title = 'SHIVA honeypot: list {0} emails starting from {1}'.format(count,start)
+        overview_list=shivamaindb.get_overview(start,count)
+        return string.join((self.header_template(title),
+                            self.headline_template(headline=headline_title),
+                            self.overview_template(overview_list=overview_list, title='', start=start, count=count),
+                            self.view_list_navigation_template(start=int(start),count=int(count),total=500),
+                            self.footer_template()))
         
+        
+    def view_list_navigation_template(self,start,count,total):
+        result = '<p>Nagivate:</p>'
+        
+        if start == 0:
+            result += '<button><<</button>'
+            result += '<button><</button>'
+        else:
+            result += '<a href="list_emails?start={0}&count={1}"><button><<</button></a>'.format(0,count)
+            result += '<a href="list_emails?start={0}&count={1}"><button><</button></a>'.format((start - count) if (start - count) > 0 else 0,count)
+            
+        if start + count < total:
+            result += '<a href="list_emails?start={0}&count={1}"><button>></button></a>'.format(start + count, count)
+            result += '<a href="list_emails?start={0}&count={1}"><button>>></button></a>'.format(total - (total % count) , count)
+        else:
+            result += '<button>></button>'
+            result += '<button>>></button>'
+        
+        return result        
     
     def statistics_template(self):
         uptime = time.time() - self.startup_time if self.startup_time else 0
@@ -61,17 +92,21 @@ class WebServer():
             </table>
         """.format(uptime_str)
     
-    def overview_template(self, overview_list):
+    def overview_template(self, overview_list, title, start=0, count=10):
         if not overview_list:
             return "<p>No emails found.</p>"
         
-        result = """<h2>Overview of last 10 emails</h2>
+        result = "<h2>{}</h2>".format(title) if title else "";
+        
+        result += """
             <table>
             <thead>
               <tr>
                 <td>Id</td>
                 <td>Last seen</td>
                 </td><td>Subject</td>
+                </td><td>Shiva score</td>
+                </td><td>Spamassassin score</td>
               </tr>
             </thead>
             <tbody>
@@ -79,8 +114,8 @@ class WebServer():
         for current in overview_list:
             result += """<tr>
                   <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
-                  <td>{1}</td></td><td>{2}</td>
-                </tr>""".format(current['id'],current['lastSeen'],current['subject'])
+                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td>
+                </tr>""".format(current['id'],current['lastSeen'],current['subject'],current['shivaScore'],current['spamassassinScore'])
         result += "</tbody></table>"
         return result
     
@@ -92,6 +127,8 @@ class WebServer():
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Subject', mailFields['subject'])
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('From', mailFields['from'])
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('To', mailFields['to'])
+        result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Shiva score', mailFields['shivaScore'])
+        result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Spamassassin score', mailFields['spamassassinScore'])
         
         firstLink = True
         for link in mailFields['links']:
@@ -102,6 +139,7 @@ class WebServer():
             firstLine = True
             for line in mailFields['text'].replace('\n','<br/>').split('<br/>'):
                 result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Plain text' if firstLine else '', line)
+                firstLine = False
         
         
         if mailFields['html']:
@@ -129,7 +167,7 @@ class WebServer():
     def footer_template(self):
         return """
             <hr>
-            <footer>Quick navigation: <a href="/">Main page</a></footer>
+            <footer>Quick navigation: <a href="/">Main page</a></footer><a href="/list_emails">List emails</a></footer>
             <foooter>Rendered: """ + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + """</footer>
           </body>
         </html>"""

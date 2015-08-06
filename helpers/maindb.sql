@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS `sdate` (
 
 CREATE TABLE IF NOT EXISTS `sdate_spam` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `spam_id` char(64) NOT NULL,
+  `spam_id` char(64) NOT NULL DEFAULT COLLATE=utf8mb4_unicode_ci,
   `date_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
@@ -199,6 +199,8 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `ssdeep` varchar(120) DEFAULT NULL COMMENT 'SSDeep hash of the mail',
   `headers` text NOT NULL COMMENT 'Header of Spam',
   `length` int(11) NOT NULL COMMENT 'Length of the spam',
+  `shivaScore` float DEFAULT -1.0 NOT NULL COMMENT 'computed phishing score',
+  `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
   PRIMARY KEY (`id`),
   KEY `subject` (`subject`),
   KEY `totalCounter` (`totalCounter`),
@@ -218,5 +220,17 @@ CREATE TABLE IF NOT EXISTS `whitelist` (
   `recipients` mediumtext CHARACTER SET utf8 COLLATE utf8_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
+-- Overview
+--
+CREATE VIEW IF NOT EXISTS spam_overview_view AS
+SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore 
+FROM spam
+  INNER JOIN sdate_spam ON sdate_spam.spam_id = spam.id 
+  INNER JOIN sdate ON sdate_spam.id = sdate.id 
+  ORDER BY sdate.lastSeen DESC ;
 
 
