@@ -548,8 +548,7 @@ def retrieve(limit, offset, filterType="none"):
     Keyword arguments:
     limit -- integer
     offset -- integer
-    """
-    resultlist = [] 
+    """ 
     whereclause = '1'   
     if filterType == 'phish':
         whereclause = 'phishingHumanCheck is true'
@@ -558,18 +557,30 @@ def retrieve(limit, offset, filterType="none"):
         whereclause = 'phishingHumanCheck is not true'
 
     fetchidsquery = "SELECT `id` FROM `spam` WHERE " + whereclause + " ORDER BY `id` LIMIT " + str(limit) + " OFFSET " + str(offset)
-
+    
     try:
         mainDb = shivadbconfig.dbconnectmain()
         mainDb.execute(fetchidsquery)
-        result = mainDb.fetchall()
         
-        for record in result:
+        ids = mainDb.fetchall()
+        return retrieve_by_ids(map(lambda a: a[0], ids if ids else []))
+    
+    except mdb.Error, e:
+        print e
+        
+    return []
+
+def retrieve_by_ids(email_ids = []):
+    resultlist = []
+    try:
+        for current_id in email_ids:
             mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'attachmentFileType':[], 'links':[],  'date': '' }
             
             """fetch basic spam information from database"""
-            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck` FROM `spam` WHERE `id` = '" + record[0] + "'"
-            mailFields['s_id'] = record[0]
+            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck` FROM `spam` WHERE `id` = '" + current_id + "'"
+            mailFields['s_id'] = current_id
+            
+            mainDb = shivadbconfig.dbconnectmain()
             mainDb.execute(spamquery)
 
             current_record = mainDb.fetchall()[0]
@@ -586,7 +597,7 @@ def retrieve(limit, offset, filterType="none"):
             mailFields['phishingHumanCheck'] = current_record[9]
             
             """fetch links for current spam"""
-            linksquery = "SELECT `hyperLink`, `longHyperLink`  FROM `links` WHERE `spam_id` = '" + record[0] + "'"
+            linksquery = "SELECT `hyperLink`, `longHyperLink`  FROM `links` WHERE `spam_id` = '" + current_id + "'"
             mainDb.execute(linksquery);
             links = mainDb.fetchall()
             linkList = []
@@ -596,7 +607,7 @@ def retrieve(limit, offset, filterType="none"):
             mailFields['links'] = linkList
             
             """fetch attachments for current spam"""
-            attachmentsquery = "SELECT `attachment_file_name`,`attachment_file_path`,`attachment_file_type` FROM `attachment` WHERE `spam_id` = '" + record[0] + "'"
+            attachmentsquery = "SELECT `attachment_file_name`,`attachment_file_path`,`attachment_file_type` FROM `attachment` WHERE `spam_id` = '" + current_id + "'"
             mainDb.execute(attachmentsquery);
             attachments = mainDb.fetchall()
             for row in attachments:
@@ -610,6 +621,27 @@ def retrieve(limit, offset, filterType="none"):
     except mdb.Error, e:
         print e
     
+    return resultlist
+    
+    
+def get_overview(limit=10):
+    try:
+        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject` from `spam_overview_view` LIMIT 10"
+        
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(overview_query)
+        result = mainDb.fetchall()
+        
+        overview_list = []
+        for record in result:
+            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3]})
+        
+    except mdb.Error, e:
+        print e
+        
+    return overview_list
+    
+
 if __name__ == '__main__':
     tempDb = shivadbconfig.dbconnect()
     mainDb = shivadbconfig.dbconnectmain()

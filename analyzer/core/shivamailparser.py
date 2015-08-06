@@ -299,7 +299,7 @@ def main(key, msgMailRequest):
         mailFields['lastSeen'] =  datetime.datetime.now()
         mailFields['firstRelayed'] =  datetime.datetime.now()
         mailFields['lastRelayed'] =  datetime.datetime.now()
-        logging.info(mailFields)
+
         try:
             mailFields['ssdeep'] = getfuzzyhash()
         except Exception, e:

@@ -9,8 +9,6 @@ import server
 import shutil
 import datetime
 
-import server
-
 from learning import check_mail
 
 def main(mailFields, key, msgMailRequest):

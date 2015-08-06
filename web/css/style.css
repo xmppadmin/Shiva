@@ -1,0 +1,12 @@
+thead {
+  text-align: center;
+}
+
+thead tr {
+    background: lightgray; 
+}
+
+table { 
+    border-spacing: 10px;
+    border-collapse: separate;
+}

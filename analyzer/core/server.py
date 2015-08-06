@@ -29,6 +29,7 @@ import shivascheduler
 import shivamailparser
 import shivadbconfig
 import iohandler
+import web
 import MySQLdb as mdb
 
 confpath = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../shiva.conf"
@@ -252,9 +253,10 @@ class QueueReceiver(object):
         while loop with a sleep.
         """
 
-        """setup iohandler"""
+        """setup iohandler and web interface"""
         if not one_shot: 
             iohandler.main()
+            web.main()
 
         logging.info("Queue receiver started on queue dir %s" %
                      (self.queue_dir))
