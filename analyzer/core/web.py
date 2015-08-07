@@ -1,20 +1,19 @@
-import time
-import string
-import datetime
-import threading
-
-import cherrypy
-
-import cgi
 from bs4 import BeautifulSoup
+import cgi
+import cherrypy
+import datetime
+import string
+import threading
+import time
 
 import shivamaindb
-from base64 import decode
+
 
 class WebServer():
     
     def __init__(self, in_params):
         self.startup_time = in_params['startup_time'] if in_params['startup_time'] else None 
+        self.attachmentFullPath = in_params['attachmentsFullPath']
     
 # index page    
     @cherrypy.expose
@@ -96,7 +95,7 @@ class WebServer():
         if not overview_list:
             return "<p>No emails found.</p>"
         
-        result = "<h2>{}</h2>".format(title) if title else "";
+        result = u"<h2>{}</h2>".format(title) if title else "";
         
         result += """
             <table>
@@ -115,7 +114,11 @@ class WebServer():
             result += """<tr>
                   <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
                   <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td>
-                </tr>""".format(current['id'],current['lastSeen'],current['subject'],current['shivaScore'],current['spamassassinScore'])
+                </tr>""".format(current['id'],
+                                current['lastSeen'],
+                                current['subject'].encode('utf8'),
+                                current['shivaScore'],
+                                current['spamassassinScore'])
         result += "</tbody></table>"
         return result
     
@@ -134,6 +137,12 @@ class WebServer():
         for link in mailFields['links']:
             result += "<tr><td><b>{0}</b></td><td><a href=\"{1}\">{1}</a>{2}</td></tr>".format('Links' if firstLink else '', link[0], '(' + link[1] + ')' if link[1] else '')
             firstLink = False
+        
+        if (mailFields['attachmentFilePath']):
+            for i in range(0, len(mailFields['attachmentFilePath'])):
+                path = mailFields['attachmentFilePath'][i].replace(self.attachmentFullPath,'')
+                result += self.attachmentFullPath
+                result += "<tr><td><b>{0}</b></td><td><a href=\"attachments/{1}\">{2}</a></td></tr>".format('Attachments' if i == 0 else '', path, mailFields['attachmentFileName'][i])
             
         if mailFields['text']:
             firstLine = True
@@ -144,7 +153,7 @@ class WebServer():
         
         if mailFields['html']:
             firstLine = True
-            soup =  BeautifulSoup(mailFields['html'].decode('utf8'))
+            soup =  BeautifulSoup(mailFields['html'].encode('utf8'))
             for line in cgi.escape(soup.prettify('utf8'), quote=True).replace('&gt;','&gt;<br/>').split('<br/>'):
                 result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Html' if firstLine else '', line)
                 firstLine = False
@@ -178,18 +187,26 @@ class WebServer():
  
     
 def prepare_http_server():
-    in_params = {'startup_time' : time.time()}
+    staticRoot = '/home/user/shiva/'
+    attachmentsPath = './shiva/attachments'
+    attachmentsFullPath = staticRoot + attachmentsPath[2:]
+    
+    in_params = {'startup_time' : time.time(), 'attachmentsFullPath' : attachmentsFullPath}
     cherrypy.config.update({'server.socket_host': '192.168.57.20',
                         'server.socket_port': 8080,
                        })
     conf = {
         '/': {
             'tools.sessions.on': True,
-            'tools.staticdir.root': '/home/user/shiva/web/'
+            'tools.staticdir.root': staticRoot
         },
         '/static': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': './css'
+            'tools.staticdir.dir': './web/css'
+        },
+        '/attachments': {
+            'tools.staticdir.on': True,
+            'tools.staticdir.dir': attachmentsPath
         }
     }
     cherrypy.quickstart(WebServer(in_params),'/',conf)
