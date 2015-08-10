@@ -142,6 +142,4 @@ def check_mail(mailFields):
     init_classifier()
     global classifier
     mailVector = shivastatistics.process_single_record(mailFields)
-    result = classifier.predict_proba(mailVector[1:])
-    logging.info("Spamassassin score " + str(get_spamassassin_bayes_score(mailFields)))
-    return result[0][1]
+    return (classifier.predict_proba(mailVector[1:])[0][1],get_spamassassin_bayes_score(mailFields))

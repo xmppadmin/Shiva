@@ -26,12 +26,9 @@ def main(mailFields, key, msgMailRequest):
     source = queuepath + "/new/" + key
     filename = mailFields['s_id'] + "-" + key
     
-    phish_flag = checkphishing(mailFields, key, msgMailRequest)
-
-    logging.info("ADD NEW RECORD RETURN")
-    """ TEMPORARY, DON'T ADD ANY NEW RECORDS """
-    return
-
+    probability_tuple = compute_phishing_probabilities(mailFields, key, msgMailRequest)
+    phish_flag = decide(probability_tuple)
+    
     if phish_flag:
         destination = rawspampath + "/phish/" + filename
     else:
@@ -62,7 +59,9 @@ def main(mailFields, key, msgMailRequest):
                 'ssdeep':mailFields['ssdeep'], 
                 's_id':mailFields['s_id'], 
                 'len':mailFields['len'], 
-                'phishingHumanCheck': phish_flag,
+                'phishingHumanCheck': False,
+                'shivaScore': probability_tuple[0],
+                'spamassassinScore': probability_tuple[1],
                 'counter':1, 
                 'relayed':0 }
     logging.info(str(newRecord))
@@ -102,11 +101,16 @@ def main(mailFields, key, msgMailRequest):
     records.insert(0, newRecord) #Inserting new record at the first position.
     del newRecord
     
-def checkphishing(mailFields, key, msgMailRequest):
-    """ return True if email is considered as phishing, False otherwise"""
+def compute_phishing_probabilities(mailFields, key, msgMailRequest):
+    """ return tuple (float,float) of computed probabilities"""
     prob = check_mail(mailFields)
     logging.info("Computed probability: " + str(prob))
     
-    """ TODO handle computing of boundary """
+    return prob
+
+def decide(probabilityTuple):
+    """ return True if given probability tuple should be considered as phishing """
+    if not probabilityTuple or len(probabilityTuple) < 2:
+        return False
     
-    return False
+    return True if probabilityTuple[0] > .5 or probabilityTuple[1] > .5 else False

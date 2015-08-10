@@ -81,5 +81,7 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `relayTime` datetime NOT NULL COMMENT 'date of first relay',
   `totalCounter` int(11) NOT NULL COMMENT 'total count of spam till date',
   `length` int(11) NOT NULL COMMENT 'Length of the spam',
+  `shivaScore` float DEFAULT -1.0 NOT NULL COMMENT 'computed phishing score',
+  `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci;
