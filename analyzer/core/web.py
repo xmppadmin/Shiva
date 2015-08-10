@@ -52,10 +52,11 @@ class WebServer():
         title='SHIVA honeypot: list emails'
         headline_title = 'SHIVA honeypot: list {0} emails starting from {1}'.format(count,start)
         overview_list=shivamaindb.get_overview(start,count)
+        total = shivamaindb.get_mail_count()
         return string.join((self.header_template(title),
                             self.headline_template(headline=headline_title),
                             self.overview_template(overview_list=overview_list, title='', start=start, count=count),
-                            self.view_list_navigation_template(start=int(start),count=int(count),total=500),
+                            self.view_list_navigation_template(start=int(start),count=int(count),total=total),
                             self.footer_template()))
         
         
@@ -87,11 +88,11 @@ class WebServer():
         return"""
             <h2>Runtime statistics</h2>
             <table>
-                <tr><td>uptime</td><td>{}</td></tr>
+                <tr><td>uptime</td><td>{0}</td></tr>
                 <tr><td>email since startup</td><td>xxx</td></tr>
-                <tr><td>emails in database</td><td>xxx</td></tr>
+                <tr><td>emails in database</td><td>{1}</td></tr>
             </table>
-        """.format(uptime_str)
+        """.format(uptime_str,str(shivamaindb.get_mail_count()))
     
     def overview_template(self, overview_list, title, start=0, count=10):
         if not overview_list:

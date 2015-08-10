@@ -644,6 +644,19 @@ def get_overview(start=0,limit=10):
         
     return overview_list
     
+def get_mail_count():
+    query = "SELECT COUNT(*) FROM spam"
+    
+    result = 0
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(query)
+        result = mainDb.fetchone()[0]
+    except mdb.Error, e:
+        print e
+        
+    return result
+
 
 if __name__ == '__main__':
     tempDb = shivadbconfig.dbconnect()
