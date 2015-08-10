@@ -7,6 +7,8 @@ import threading
 import time
 
 import shivamaindb
+import os
+import logging
 
 
 class WebServer():
@@ -176,7 +178,7 @@ class WebServer():
     def footer_template(self):
         return """
             <hr>
-            <footer>Quick navigation: <a href="/">Main page</a></footer><a href="/list_emails">List emails</a></footer>
+            <footer>Quick navigation: <a href="/">Main page</a>&nbsp;<a href="/list_emails">List emails</a></footer>
             <foooter>Rendered: """ + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + """</footer>
           </body>
         </html>"""
@@ -209,6 +211,27 @@ def prepare_http_server():
             'tools.staticdir.dir': attachmentsPath
         }
     }
+    
+    log_dir = os.path.dirname(os.path.realpath(__file__)) + "/../../../../analyzer/logs/"
+    if not os.path.isdir(log_dir):
+        logging.warn("Logging directory doesn't exist, using /tmp/")
+        log_dir = '/tmp/'
+        
+    access_log_path = log_dir + "web_access.log"
+    error_log_path = log_dir + "web_error.log"
+    
+    if not os.path.exists(access_log_path):
+        open(access_log_path, 'a').close()
+    
+    if not os.path.exists(error_log_path):
+        open(error_log_path, 'a').close()    
+    
+    cherrypy.log.screen = False
+    cherrypy.log.error_log.propagate = False
+    cherrypy.log.access_log.propagate = False
+    cherrypy.log.error_file = error_log_path
+    cherrypy.log.access_file = access_log_path
+    
     cherrypy.quickstart(WebServer(in_params),'/',conf)
     
 def main():
