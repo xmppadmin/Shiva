@@ -7,6 +7,7 @@ import threading
 import time
 
 import shivamaindb
+import iohandler
 import os
 import logging
 
@@ -60,6 +61,21 @@ class WebServer():
                             self.footer_template()))
         
         
+        
+# API handler
+    @cherrypy.expose
+    @cherrypy.tools.json_in()
+    @cherrypy.tools.json_out()
+    def api(self):
+        if not hasattr(cherrypy.request, 'json'):
+            return {'error': 'invalid document suplied'}
+        data = cherrypy.request.json
+        
+        if (data.has_key('action')):
+            return {'status': 'success' if iohandler.handle_api_request(data) else 'failure'}
+        
+        return {'error': 'unknown action'}
+    
     def view_list_navigation_template(self,start,count,total):
         result = '<p>Nagivate:</p>'
         

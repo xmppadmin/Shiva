@@ -28,7 +28,6 @@ from lamson.bounce import PRIMARY_STATUS_CODES, SECONDARY_STATUS_CODES, COMBINED
 import shivascheduler
 import shivamailparser
 import shivadbconfig
-import iohandler
 import web
 import MySQLdb as mdb
 
@@ -253,9 +252,8 @@ class QueueReceiver(object):
         while loop with a sleep.
         """
 
-        """setup iohandler and web interface"""
+        """setup web interface and api"""
         if not one_shot: 
-            iohandler.main()
             web.main()
 
         logging.info("Queue receiver started on queue dir %s" %
