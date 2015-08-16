@@ -39,7 +39,7 @@ INSTALL_PATH=$WORK_PATH/shiva
 
 prerequisites () {
     printf "\n\n[*] Checking for the prerequisites in system.\n"
-    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf" "libpng-dev" "libfreetype6-dev")
+    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf" "libpng12-dev" "libfreetype6-dev" "spamassassin")
     
     missing_counter=0
     for needed_pkg in "${pkgs[@]}"
@@ -153,6 +153,7 @@ analyzer () {
     pip install python-daemon==2.0.2
     pip install matplotlib
     pip install beautifulsoup4
+    pip install cherrypy
 
     printf "\n[*] Installing Lamson (analyzer) and creating project:\n"
     pip install lamson==1.3.4
