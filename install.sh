@@ -39,7 +39,7 @@ INSTALL_PATH=$WORK_PATH/shiva
 
 prerequisites () {
     printf "\n\n[*] Checking for the prerequisites in system.\n"
-    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf" "libpng12-dev" "libfreetype6-dev" "spamassassin")
+    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf" "libpng12-dev" "libfreetype6-dev" "libxft-dev" "spamassassin")
     
     missing_counter=0
     for needed_pkg in "${pkgs[@]}"
@@ -66,6 +66,10 @@ helpers () {
     cp -v $WORK_PATH/helpers/shiva.conf $INSTALL_PATH/
     cp -v $WORK_PATH/helpers/tempdb.sql $INSTALL_PATH/
     cp -v $WORK_PATH/helpers/setup_exim4.sh $INSTALL_PATH/ 
+
+    printf "\n\n[*] Generating update script.\n"
+    WORK_PATH_ESC=$(echo "$WORK_PATH" | sed -e 's/[\/&]/\\&/g')
+    sed "s/WORK_PATH/$WORK_PATH_ESC/g" $WORK_PATH/helpers/update_shiva_packages.sh > $INS        TALL_PATH/update_shiva_packages.sh && chmod u+x $INSTALL_PATH/update_shiva_packages.sh
 }
 
 dbcreate () {
@@ -151,7 +155,9 @@ analyzer () {
     pip install ssdeep==3.1
     pip install docutils
     pip install python-daemon==2.0.2
-    pip install matplotlib
+    pip install numpy || true
+    pip install matplotlib || true
+    pip install sklearn
     pip install beautifulsoup4
     pip install cherrypy
 
@@ -161,7 +167,7 @@ analyzer () {
     
     printf "\n[*] Copying neccesary files:\n"
     cp -v $WORK_PATH/analyzer/core/server.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/
-    cp -v $WORK_PATH/analyzer/core/shiva*.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/
+    cp -v $WORK_PATH/analyzer/core/*.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/
     
     mkdir -p $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/hpfeeds/
     cp -rv $WORK_PATH/hpfeeds/sendfiles.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/hpfeeds/
