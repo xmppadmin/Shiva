@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS `sdate` (
 
 CREATE TABLE IF NOT EXISTS `sdate_spam` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `spam_id` char(64) NOT NULL DEFAULT COLLATE=utf8mb4_unicode_ci,
+  `spam_id` char(64) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `date_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
@@ -226,7 +226,7 @@ CREATE TABLE IF NOT EXISTS `whitelist` (
 --
 -- Overview
 --
-CREATE VIEW IF NOT EXISTS spam_overview_view AS
+CREATE OR REPLACE VIEW spam_overview_view AS
 SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore 
 FROM spam
   INNER JOIN sdate_spam ON sdate_spam.spam_id = spam.id 
