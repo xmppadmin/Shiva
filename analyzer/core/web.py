@@ -6,6 +6,7 @@ import string
 import threading
 import time
 
+import server
 import shivamaindb
 import iohandler
 import os
@@ -206,13 +207,21 @@ class WebServer():
  
     
 def prepare_http_server():
-    staticRoot = '/home/user/shiva/'
+    staticRoot = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../../"
     attachmentsPath = './shiva/attachments'
     attachmentsFullPath = staticRoot + attachmentsPath[2:]
     
+    
+    web_interface_address = '127.0.0.1'
+    web_interface_port = '8080'
+    web_bind_config = server.shivaconf.get('web', 'address')
+
+    if web_bind_config:
+        web_interface_address, web_interface_port = web_bind_config.split(str=':')
+    
     in_params = {'startup_time' : time.time(), 'attachmentsFullPath' : attachmentsFullPath}
-    cherrypy.config.update({'server.socket_host': '192.168.57.20',
-                        'server.socket_port': 8080,
+    cherrypy.config.update({'server.socket_host': web_interface_address,
+                        'server.socket_port': web_interface_port,
                        })
     conf = {
         '/': {
