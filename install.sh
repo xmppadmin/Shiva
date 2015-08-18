@@ -69,7 +69,7 @@ helpers () {
 
     printf "\n\n[*] Generating update script.\n"
     WORK_PATH_ESC=$(echo "$WORK_PATH" | sed -e 's/[\/&]/\\&/g')
-    sed "s/WORK_PATH/$WORK_PATH_ESC/g" $WORK_PATH/helpers/update_shiva_packages.sh > $INS        TALL_PATH/update_shiva_packages.sh && chmod u+x $INSTALL_PATH/update_shiva_packages.sh
+    sed "s/WORK_PATH/$WORK_PATH_ESC/g" $WORK_PATH/helpers/update_shiva_packages.sh > $INSTALL_PATH/update_shiva_packages.sh && chmod u+x $INSTALL_PATH/update_shiva_packages.sh
 }
 
 dbcreate () {
@@ -148,6 +148,10 @@ analyzer () {
     source bin/activate
 
     printf "\n[*] Installing required python modules for analyzer:\n"
+    pip install numpy==1.9.2
+    pip install scipy==0.16.0
+    pip install scikit-learn==0.16.1
+    pip install matplotlib==1.4.3
     easy_install -U distribute
     pip install cython==0.20.2
     pip install apscheduler==2.1.2
@@ -155,11 +159,8 @@ analyzer () {
     pip install ssdeep==3.1
     pip install docutils
     pip install python-daemon==2.0.2
-    pip install numpy || true
-    pip install matplotlib || true
-    pip install sklearn
-    pip install beautifulsoup4
-    pip install cherrypy
+    pip install beautifulsoup4==4.4.0
+    pip install cherrypy==3.8.0
 
     printf "\n[*] Installing Lamson (analyzer) and creating project:\n"
     pip install lamson==1.3.4
@@ -182,6 +183,7 @@ analyzer () {
     
     printf "\n[+] Setting up Shiva Analyzer done!\n"
     deactivate
+    
 }
 
 create_dirs () {
