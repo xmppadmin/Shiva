@@ -217,11 +217,11 @@ def prepare_http_server():
     web_bind_config = server.shivaconf.get('web', 'address')
 
     if web_bind_config:
-        web_interface_address, web_interface_port = web_bind_config.split(str=':')
+        web_interface_address, web_interface_port = web_bind_config.split(':')
     
     in_params = {'startup_time' : time.time(), 'attachmentsFullPath' : attachmentsFullPath}
     cherrypy.config.update({'server.socket_host': web_interface_address,
-                        'server.socket_port': web_interface_port,
+                        'server.socket_port': int(web_interface_port),
                        })
     conf = {
         '/': {
