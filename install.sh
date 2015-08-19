@@ -39,7 +39,7 @@ INSTALL_PATH=$WORK_PATH/shiva
 
 prerequisites () {
     printf "\n\n[*] Checking for the prerequisites in system.\n"
-    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf" "libpng12-dev" "libfreetype6-dev" "libxft-dev" "spamassassin")
+    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf" "libpng12-dev" "libfreetype6-dev" "libxft-dev" "libblas-dev" "liblapack-dev" "gfortran" "spamassassin")
     
     missing_counter=0
     for needed_pkg in "${pkgs[@]}"
