@@ -126,6 +126,7 @@ class WebServer():
                 </td><td>Subject</td>
                 </td><td>Shiva score</td>
                 </td><td>Spamassassin score</td>
+                </td><td>SensorID</td>
               </tr>
             </thead>
             <tbody>
@@ -133,12 +134,13 @@ class WebServer():
         for current in overview_list:
             result += """<tr>
                   <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
-                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td>
+                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td>
                 </tr>""".format(current['id'],
                                 current['lastSeen'],
                                 current['subject'].encode('utf8'),
                                 current['shivaScore'],
-                                current['spamassassinScore'])
+                                current['spamassassinScore'],
+                                current['sensorID'])
         result += "</tbody></table>"
         return result
     
@@ -173,7 +175,7 @@ class WebServer():
         
         if mailFields['html']:
             firstLine = True
-            soup =  BeautifulSoup(mailFields['html'].encode('utf8'))
+            soup =  BeautifulSoup(mailFields['html'].encode('utf8'), "html.parser")
             for line in cgi.escape(soup.prettify('utf8'), quote=True).replace('&gt;','&gt;<br/>').split('<br/>'):
                 result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Html' if firstLine else '', line)
                 firstLine = False

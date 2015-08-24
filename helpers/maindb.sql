@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS `attachment` (
   `attachment_file_name` varchar(200) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `attachment_file_path` mediumtext NOT NULL,
   `attachment_file_type` varchar(50) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `spam_id` char(32) NOT NULL,
+  `spam_id` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
   KEY `md5` (`md5`),
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS `inline` (
   `md5` char(32) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `inline_file_name` varchar(200) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `inline_file_path` mediumtext NOT NULL,
-  `spam_id` char(32) NOT NULL,
+  `spam_id` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
   KEY `md5` (`md5`),
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `ip` (
 CREATE TABLE IF NOT EXISTS `ip_spam` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `ip_id` int(11) NOT NULL,
-  `spam_id` char(32) NOT NULL,
+  `spam_id` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `ip_id` (`ip_id`),
   KEY `spam_id` (`spam_id`)
@@ -93,7 +93,7 @@ CREATE TABLE IF NOT EXISTS `links` (
   `date` date NOT NULL,
   `hyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `longHyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci,
-  `spam_id` char(32) NOT NULL,
+  `spam_id` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
   KEY `hyperLink` (`hyperLink`),
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS `relay` (
   `firstRelayed` datetime NOT NULL COMMENT 'date of first relay',
   `lastRelayed` datetime NOT NULL COMMENT 'date of last relay',
   `totalRelayed` int(11) NOT NULL DEFAULT '0' COMMENT 'Total Mails Relayed Till Date',
-  `spam_id` char(32) NOT NULL,
+  `spam_id` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `sensorID` varchar(50) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS `sdate` (
 
 CREATE TABLE IF NOT EXISTS `sdate_spam` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `spam_id` char(64) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `spam_id` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `date_id` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
@@ -162,7 +162,7 @@ CREATE TABLE IF NOT EXISTS `sdate_spam` (
 CREATE TABLE IF NOT EXISTS `sensor` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` date NOT NULL,
-  `sensorID` varchar(50) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL COMMENT 'Shiva sensor id',
+  `sensorID` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Shiva sensor id',
   PRIMARY KEY (`id`),
   KEY `sensorID` (`sensorID`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
@@ -176,7 +176,7 @@ CREATE TABLE IF NOT EXISTS `sensor` (
 CREATE TABLE IF NOT EXISTS `sensor_spam` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `sensor_id` int(11) NOT NULL,
-  `spam_id` char(32) NOT NULL,
+  `spam_id` char(32)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
   PRIMARY KEY (`id`),
   KEY `sensor_id` (`sensor_id`),
   KEY `spam_id` (`spam_id`)
@@ -201,6 +201,7 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `length` int(11) NOT NULL COMMENT 'Length of the spam',
   `shivaScore` float DEFAULT -1.0 NOT NULL COMMENT 'computed phishing score',
   `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
+  `phishingHumanCheck` BOOL COMMENT 'messaged marked as phishing by human',
   PRIMARY KEY (`id`),
   KEY `subject` (`subject`),
   KEY `totalCounter` (`totalCounter`),
@@ -231,6 +232,11 @@ SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.
 FROM spam
   INNER JOIN sdate_spam ON sdate_spam.spam_id = spam.id 
   INNER JOIN sdate ON sdate_spam.id = sdate.id 
+  INNER JOIN sensor_spam ON spam.id = sensor_spam.spam_id
+  INNER JOIN sensor ON sensor_spam.sensor_id = sensor.id
   ORDER BY sdate.lastSeen DESC ;
+
+
+
 
 

@@ -271,7 +271,7 @@ class RuleC1(MailClassificationRule):
     def apply_rule(self, mailFields):
         if not mailFields['html']:
             return 0
-        soup = BeautifulSoup(mailFields['html'])
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             href = extractdomain(a_tag.get('href'))
             text = extractdomain(a_tag.get_text())
@@ -290,7 +290,7 @@ class RuleC2(MailClassificationRule):
     def apply_rule(self, mailFields):
         if not mailFields['html']:
             return 0
-        soup = BeautifulSoup(mailFields['html'])
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             text = a_tag.get_text()
             if not text:
@@ -345,7 +345,7 @@ class RuleC6(MailClassificationRule):
             return 0
         
         domain_list = filter(lambda url: url, (map(extractdomain, getfinalurls(mailFields['links']))))
-        soup = BeautifulSoup(mailFields['html'])
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for img_tag in soup.find_all('img'):
             src_domain = extractdomain(img_tag.get('src'))
             if src_domain:
@@ -364,7 +364,7 @@ class RuleC7(MailClassificationRule):
     def apply_rule(self, mailFields):
         if not mailFields['html']:
             return 0
-        soup = BeautifulSoup(mailFields['html'])
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for img_tag in soup.find_all('img'):
             src_ip = extractip(img_tag.get('src'))
             if src_ip:
@@ -378,7 +378,7 @@ class RuleC8(MailClassificationRule):
     def apply_rule(self, mailFields):
         if not mailFields['html']:
             return 0
-        soup = BeautifulSoup(mailFields['html'])
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             href = extractdomain(a_tag.get('href'))
             if len(extractalldomains(href)) > 1:
@@ -392,7 +392,7 @@ class RuleC9(MailClassificationRule):
     def apply_rule(self, mailFields):
         if not mailFields['html']:
             return 0
-        soup = BeautifulSoup(mailFields['html'])
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             href = extractdomain(a_tag.get('href'))
             if href and not extractip(href) and len(split(href, '.')) > 3:
@@ -406,7 +406,7 @@ class RuleC10(MailClassificationRule):
     def apply_rule(self, mailFields):
         if not mailFields['html']:
             return 0
-        soup = BeautifulSoup(mailFields['html'])
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             for img in a_tag.find_all('img'):
                 if extractip(img.get('src')):
@@ -420,7 +420,7 @@ class RuleC11(MailClassificationRule):
     def apply_rule(self, mailFields):
         if not mailFields['html']:
             return 0
-        soup = BeautifulSoup(mailFields['html'])
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             href = extractdomain(a_tag.get('href'))
             text = extractdomain(a_tag.get_text())

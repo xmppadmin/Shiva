@@ -58,7 +58,7 @@ def linkparser(input_body):
         try:
             req = urllib2.urlopen('http://api.longurl.org/v2/expand?format=xml&url=' + link)
             content = req.read()
-            soup = BeautifulSoup(content)
+            soup = BeautifulSoup(content, 'html.parser')
             longUlr = soup.find("long-url").getText()
             if samedomain(extractdomain(link), extractdomain(longUlr)):
                 longUlr = ''

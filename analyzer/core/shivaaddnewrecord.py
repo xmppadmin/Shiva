@@ -26,13 +26,31 @@ def main(mailFields, key, msgMailRequest):
     source = queuepath + "/new/" + key
     filename = mailFields['s_id'] + "-" + key
     
-    probability_tuple = compute_phishing_probabilities(mailFields, key, msgMailRequest)
-    phish_flag = decide(probability_tuple)
+    probability_tuple = (0,0)
+    phish_flag = None
+    phishing_human_check = None
+    
+    # check whether email is imported manually
+    if mailFields['sensorID']:
+        if mailFields['sensorID'] == 'phishingImport':
+            probability_tuple = (-1,-1)
+            phish_flag = True
+            phishing_human_check = True
+        if mailFields['sensorID'] == 'spamImport':
+            probability_tuple = (-1,-1)
+            phish_flag = False
+            phishing_human_check = False
+    
+    
+    # mail is not manually imported compute score
+    if not phish_flag:
+        probability_tuple = compute_phishing_probabilities(mailFields, key, msgMailRequest)
+        phish_flag = decide(probability_tuple)
     
     if phish_flag:
-        destination = rawspampath + "/phish/" + filename
+        destination = rawspampath + "phishing/" + filename
     else:
-        destination = rawspampath + "/spam/" + filename
+        destination = rawspampath + "spam/" + filename
         
     shutil.copy2(source, destination) # shutil.copy2() copies the meta-data too
 
@@ -59,7 +77,7 @@ def main(mailFields, key, msgMailRequest):
                 'ssdeep':mailFields['ssdeep'], 
                 's_id':mailFields['s_id'], 
                 'len':mailFields['len'], 
-                'phishingHumanCheck': False,
+                'phishingHumanCheck': phishing_human_check,
                 'shivaScore': probability_tuple[0],
                 'spamassassinScore': probability_tuple[1],
                 'counter':1, 

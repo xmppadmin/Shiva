@@ -27,7 +27,7 @@ def init_classifier():
     if classifier:
         logging.info("Learning: Classifier successfully loaded.")
     else:
-        logging.info("Learning: Classifier not found, re-learning...")
+        logging.info("Learning: Classifier not found, trying to re-learn...")
         learn()
     
         
@@ -82,7 +82,7 @@ def learn_spamassassin():
     
     rawspampath = server.shivaconf.get('analyzer', 'rawspampath')
         
-    phishing_mail_path = rawspampath + "phish/"
+    phishing_mail_path = rawspampath + "phishing/"
     phishing_mail_count = len(fnmatch.filter(os.listdir(phishing_mail_path), '*'))
     phishing_learn_cmd = 'sa-learn --spam ' + phishing_mail_path + '*'
     

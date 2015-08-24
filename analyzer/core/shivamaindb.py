@@ -17,6 +17,7 @@ import urllib2
 from urllib2 import HTTPError
 
 def main():
+    
     fetchfromtempdb = "SELECT `id`, `ssdeep`, `length` FROM `spam` WHERE 1"
     fetchfrommaindb = "SELECT `id`, `ssdeep`, `length` FROM `spam` WHERE 1"
     
@@ -629,7 +630,7 @@ def retrieve_by_ids(email_ids = []):
 def get_overview(start=0,limit=10):
     overview_list = []
     try:
-        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore` from `spam_overview_view` LIMIT {0} OFFSET {1}".format(str(limit),str(start))
+        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID` from `spam_overview_view` LIMIT {0} OFFSET {1}".format(str(limit),str(start))
         
         mainDb = shivadbconfig.dbconnectmain()
         mainDb.execute(overview_query)
@@ -637,10 +638,10 @@ def get_overview(start=0,limit=10):
         
         overview_list = []
         for record in result:
-            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5]})
+            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6]})
         
     except mdb.Error, e:
-        print e
+        logging.error(e)
         
     return overview_list
     
