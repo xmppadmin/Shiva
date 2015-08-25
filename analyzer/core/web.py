@@ -17,7 +17,7 @@ class WebServer():
     
     def __init__(self, in_params):
         self.startup_time = in_params['startup_time'] if in_params['startup_time'] else None 
-        self.attachmentFullPath = in_params['attachmentsFullPath']
+        self.attachmentsPath = in_params['attachmentsPath']
     
 # index page    
     @cherrypy.expose
@@ -27,10 +27,11 @@ class WebServer():
     def index_template(self):
         title='SHIVA honeypot: mainpage'
         overview_title = 'Overview of last 10 emails'
-        return string.join((self.header_template(title),
+        overview_list=shivamaindb.get_overview()
+        return map(lambda a: a.decode('utf8','ignore'), (self.header_template(title),
                              self.headline_template(title),
                              self.statistics_template(),
-                             self.overview_template(overview_list=shivamaindb.get_overview(),title=overview_title,start=0,count=10), 
+                             self.overview_template(overview_list,title=overview_title,start=0,count=10), 
                              self.footer_template())) 
 # view email page
     @cherrypy.expose
@@ -41,7 +42,7 @@ class WebServer():
             mailFields = emails[0]
         title='SHIVA honeypot: view email: ' + email_id;
         
-        return map(lambda a: a.decode('utf8'), (self.header_template(title),
+        return map(lambda a: a.decode('utf8','ignore'), (self.header_template(title),
                              self.headline_template(title),
                              self.email_detail_template(mailFields), 
                              self.footer_template()))
@@ -55,7 +56,7 @@ class WebServer():
         headline_title = 'SHIVA honeypot: list {0} emails starting from {1}'.format(count,start)
         overview_list=shivamaindb.get_overview(start,count)
         total = shivamaindb.get_mail_count()
-        return string.join((self.header_template(title),
+        return map(lambda a: a.decode('utf8'), (self.header_template(title),
                             self.headline_template(headline=headline_title),
                             self.overview_template(overview_list=overview_list, title='', start=start, count=count),
                             self.view_list_navigation_template(start=int(start),count=int(count),total=total),
@@ -131,13 +132,21 @@ class WebServer():
             </thead>
             <tbody>
             """
+        
         for current in overview_list:
+            subject = ''
+            try:
+                subject = current['subject'].encode('utf8','ignore')
+            except UnicodeDecodeError:
+                subject = 'encoding error'
+#             subject = subject.decode('utf8')
+            logging.info(dir(subject))
             result += """<tr>
                   <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
                   <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td>
                 </tr>""".format(current['id'],
                                 current['lastSeen'],
-                                current['subject'].encode('utf8'),
+                                unicode(subject, errors='ignore'),
                                 current['shivaScore'],
                                 current['spamassassinScore'],
                                 current['sensorID'])
@@ -149,7 +158,7 @@ class WebServer():
             return "<p>Email not found.</p>"
     
         result = "<table>"
-        result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Subject', mailFields['subject'])
+        result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Subject', mailFields['subject'].encode('utf8'))
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('From', mailFields['from'])
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('To', mailFields['to'])
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Shiva score', mailFields['shivaScore'])
@@ -162,14 +171,15 @@ class WebServer():
         
         if (mailFields['attachmentFilePath']):
             for i in range(0, len(mailFields['attachmentFilePath'])):
-                path = mailFields['attachmentFilePath'][i].replace(self.attachmentFullPath,'')
-                result += self.attachmentFullPath
-                result += "<tr><td><b>{0}</b></td><td><a href=\"attachments/{1}\">{2}</a></td></tr>".format('Attachments' if i == 0 else '', path, mailFields['attachmentFileName'][i])
+                index = mailFields['attachmentFilePath'][i].find(self.attachmentsPath)
+                if index < 0:
+                    continue
+                result += "<tr><td><b>{0}</b></td><td><a href=\"attachments/{1}\">{2}</a></td></tr>".format('Attachments' if i == 0 else '', mailFields['attachmentFilePath'][i][index + len(self.attachmentsPath):], mailFields['attachmentFileName'][i])
             
         if mailFields['text']:
             firstLine = True
             for line in mailFields['text'].replace('\n','<br/>').split('<br/>'):
-                result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Plain text' if firstLine else '', line)
+                result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Plain text' if firstLine else '', line.encode('utf8'))
                 firstLine = False
         
         
@@ -210,8 +220,7 @@ class WebServer():
     
 def prepare_http_server():
     staticRoot = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../../"
-    attachmentsPath = './shiva/attachments'
-    attachmentsFullPath = staticRoot + attachmentsPath[2:]
+    attachmentsPath = '/shiva/attachments'
     
     
     web_interface_address = '127.0.0.1'
@@ -221,7 +230,7 @@ def prepare_http_server():
     if web_bind_config:
         web_interface_address, web_interface_port = web_bind_config.split(':')
     
-    in_params = {'startup_time' : time.time(), 'attachmentsFullPath' : attachmentsFullPath}
+    in_params = {'startup_time' : time.time(), 'attachmentsPath' : attachmentsPath}
     cherrypy.config.update({'server.socket_host': web_interface_address,
                         'server.socket_port': int(web_interface_port),
                        })
@@ -236,7 +245,7 @@ def prepare_http_server():
         },
         '/attachments': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': attachmentsPath
+            'tools.staticdir.dir': '.' + attachmentsPath
         }
     }
     
