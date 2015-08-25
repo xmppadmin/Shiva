@@ -99,7 +99,7 @@ class WebServer():
     def statistics_template(self):
         uptime = time.time() - self.startup_time if self.startup_time else 0
         if uptime > 0:
-            uptime_str = "{:.0f} days {:.0f} hours {:.0f} minutes {:.0f} seconds".format(uptime / 60 / 60 / 24, uptime / 60 / 60, uptime / 60, uptime % 60)
+            uptime_str = "{:.0f} days {:.0f} hours {:.0f} minutes {:.0f} seconds".format(uptime / 60 / 60 / 24, (uptime / 60 / 60) % 24, (uptime / 60) % 60, uptime % 60)
         else:
             uptime_str = 'unknown'
         return"""
