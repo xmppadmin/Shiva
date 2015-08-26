@@ -662,6 +662,85 @@ def get_mail_count():
         
     return result
 
+def delete_spam(id=''):
+    """delete email from database and remove all related files"""
+    if not id:
+        return
+    
+    delete_queries = []
+    
+    check_query = "SELECT * FROM `spam` WHERE id =  '{}'".format(id);
+    mainDb = shivadbconfig.dbconnectmain()
+    
+    mainDb.execute(check_query)
+    if not mainDb.fetchone():
+        return
+    
+    delete_queries.append("DELETE FROM attachment WHERE spam_id = '{}'".format(id))
+    atachments_query = "SELECT date_id FROM sdate_spam WHERE spam_id = '{}'".format(id)
+    mainDb.execute(atachments_query)
+    records = mainDb.fetchall()
+    if records:
+        for record in records:
+            silent_remove(str(record[0]))
+            
+    rawspampath = server.shivaconf.get('analyzer', 'rawspampath')
+    for subdir in ('phishing/', 'spam/'):
+        from os import listdir
+        from os.path import isfile, join
+        path = rawspampath + subdir
+        files = [ f for f in listdir(path) if isfile(join(path,f)) and f.startswith(id) ]
+        for file_to_delete in files:
+            silent_remove(path + file_to_delete)
+            
+    delete_queries.append("DELETE FROM inline WHERE spam_id = '{}'".format(id))
+    delete_queries.append("DELETE FROM links WHERE spam_id = '{}'".format(id))
+    delete_queries.append("DELETE FROM relay WHERE spam_id = '{}'".format(id))
+    
+    ips_query = "SELECT ip_id FROM ip_spam WHERE spam_id = '{}'".format(id)
+    delete_queries.append("DELETE FROM ip_spam WHERE spam_id = '{}'".format(id))
+    mainDb.execute(ips_query)
+    records = mainDb.fetchall()
+    if records:
+        for record in records:
+            delete_queries.append("DELETE FROM ip WHERE id = '{}'".format(str(record[0])))
+    
+
+    dates_query = "SELECT date_id FROM sdate_spam WHERE spam_id = '{}'".format(id)
+    delete_queries.append("DELETE FROM sdate_spam WHERE spam_id = '{}'".format(id))
+    mainDb.execute(dates_query)
+    records = mainDb.fetchall()
+    if records:
+        for record in records:
+            delete_queries.append("DELETE FROM sdate WHERE id = '{}'".format(str(record[0])))
+    
+    
+    sensors_query = "SELECT sensor_id FROM sensor_spam WHERE spam_id = '{}'".format(id)
+    delete_queries.append("DELETE FROM sensor_spam WHERE spam_id = '{}'".format(id))
+    mainDb.execute(sensors_query)
+    records = mainDb.fetchall()
+    if records:
+        for record in records:
+            delete_queries.append("DELETE FROM sensor WHERE id = '{}'".format(str(record[0])))
+    
+
+    delete_queries.append("DELETE FROM spam WHERE id = '{}'".format(id))
+    for query in delete_queries:
+        try:
+            mainDb.execute(query)
+        except mdb.Error, e:
+            logging.error(e)
+            return
+        
+    logging.info("Email with id '{}' was successfully deleted from honeypot".format(id))
+           
+
+def silent_remove(filename):
+    try:
+        os.remove(filename)
+    except OSError:
+        pass  
+
 
 if __name__ == '__main__':
     tempDb = shivadbconfig.dbconnect()

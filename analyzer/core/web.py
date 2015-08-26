@@ -47,7 +47,10 @@ class WebServer():
                              self.email_detail_template(mailFields), 
                              self.footer_template()))
 
-    
+    @cherrypy.expose
+    def delete_email(self,email_id = ''):
+        shivamaindb.delete_spam(email_id)
+        return 'delted'
         
 # go throught all emails
     @cherrypy.expose
