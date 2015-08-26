@@ -240,7 +240,7 @@ def prepare_http_server():
             'tools.staticdir.on': True,
             'tools.staticdir.dir': '.' + attachmentsPath
         },
-        '/favicon.ico' : {
+        '/favicon.ico': {
             'tools.staticfile.on': True,
             'tools.staticfile.filename': staticRoot + 'web/favicon.png'
         }
