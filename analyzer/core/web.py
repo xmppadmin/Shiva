@@ -116,7 +116,7 @@ class WebServer():
         if not overview_list:
             return "<p>No emails found.</p>"
         
-        result = u"<h2>{}</h2>".format(title) if title else "";
+        result = "<h2>{}</h2>".format(title) if title else "";
         
         result += """
             <table>
@@ -134,19 +134,12 @@ class WebServer():
             """
         
         for current in overview_list:
-            subject = ''
-            try:
-                subject = current['subject'].encode('utf8','ignore')
-            except UnicodeDecodeError:
-                subject = 'encoding error'
-#             subject = subject.decode('utf8')
-            logging.info(dir(subject))
             result += """<tr>
                   <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
                   <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td>
                 </tr>""".format(current['id'],
                                 current['lastSeen'],
-                                unicode(subject, errors='ignore'),
+                                current['subject'].encode('utf8',errors='ignore'),
                                 current['shivaScore'],
                                 current['spamassassinScore'],
                                 current['sensorID'])
