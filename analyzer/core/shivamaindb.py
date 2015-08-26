@@ -584,7 +584,9 @@ def retrieve_by_ids(email_ids = []):
             mainDb = shivadbconfig.dbconnectmain()
             mainDb.execute(spamquery)
 
-            current_record = mainDb.fetchall()[0]
+            current_record = mainDb.fetchone()
+            if not current_record: 
+                continue
             
             mailFields['from'] = current_record[0] 
             mailFields['subject'] = current_record[1]
