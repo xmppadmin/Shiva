@@ -83,5 +83,6 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `length` int(11) NOT NULL COMMENT 'Length of the spam',
   `shivaScore` float DEFAULT -1.0 NOT NULL COMMENT 'computed phishing score',
   `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
+  `phishingHumanCheck` BOOL COMMENT 'messaged marked as phishing by human',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci;

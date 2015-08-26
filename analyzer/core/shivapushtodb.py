@@ -38,9 +38,11 @@ def push():
     
     for record in server.QueueReceiver.deep_records:
         logging.info("Records are %d" % len(server.QueueReceiver.deep_records))
-
-        insertSpam = "INSERT INTO `spam`(`id`, `ssdeep`, `to`, `from`, `textMessage`, `htmlMessage`, `subject`, `headers`, `sourceIP`, `sensorID`, `firstSeen`, `relayCounter`, `totalCounter`, `length`, `relayTime`, `shivaScore`, `spamassassinScore`) VALUES ('" + str(record['s_id']) + "', '" + str(record['ssdeep']) + "', '" + str(record['to']) + "', '" + str(record['from']) + "', '" + str(record['text']) + "', '" + str(record['html']) + "', '" + str(record['subject']) + "', '" + str(record['headers']) + "', '" + str(record['sourceIP']) + "', '" + str(record['sensorID']) + "', '" + str(record['firstSeen']) + "', '" + str(record['relayed']) + "', '" + str(record['counter']) + "', '" + str(record['len']) + "', '" + str(record['firstRelayed']) + "', '" + str(record['shivaScore']) + "', '" + str(record['spamassassinScore']) + "')"
-        logging.info(insertSpam)
+        
+        phishingHumanCheck = "'" + str(record['phishingHumanCheck']) + "'" if record['phishingHumanCheck'] else 'NULL'
+        insertSpam = "INSERT INTO `spam`(`id`, `ssdeep`, `to`, `from`, `textMessage`, `htmlMessage`, `subject`, `headers`, `sourceIP`, `sensorID`, `firstSeen`, `relayCounter`, `totalCounter`, `length`, `relayTime`, `shivaScore`, `spamassassinScore`, `phishingHumanCheck`) VALUES ('" + str(record['s_id']) + "', '" + str(record['ssdeep']) + "', '" + str(record['to']) + "', '" + str(record['from']) + "', '" + str(record['text']) + "', '" + str(record['html']) + "', '" + str(record['subject']) + "', '" + str(record['headers']) + "', '" + str(record['sourceIP']) + "', '" + str(record['sensorID']) + "', '" + str(record['firstSeen']) + "', '" + str(record['relayed']) + "', '" + str(record['counter']) + "', '" + str(record['len']) + "', '" + str(record['firstRelayed']) + "', '" + str(record['shivaScore']) + "', '" + str(record['spamassassinScore']) + "', " + phishingHumanCheck + ")"
+        
+        
         try:
             exeSql.execute(insertSpam)
         except mdb.Error, e:

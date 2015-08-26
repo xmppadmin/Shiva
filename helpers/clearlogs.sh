@@ -5,6 +5,7 @@
 > logger.log
 > web_access.log
 > web_error.log
+> maindb.log
 echo
 ls -l
 
