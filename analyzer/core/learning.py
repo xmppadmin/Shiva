@@ -20,9 +20,10 @@ def init_classifier():
         return
     
     logging.info("Learning: Trying to load classifier from file.")
-    f = open(CLASSIFIER_PKL, 'rb')
-    classifier = pickle.load(f)
-    f.close()
+    classifier_file = open(CLASSIFIER_PKL, 'rb')
+    if classifier_file:
+        classifier = pickle.load(classifier_file)
+        classifier_file.close()
     
     if classifier:
         logging.info("Learning: Classifier successfully loaded.")
@@ -34,10 +35,7 @@ def init_classifier():
 
 def learn():
     learning_matrix = shivastatistics.prepare_matrix(filterType='none', matrixType='learning')
-    weights = learning_matrix[0]
-    """ remove phishing indicator
-        NOTE: not needed when classes weights works as expected
-    """
+    
     samples = map(lambda a: a[1:], learning_matrix[1:])
     results = map(lambda a: a[0],  learning_matrix[1:])
     
