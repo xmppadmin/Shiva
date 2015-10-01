@@ -50,7 +50,7 @@ class WebServer():
     @cherrypy.expose
     def delete_email(self,email_id = ''):
         shivamaindb.delete_spam(email_id)
-        return 'delted'
+        return 'deleted'
         
 # go throught all emails
     @cherrypy.expose
@@ -65,7 +65,15 @@ class WebServer():
                             self.view_list_navigation_template(start=int(start),count=int(count),total=total),
                             self.footer_template()))
         
-        
+ 
+# handle relearn
+    @cherrypy.expose
+    def mark_as_phishing(self,email_id = ''):
+        shivamaindb.mark_as_phishing(email_id)     
+
+    @cherrypy.expose
+    def mark_as_spam(self,email_id = ''):
+        shivamaindb.mark_as_spam(email_id)
         
 # API handler
     @cherrypy.expose
@@ -131,21 +139,33 @@ class WebServer():
                 </td><td>Shiva score</td>
                 </td><td>Spamassassin score</td>
                 </td><td>SensorID</td>
+                </td><td>Status</td>
               </tr>
             </thead>
             <tbody>
             """
         
         for current in overview_list:
+            
+            phishingStatus = current['derivedPhishingStatus']
+            phishingStatusTag = '<font color="{0}">{1}</font>';
+            if phishingStatus == True:
+                phishingStatusTag = phishingStatusTag.format("red", "PHISHING")
+            elif phishingStatus == False:
+                phishingStatusTag = phishingStatusTag.format("green", "SPAM")
+            else:
+                phishingStatusTag = phishingStatusTag.format("black", "--")
+            
             result += """<tr>
                   <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
-                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td>
+                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td>
                 </tr>""".format(current['id'],
                                 current['lastSeen'],
                                 current['subject'].encode('utf8',errors='ignore'),
                                 current['shivaScore'],
                                 current['spamassassinScore'],
-                                current['sensorID'])
+                                current['sensorID'],
+                                phishingStatusTag)
         result += "</tbody></table>"
         return result
     

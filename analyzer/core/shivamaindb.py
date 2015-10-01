@@ -634,7 +634,7 @@ def retrieve_by_ids(email_ids = []):
 def get_overview(start=0,limit=10):
     overview_list = []
     try:
-        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID` from `spam_overview_view` LIMIT {0} OFFSET {1}".format(str(limit),str(start))
+        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID`,`derivedPhishingStatus` from `spam_overview_view` LIMIT {0} OFFSET {1}".format(str(limit),str(start))
         
         mainDb = shivadbconfig.dbconnectmain()
         mainDb.execute(overview_query)
@@ -642,7 +642,8 @@ def get_overview(start=0,limit=10):
         
         overview_list = []
         for record in result:
-            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6]})
+            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6], 'derivedPhishingStatus':record[7]})
+        
         
     except mdb.Error, e:
         logging.error(e)
@@ -662,69 +663,69 @@ def get_mail_count():
         
     return result
 
-def delete_spam(id=''):
+def delete_spam(email_id=''):
     """delete email from database and remove all related files"""
-    if not id:
+    if not email_id:
         return
     
     delete_queries = []
     
-    check_query = "SELECT * FROM `spam` WHERE id =  '{}'".format(id);
+    check_query = "SELECT * FROM `spam` WHERE email_id =  '{}'".format(email_id);
     mainDb = shivadbconfig.dbconnectmain()
     
     mainDb.execute(check_query)
     if not mainDb.fetchone():
         return
     
-    delete_queries.append("DELETE FROM attachment WHERE spam_id = '{}'".format(id))
-    atachments_query = "SELECT date_id FROM sdate_spam WHERE spam_id = '{}'".format(id)
+    delete_queries.append("DELETE FROM attachment WHERE spam_id = '{}'".format(email_id))
+    atachments_query = "SELECT date_id FROM sdate_spam WHERE spam_id = '{}'".format(email_id)
     mainDb.execute(atachments_query)
     records = mainDb.fetchall()
     if records:
         for record in records:
-            silent_remove(str(record[0]))
+            __silent_remove_file(str(record[0]))
             
     rawspampath = server.shivaconf.get('analyzer', 'rawspampath')
     for subdir in ('phishing/', 'spam/'):
         from os import listdir
         from os.path import isfile, join
         path = rawspampath + subdir
-        files = [ f for f in listdir(path) if isfile(join(path,f)) and f.startswith(id) ]
+        files = [ f for f in listdir(path) if isfile(join(path,f)) and f.startswith(email_id) ]
         for file_to_delete in files:
-            silent_remove(path + file_to_delete)
+            __silent_remove_file(path + file_to_delete)
             
-    delete_queries.append("DELETE FROM inline WHERE spam_id = '{}'".format(id))
-    delete_queries.append("DELETE FROM links WHERE spam_id = '{}'".format(id))
-    delete_queries.append("DELETE FROM relay WHERE spam_id = '{}'".format(id))
+    delete_queries.append("DELETE FROM inline WHERE spam_id = '{}'".format(email_id))
+    delete_queries.append("DELETE FROM links WHERE spam_id = '{}'".format(email_id))
+    delete_queries.append("DELETE FROM relay WHERE spam_id = '{}'".format(email_id))
     
-    ips_query = "SELECT ip_id FROM ip_spam WHERE spam_id = '{}'".format(id)
-    delete_queries.append("DELETE FROM ip_spam WHERE spam_id = '{}'".format(id))
+    ips_query = "SELECT ip_id FROM ip_spam WHERE spam_id = '{}'".format(email_id)
+    delete_queries.append("DELETE FROM ip_spam WHERE spam_id = '{}'".format(email_id))
     mainDb.execute(ips_query)
     records = mainDb.fetchall()
     if records:
         for record in records:
-            delete_queries.append("DELETE FROM ip WHERE id = '{}'".format(str(record[0])))
+            delete_queries.append("DELETE FROM ip WHERE email_id = '{}'".format(str(record[0])))
     
 
-    dates_query = "SELECT date_id FROM sdate_spam WHERE spam_id = '{}'".format(id)
-    delete_queries.append("DELETE FROM sdate_spam WHERE spam_id = '{}'".format(id))
+    dates_query = "SELECT date_id FROM sdate_spam WHERE spam_id = '{}'".format(email_id)
+    delete_queries.append("DELETE FROM sdate_spam WHERE spam_id = '{}'".format(email_id))
     mainDb.execute(dates_query)
     records = mainDb.fetchall()
     if records:
         for record in records:
-            delete_queries.append("DELETE FROM sdate WHERE id = '{}'".format(str(record[0])))
+            delete_queries.append("DELETE FROM sdate WHERE email_id = '{}'".format(str(record[0])))
     
     
-    sensors_query = "SELECT sensor_id FROM sensor_spam WHERE spam_id = '{}'".format(id)
-    delete_queries.append("DELETE FROM sensor_spam WHERE spam_id = '{}'".format(id))
+    sensors_query = "SELECT sensor_id FROM sensor_spam WHERE spam_id = '{}'".format(email_id)
+    delete_queries.append("DELETE FROM sensor_spam WHERE spam_id = '{}'".format(email_id))
     mainDb.execute(sensors_query)
     records = mainDb.fetchall()
     if records:
         for record in records:
-            delete_queries.append("DELETE FROM sensor WHERE id = '{}'".format(str(record[0])))
+            delete_queries.append("DELETE FROM sensor WHERE email_id = '{}'".format(str(record[0])))
     
 
-    delete_queries.append("DELETE FROM spam WHERE id = '{}'".format(id))
+    delete_queries.append("DELETE FROM spam WHERE email_id = '{}'".format(email_id))
     for query in delete_queries:
         try:
             mainDb.execute(query)
@@ -732,10 +733,99 @@ def delete_spam(id=''):
             logging.error(e)
             return
         
-    logging.info("Email with id '{}' was successfully deleted from honeypot".format(id))
+    logging.info("Email with email_id '{}' was successfully deleted from honeypot".format(email_id))
            
 
-def silent_remove(filename):
+def mark_as_phishing(email_id=''):
+    """mark email with given id as phishing"""
+    
+    logging.info(get_derived_phishing_status(email_id))
+    if get_derived_phishing_status(email_id):
+        logging.info("Atempnt to re-mark email with id '{}' as phishing, nothing to do".format(email_id))
+        return
+    
+    logging.info("Manually marking email with id '{}' as phishing.".format(email_id))
+    
+    update_query = "update spam set derivedPhishingStatus = true where id = '{}'".format(email_id)
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(update_query)
+    except mdb.Error, e:
+        logging.error(e)
+        return
+    
+    __move_mail_by_id(email_id, False)
+    
+    
+    
+    
+def mark_as_spam(email_id=''):
+    """mark email with given id as spam"""
+    
+    if get_derived_phishing_status(email_id) == False:
+        logging.info("Atempnt to re-mark email with id '{}' as spam, nothing to do".format(email_id))
+        return
+    
+    logging.info("Manually marking email with id '{}' as spam.".format(email_id))
+    
+    update_query = "update spam set derivedPhishingStatus = False where id = '{}'".format(email_id)
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(update_query)
+    except mdb.Error, e:
+        logging.error(e)
+        return
+    
+    __move_mail_by_id(email_id, True)
+    
+def __move_mail_by_id(email_id='',spam_to_pshishing=True):
+    rawspampath = server.shivaconf.get('analyzer', 'rawspampath')
+    phish_path = rawspampath + 'phishing/'
+    spam_path = rawspampath + 'spam/'
+    
+    to_path = spam_path if spam_to_pshishing else phish_path
+    from_path = phish_path if spam_to_pshishing else spam_path
+    
+
+    files_to_move = list()
+    from os import walk,rename
+    for dirpath, dirnames, filenames in walk(from_path):
+        for filename in filenames:
+            if filename.startswith(email_id):
+                files_to_move.append(filename)
+    
+             
+    for filename in files_to_move:
+        logging.info(from_path + filename)
+        rename(from_path + filename, to_path + filename)
+    
+    
+def get_derived_phishing_status(email_id=''):
+    """ return True if email with given id was classified as phishing,
+        False if it was classified as spam
+        None if if information isn't available (imported emails).
+    """
+    
+    if not email_id:
+        return None
+    
+    query = 'SELECT derivedPhishingStatus FROM spam WHERE id = \'{}\''.format(email_id)
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(query)
+    except mdb.Error, e:
+        logging.error(e)
+        return None
+    
+    result = mainDb.fetchone()[0]
+    if result == True:
+        return True
+    if result == False:
+        return False
+    return None
+    
+
+def __silent_remove_file(filename):
     try:
         os.remove(filename)
     except OSError:

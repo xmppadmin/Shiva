@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `relay` (
   `sensorID` varchar(50) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
-  KEY `sensorID` (`sensorID`)
+  KEY `sensorID` (`sensorID`
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
@@ -202,6 +202,7 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `shivaScore` float DEFAULT -1.0 NOT NULL COMMENT 'computed phishing score',
   `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
   `phishingHumanCheck` BOOL COMMENT 'messaged marked as phishing by human',
+  `derivedStatus``derivedPhishingStatus` BOOL DEFAULT NULL 'status computed for message: NULL - not assigned, true - phishing, false - spam',
   PRIMARY KEY (`id`),
   KEY `subject` (`subject`),
   KEY `totalCounter` (`totalCounter`),
@@ -209,6 +210,8 @@ CREATE TABLE IF NOT EXISTS `spam` (
   KEY `textMessage` (`textMessage`(255)),
   KEY `htmlMessage` (`htmlMessage`(255))
 ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci;
+
+-- TODO triger on update phishingHumanCheck
 
 -- --------------------------------------------------------
 
@@ -228,13 +231,13 @@ CREATE TABLE IF NOT EXISTS `whitelist` (
 -- Overview
 --
 CREATE OR REPLACE VIEW spam_overview_view AS
-SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore 
+SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore,sensor.sensorID,spam.derivedPhishingStatus
 FROM spam
   INNER JOIN sdate_spam ON sdate_spam.spam_id = spam.id 
   INNER JOIN sdate ON sdate_spam.id = sdate.id 
   INNER JOIN sensor_spam ON spam.id = sensor_spam.spam_id
   INNER JOIN sensor ON sensor_spam.sensor_id = sensor.id
-  ORDER BY sdate.lastSeen DESC ;
+  ORDER BY sdate.lastSeen DESC;
 
 
 
