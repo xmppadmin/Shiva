@@ -670,7 +670,7 @@ def delete_spam(email_id=''):
     
     delete_queries = []
     
-    check_query = "SELECT * FROM `spam` WHERE email_id =  '{}'".format(email_id);
+    check_query = "SELECT * FROM `spam` WHERE id =  '{}'".format(email_id);
     mainDb = shivadbconfig.dbconnectmain()
     
     mainDb.execute(check_query)
