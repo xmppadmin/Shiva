@@ -2,7 +2,6 @@ from bs4 import BeautifulSoup
 import cgi
 import cherrypy
 import datetime
-import string
 import threading
 import time
 
@@ -50,7 +49,6 @@ class WebServer():
     @cherrypy.expose
     def delete_email(self,email_id = ''):
         shivamaindb.delete_spam(email_id)
-        return 'deleted'
         
 # go throught all emails
     @cherrypy.expose
@@ -140,13 +138,14 @@ class WebServer():
                 </td><td>Spamassassin score</td>
                 </td><td>SensorID</td>
                 </td><td>Status</td>
+                </td><td>Actions</td>
               </tr>
             </thead>
             <tbody>
             """
         
         for current in overview_list:
-            
+            current_id = current['id']
             phishingStatus = current['derivedPhishingStatus']
             phishingStatusTag = '<font color="{0}">{1}</font>';
             if phishingStatus == True:
@@ -158,16 +157,31 @@ class WebServer():
             
             result += """<tr>
                   <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
-                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td>
-                </tr>""".format(current['id'],
+                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td>
+                </tr>""".format(current_id,
                                 current['lastSeen'],
                                 current['subject'].encode('utf8',errors='ignore'),
                                 current['shivaScore'],
                                 current['spamassassinScore'],
                                 current['sensorID'],
-                                phishingStatusTag)
+                                phishingStatusTag,
+                                self.prepare_actions_template(current_id, current['derivedPhishingStatus']))
         result += "</tbody></table>"
         return result
+    
+    def prepare_actions_template(self, email_id='', phishing_status=None):
+        result = '<img src="/static/icons/delete.png" title="Delete email from honeypot." onclick="delete_email(\'' + email_id + '\')">'
+        if phishing_status == True:
+            result += '<img src="/static/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam(\'' + email_id + '\')" >'
+        elif phishing_status == False:
+            result += '<img src="/static/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing(\'' + email_id + '\')" >'
+        else:
+            result += '<img src="/static/icons/small_change_none.png" title="Marking not supported for imported emails.">'
+        
+        logging.info(result)
+        return result;
+        
+        
     
     def email_detail_template(self, mailFields):
         if not mailFields:
@@ -213,7 +227,8 @@ class WebServer():
     def header_template(self, title=''):
         return """<html>
         <head>
-          <link href="/static/style.css" rel="stylesheet">
+          <link href="/static/css/style.css" rel="stylesheet">
+          <script type="text/javascript" src="/static/js/requests.js"></script>
           <title>""" + title + """</title>
         </head>
           <body>"""
@@ -257,7 +272,7 @@ def prepare_http_server():
         },
         '/static': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': './web/css'
+            'tools.staticdir.dir': './web/'
         },
         '/attachments': {
             'tools.staticdir.on': True,
