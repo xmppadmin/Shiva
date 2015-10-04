@@ -35,10 +35,10 @@ def handle_api_request(json_request):
         learning.learn()
         return True
     
-    if re.match('^learn_spamassassin$', action):
-        logging.info("IO: Learning spamassassin Bayes filter")
-        learning.learn_spamassassin()
-        return True
+#     if re.match('^learn_spamassassin$', action):
+#         logging.info("IO: Learning spamassassin Bayes filter")
+#         learning.learn_spamassassin()
+#         return True
     
     
     logging.info("IO: NO action selected.")

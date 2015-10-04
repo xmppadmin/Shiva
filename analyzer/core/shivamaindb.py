@@ -640,7 +640,6 @@ def get_overview(start=0,limit=10):
         mainDb.execute(overview_query)
         result = mainDb.fetchall()
         
-        overview_list = []
         for record in result:
             overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6], 'derivedPhishingStatus':record[7]})
         
@@ -825,6 +824,47 @@ def get_derived_phishing_status(email_id=''):
     return None
     
 
+def save_learning_report(classifier_status=False,spamassassin_status=False):
+    """ 
+    store report of honeypot learning into database
+    """
+    
+    import datetime
+    report_time = datetime.datetime.now()
+    report_classifier = "success" if classifier_status else "failure"
+    report_spamassassin = "success" if spamassassin_status else "failure"
+    
+    query = "insert into `learningreport` (`learningDate`,`learningMailCount`,`spamassassinStatus`,`shivaStatus`) values ('{0}', (select count(*) from spam), '{1}','{2}')".format(report_time,report_spamassassin,report_classifier);
+    
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(query)
+    except mdb.Error, e:
+        logging.error(e)
+        return
+    
+def get_learning_overview(limit=10):
+    """
+    get overview of recent honeypot learning reports
+    """
+    
+    overview_list = []
+    query = 'select learningDate,learningMailCount,spamassassinStatus,shivaStatus from learningreport order by learningDate desc limit ' + str(limit)
+    
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(query)
+        
+        result = mainDb.fetchall()
+        for record in result:
+            overview_list.append({'learningDate':record[0], 'learningMailCount':record[1], 'spamassassinStatus':record[2], 'shivaStatus':record[3]})
+        
+    except mdb.Error, e:
+        logging.error(e)
+        
+    return overview_list
+    
+
 def __silent_remove_file(filename):
     try:
         os.remove(filename)
@@ -833,7 +873,7 @@ def __silent_remove_file(filename):
 
 
 if __name__ == '__main__':
-    tempDb = shivadbconfig.dbconnect()
+    tempDb = shivadbconfig.dbconnect() 
     mainDb = shivadbconfig.dbconnectmain()
     notify = server.shivaconf.getboolean('notification', 'enabled')
 #     time.sleep(200) # Giving time to hpfeeds module to complete the task.

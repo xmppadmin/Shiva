@@ -5,10 +5,12 @@ import server
 from sklearn import svm
 
 import shivastatistics
+import shivamaindb
 
 
 
-CLASSIFIER_PKL = 'classifier.pkl';
+CLASSIFIER_PKL = 'run/classifier.pkl'
+LEARNING_LOCK = 'run/learning.lock'
 classifier = None
 
 def init_classifier():
@@ -34,6 +36,23 @@ def init_classifier():
         
 
 def learn():
+    """
+    start honeypot email classifiers learning process
+    results of learning are stored in database table 'learningstate'
+    """
+    if not __check_learning_and_lock():
+        logging.warn('Learning: attempt to learn honeypot while learning is already in progress. Nothing to do.')
+        return
+        
+    classifier_status = __learn_classifier()
+    spamassassin_status = __learn_spamassassin()
+    
+    shivamaindb.save_learning_report(classifier_status, spamassassin_status)
+    
+    free_learning_lock()
+
+def __learn_classifier():
+    
     learning_matrix = shivastatistics.prepare_matrix(filterType='none', matrixType='learning')
     
     samples = map(lambda a: a[1:], learning_matrix[1:])
@@ -60,12 +79,16 @@ def learn():
     pickle.dump(classifier, f, pickle.HIGHEST_PROTOCOL)
     f.close()
     
-    logging.info("Learning: Learning successfully finished.")
+    logging.info("Learning: Learning of classifier successfully finished.")
+    return True
 
     
 
-def learn_spamassassin():
-    """ learn spamassassin Bayes filter on captured emails """
+def __learn_spamassassin():
+    """
+    learn spamassassin Bayes filter on captured emails
+    return False if error occurs, True otherwise
+    """
     import subprocess,os,fnmatch,shlex
     
     logging.info('Learning - re-learning spamassassin.')
@@ -101,10 +124,12 @@ def learn_spamassassin():
         if retval == 0:
             logging.info('Learning: spamassassin successfully learned.')
         else:
-            logging.error('Learning: error occered during spamassassin learnig process.')
+            logging.error('Learning: error occurred during spamassassin learnig process.')
         
     except subprocess.CalledProcessError as ex:
-        logging.error('Learning: error occered during communication with spamassassin daemon.')
+        logging.error('Learning: error occurred during communication with spamassassin daemon.')
+        return False
+    return True
     
     
 def get_spamassassin_bayes_score(mailFields):
@@ -141,3 +166,25 @@ def check_mail(mailFields):
     global classifier
     mailVector = shivastatistics.process_single_record(mailFields)
     return (classifier.predict_proba(mailVector[1:])[0][1],get_spamassassin_bayes_score(mailFields))
+
+def __check_learning_and_lock():
+    """ 
+    check whether learning can be performed - existence of file LEARNING_LOCK
+    if file doesn't exist it's craeted ant True is returned. If file already exists,
+    it remains untouched and False is returned.
+    """
+    
+    import os.path
+    if os.path.exists(LEARNING_LOCK):
+        return False
+    
+    open(LEARNING_LOCK, 'a').close()
+    return True
+
+def free_learning_lock():
+    """
+    delete fiLe LEARNING_LOCK if exits
+    """
+    import os
+    if os.path.exists(LEARNING_LOCK):
+        os.remove(LEARNING_LOCK)

@@ -228,6 +228,21 @@ CREATE TABLE IF NOT EXISTS `whitelist` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `learning state`
+--
+
+CREATE TABLE IF NOT EXISTS `learningreport` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `learningDate` datetime NOT NULL,
+  `learningMailCount` int(10) NOT NULL,
+  `spamassassinStatus` char(10),
+  `shivaStatus` char(10),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1 ;
+
+-- --------------------------------------------------------
+
+--
 -- Overview
 --
 CREATE OR REPLACE VIEW spam_overview_view AS

@@ -255,6 +255,10 @@ class QueueReceiver(object):
         """setup web interface and api"""
         if not one_shot: 
             web.main()
+        
+        """ remove possible lock file from previous learning """
+        import learning
+        learning.free_learning_lock()
 
         logging.info("Queue receiver started on queue dir %s" %
                      (self.queue_dir))

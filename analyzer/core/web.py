@@ -8,6 +8,7 @@ import time
 import server
 import shivamaindb
 import iohandler
+import learning
 import os
 import logging
 
@@ -27,10 +28,12 @@ class WebServer():
         title='SHIVA honeypot: mainpage'
         overview_title = 'Overview of last 10 emails'
         overview_list=shivamaindb.get_overview()
+        learning_overview_list=shivamaindb.get_learning_overview(10)
         return map(lambda a: a.decode('utf8','ignore'), (self.header_template(title),
                              self.headline_template(title),
                              self.statistics_template(),
                              self.overview_template(overview_list,title=overview_title,start=0,count=10), 
+                             self.learning_template(learning_overview_list), 
                              self.footer_template())) 
 # view email page
     @cherrypy.expose
@@ -63,6 +66,17 @@ class WebServer():
                             self.view_list_navigation_template(start=int(start),count=int(count),total=total),
                             self.footer_template()))
         
+# learning page
+    @cherrypy.expose
+    def learning(self):
+        title='SHIVA honeypot: learning'
+        headline_title = 'SHIVA honeypot: learning status'
+        return map(lambda a: a.decode('utf8'), (self.header_template(title),
+                            self.headline_template(headline=headline_title),
+                            self.learning_template(shivamaindb.get_learning_overview()),
+                            self.footer_template()))
+        
+ 
  
 # handle relearn
     @cherrypy.expose
@@ -72,6 +86,11 @@ class WebServer():
     @cherrypy.expose
     def mark_as_spam(self,email_id = ''):
         shivamaindb.mark_as_spam(email_id)
+        
+    @cherrypy.expose
+    def relearn(self):
+        learning.learn()
+        raise cherrypy.HTTPRedirect("/learning")
         
 # API handler
     @cherrypy.expose
@@ -178,7 +197,6 @@ class WebServer():
         else:
             result += '<img src="/static/icons/small_change_none.png" title="Marking not supported for imported emails.">'
         
-        logging.info(result)
         return result;
         
         
@@ -224,6 +242,38 @@ class WebServer():
         
         return result
     
+    def learning_template(self,report_overview=[]):
+        result = "<h2>Overview of last {} honeypot learning attempts</h2>".format(str(len(report_overview)))
+        
+        result += """
+        <table>
+            <thead>
+              <tr>
+                <td>Learning date</td>
+                <td>Count of emails</td>
+                </td><td>Shiva classifier status</td>
+                </td><td>Spamassassin status</td>
+              </tr>
+            </thead>
+            <tbody>
+        """
+        
+        for current_report in report_overview:
+            result += "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>".format(
+                str(current_report['learningDate']),
+                str(current_report['learningMailCount']),
+                current_report['shivaStatus'],
+                current_report['spamassassinStatus'])
+        
+        result += "</tbody></table>"
+        
+        result += """<p><a href="/relearn">Relearn honeypot now</a></p>"""
+        return result
+        
+        
+        
+ #       {'learningDate':record[0], 'learningMailCount':record[1], 'spamassassinStatus':record[2], 'shivaStatus':record[3]}
+    
     def header_template(self, title=''):
         return """<html>
         <head>
@@ -239,7 +289,7 @@ class WebServer():
     def footer_template(self):
         return """
             <hr>
-            <footer>Quick navigation: <a href="/">Main page</a>&nbsp;<a href="/list_emails">List emails</a></footer>
+            <footer>Quick navigation: <a href="/">Main page</a>&nbsp;<a href="/list_emails">List emails</a>&nbsp;<a href="/learning">Learning</a></footer>
             <foooter>Rendered: """ + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + """</footer>
           </body>
         </html>"""
