@@ -11,6 +11,7 @@ import iohandler
 import learning
 import os
 import logging
+import subprocess
 
 
 class WebServer():
@@ -18,6 +19,7 @@ class WebServer():
     def __init__(self, in_params):
         self.startup_time = in_params['startup_time'] if in_params['startup_time'] else None 
         self.attachmentsPath = in_params['attachmentsPath']
+        self.honypotLogFile = in_params['honeypot_log_file']
     
 # index page    
     @cherrypy.expose
@@ -76,7 +78,16 @@ class WebServer():
                             self.learning_template(shivamaindb.get_learning_overview()),
                             self.footer_template()))
         
- 
+#logs accessibility
+    @cherrypy.expose
+    def logs(self):
+        title='SHIVA honeypot: log file view'
+        headline_title = 'SHIVA honeypot: log file view'
+        return map(lambda a: a.decode('utf8'), (self.header_template(title),
+                            self.headline_template(headline=headline_title),
+                            self.log_file_template(),
+                            self.footer_template()))
+        
  
 # handle relearn
     @cherrypy.expose
@@ -271,8 +282,20 @@ class WebServer():
         return result
         
         
+    def log_file_template(self):
+        result = "<table>"
+        try:
+            out = subprocess.check_output(['tail', '-n', '100', self.honypotLogFile])
+            for o in out.splitlines():
+                result += "<tr><td>" + o + "</td></tr>"
+        except subprocess.CalledProcessError:
+            pass
         
- #       {'learningDate':record[0], 'learningMailCount':record[1], 'spamassassinStatus':record[2], 'shivaStatus':record[3]}
+        
+        result += """</table><p id="end_of_log"></p>"""
+        return result;
+        
+
     
     def header_template(self, title=''):
         return """<html>
@@ -289,7 +312,7 @@ class WebServer():
     def footer_template(self):
         return """
             <hr>
-            <footer>Quick navigation: <a href="/">Main page</a>&nbsp;<a href="/list_emails">List emails</a>&nbsp;<a href="/learning">Learning</a></footer>
+            <footer>Quick navigation: <a href="/">Main page</a>&nbsp;<a href="/list_emails">List emails</a>&nbsp;<a href="/learning">Learning</a>&nbsp;<a href="/logs#end_of_log">Logs</a></footer>
             <foooter>Rendered: """ + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + """</footer>
           </body>
         </html>"""
@@ -354,6 +377,7 @@ def prepare_http_server():
     cherrypy.log.error_file = error_log_path
     cherrypy.log.access_file = access_log_path
     
+    in_params['honeypot_log_file'] = log_dir + 'lamson.log'
     cherrypy.quickstart(WebServer(in_params),'/',conf)
     
 def main():
