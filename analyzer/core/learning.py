@@ -58,6 +58,10 @@ def __learn_classifier():
     samples = map(lambda a: a[1:], learning_matrix[1:])
     results = map(lambda a: a[0],  learning_matrix[1:])
     
+    if not samples or not results:
+        #nothing to - no mails database?
+        return True
+    
     classifier = svm.SVC(C=1.0, 
                          cache_size=200, 
                          class_weight='auto', 
