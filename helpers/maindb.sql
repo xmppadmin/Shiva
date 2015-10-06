@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `relay` (
   `sensorID` varchar(50) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
-  KEY `sensorID` (`sensorID`
+  KEY `sensorID` (`sensorID`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 -- --------------------------------------------------------
@@ -176,7 +176,7 @@ CREATE TABLE IF NOT EXISTS `sensor` (
 CREATE TABLE IF NOT EXISTS `sensor_spam` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `sensor_id` int(11) NOT NULL,
-  `spam_id` char(32)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL
+  `spam_id` char(32)  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `sensor_id` (`sensor_id`),
   KEY `spam_id` (`spam_id`)
@@ -202,7 +202,7 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `shivaScore` float DEFAULT -1.0 NOT NULL COMMENT 'computed phishing score',
   `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
   `phishingHumanCheck` BOOL COMMENT 'messaged marked as phishing by human',
-  `derivedStatus``derivedPhishingStatus` BOOL DEFAULT NULL 'status computed for message: NULL - not assigned, true - phishing, false - spam',
+  `derivedPhishingStatus` BOOL DEFAULT NULL COMMENT 'status computed for message: NULL - not assigned, true - phishing, false - spam',
   PRIMARY KEY (`id`),
   KEY `subject` (`subject`),
   KEY `totalCounter` (`totalCounter`),
