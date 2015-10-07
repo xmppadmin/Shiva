@@ -186,7 +186,7 @@ def main(key, msgMailRequest):
     queuepath = server.shivaconf.get('global', 'queuepath')
     
     mailFields = {'headers':'', 'to':'', 'from':'', 'subject':'', 'date':'', 'firstSeen':'', 'lastSeen':'', 'firstRelayed':'', 'lastRelayed':'', 'sourceIP':'', 'sensorID':'', 'text':'', 'html':'', 'inlineFileName':[], 'inlineFile':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFile':[], 'attachmentFileMd5':[], 'links':[], 'ssdeep':'', 'len':'', 's_id':''}
-  
+   
     mailFile = open(queuepath + "new/" + key,"rb")
     p = email.Parser.Parser()
     msg = p.parse(mailFile)
@@ -196,7 +196,7 @@ def main(key, msgMailRequest):
     msgmsg = email.message_from_file(f)
     pp = email.parser.HeaderParser()
     hh = pp.parsestr(msgmsg.as_string())
-
+    
     headerString = ''
     for h in hh.items():
         headerString += str(h) + '\n'

@@ -31,19 +31,20 @@ def main(mailFields, key, msgMailRequest):
     phishing_human_check = None
     
     # check whether email is imported manually
-    if mailFields['sensorID']:
-        if mailFields['sensorID'] == 'phishingImport':
-            probability_tuple = (-1,-1)
-            phish_flag = True
-            phishing_human_check = True
-        if mailFields['sensorID'] == 'spamImport':
-            probability_tuple = (-1,-1)
-            phish_flag = False
-            phishing_human_check = False
+    sensor = mailFields['sensorID']
+    if not sensor:
+        sensor = 'default'
     
-    
-    # mail is not manually imported compute score
-    if not phish_flag:
+    if mailFields['sensorID'] == 'phishingImport':
+        probability_tuple = (-1,-1)
+        phish_flag = True
+        phishing_human_check = True
+    elif mailFields['sensorID'] == 'spamImport':
+        probability_tuple = (-1,-1)
+        phish_flag = False
+        phishing_human_check = False
+    else:
+        # mail is not manually imported, compute score
         probability_tuple = compute_phishing_probabilities(mailFields, key, msgMailRequest)
         phish_flag = decide(probability_tuple)
     
@@ -82,7 +83,7 @@ def main(mailFields, key, msgMailRequest):
                 'spamassassinScore': probability_tuple[1],
                 'counter':1, 
                 'relayed':0 }
-    logging.info(str(newRecord))
+
     if relay_enabled is True:
         relaycounter = server.shivaconf.getint('analyzer', 'globalcounter')
 

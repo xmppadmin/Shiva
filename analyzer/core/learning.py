@@ -1,6 +1,7 @@
 import pickle
 import logging
 import server
+import os
 
 from sklearn import svm
 
@@ -21,8 +22,9 @@ def init_classifier():
     if classifier:
         return
     
+    logging.info(os.getcwd())
     logging.info("Learning: Trying to load classifier from file.")
-    classifier_file = open(CLASSIFIER_PKL, 'rb')
+    classifier_file = os.path.exists(CLASSIFIER_PKL)
     if classifier_file:
         classifier = pickle.load(classifier_file)
         classifier_file.close()
@@ -189,6 +191,5 @@ def free_learning_lock():
     """
     delete fiLe LEARNING_LOCK if exits
     """
-    import os
     if os.path.exists(LEARNING_LOCK):
         os.remove(LEARNING_LOCK)
