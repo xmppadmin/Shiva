@@ -90,7 +90,7 @@ def insert(spam_id):
         spamrecord = tempDb.fetchone()
         if spamrecord:
             mailFields['s_id'], mailFields['ssdeep'], mailFields['to'], mailFields['from'], mailFields['text'], mailFields['html'], mailFields['subject'], mailFields['headers'], mailFields['sourceIP'], mailFields['sensorID'], mailFields['firstSeen'], mailFields['relayCounter'], mailFields['relayTime'], mailFields['count'], mailFields['len'], mailFields['shivaScore'], mailFields['spamassassinScore'], mailFields['phishingHumanCheck'] = spamrecord
-        
+            
             mailFields['date'] = str(mailFields['firstSeen']).split(' ')[0]
             # Saving 'attachments' table's data
             tempDb.execute(attachments)
@@ -120,9 +120,17 @@ def insert(spam_id):
             
             
             # Inserting data in main db
-            phishingHumanCheck = "'" + str(mailFields['phishingHumanCheck']) + "'" if mailFields['phishingHumanCheck'] else 'NULL'
+            
+
+            phishingHumanCheck = 'NULL'
+            
+            if mailFields['phishingHumanCheck'] == 1:
+                phishingHumanCheck = 'TRUE'
+            elif mailFields['phishingHumanCheck'] == 0:
+                phishingHumanCheck = 'FALSE'
+            
             insert_spam = "INSERT INTO `spam`(`headers`, `to`, `from`, `subject`, `textMessage`, `htmlMessage`, `totalCounter`, `id`, `ssdeep`, `length`, `shivaScore`, `spamassassinScore`, `phishingHumanCheck`) VALUES('" + mailFields['headers'] + "', '" + mailFields['to'] + "', '" + mailFields['from'] + "', '" + mailFields['subject'] + "', '" + mailFields['text'] + "', '" + mailFields['html'] + "', '" + str(mailFields['count']) + "', '" + mailFields['s_id'] + "', '" + mailFields['ssdeep'] + "', '" + str(mailFields['len']) + "', '" + str(mailFields['shivaScore']) + "', '" + str(mailFields['spamassassinScore']) + "', " + phishingHumanCheck + ")"
-            logging.debug(insert_spam)   
+  
             try:
                 mainDb.execute(insert_spam)
             except mdb.Error, e:

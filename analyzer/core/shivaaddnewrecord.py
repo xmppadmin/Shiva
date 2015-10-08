@@ -8,6 +8,7 @@ import logging
 import server
 import shutil
 import datetime
+import re
 
 from learning import check_mail
 
@@ -35,11 +36,12 @@ def main(mailFields, key, msgMailRequest):
     if not sensor:
         sensor = 'default'
     
-    if mailFields['sensorID'] == 'phishingImport':
+    logging.info(sensor)
+    if re.match('.*phishingImport.*',sensor):
         probability_tuple = (-1,-1)
         phish_flag = True
         phishing_human_check = True
-    elif mailFields['sensorID'] == 'spamImport':
+    elif re.match('.*spamImport.*',sensor):
         probability_tuple = (-1,-1)
         phish_flag = False
         phishing_human_check = False
