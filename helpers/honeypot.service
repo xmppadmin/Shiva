@@ -1,0 +1,23 @@
+# sample systemd service for honeypot
+
+[Unit]
+Description=Shiva email honeypot with analyzer
+
+#dhclient is called from /etc/rc.local
+#at this point, we interface have assigned address
+After=rc-local.service
+
+#services required by analyzer
+After=spamassassin.service
+After=mysql.service
+
+
+[Service]
+Type=oneshot
+User=shiva
+ExecStart=/etc/init.d/honeypot.sh start
+ExecStop=/etc/init.d/honeypot.sh stop
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

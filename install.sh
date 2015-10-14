@@ -70,6 +70,10 @@ helpers () {
     printf "\n\n[*] Generating update script.\n"
     WORK_PATH_ESC=$(echo "$WORK_PATH" | sed -e 's/[\/&]/\\&/g')
     sed "s/WORK_PATH/$WORK_PATH_ESC/g" $WORK_PATH/helpers/update_shiva_packages.sh > $INSTALL_PATH/update_shiva_packages.sh && chmod u+x $INSTALL_PATH/update_shiva_packages.sh
+
+    printf "\n\n[*]  Generating init script.\n"
+    cp $WORK_PATH/helpers/honeypot.service $INSTALL_PATH/
+    sed "s/INSTALL_PATH/$WORK_PATH_ESC/g" $WORK_PATH/helpers/honeypot.sh > $INSTALL_PATH/honeypot.sh
 }
 
 dbcreate () {
