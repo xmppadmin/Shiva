@@ -43,8 +43,14 @@ def push():
         phishingHumanCheck = str(record['phishingHumanCheck']).upper()
         if not (phishingHumanCheck == 'TRUE' or phishingHumanCheck == 'FALSE'):
             phishingHumanCheck = 'NULL'
+            
+        derivedPhishingStatus = str(record['derivedPhishingStatus']).upper()
+        logging.critical(derivedPhishingStatus)
+        logging.critical(str(record['derivedPhishingStatus']).upper())
+        if not (derivedPhishingStatus == 'TRUE' or derivedPhishingStatus == 'FALSE'):
+            derivedPhishingStatus = 'NULL'
   
-        insertSpam = "INSERT INTO `spam`(`id`, `ssdeep`, `to`, `from`, `textMessage`, `htmlMessage`, `subject`, `headers`, `sourceIP`, `sensorID`, `firstSeen`, `relayCounter`, `totalCounter`, `length`, `relayTime`, `shivaScore`, `spamassassinScore`, `phishingHumanCheck`) VALUES ('" + str(record['s_id']) + "', '" + str(record['ssdeep']) + "', '" + str(record['to']) + "', '" + str(record['from']) + "', '" + str(record['text']) + "', '" + str(record['html']) + "', '" + str(record['subject']) + "', '" + str(record['headers']) + "', '" + str(record['sourceIP']) + "', '" + str(record['sensorID']) + "', '" + str(record['firstSeen']) + "', '" + str(record['relayed']) + "', '" + str(record['counter']) + "', '" + str(record['len']) + "', '" + str(record['firstRelayed']) + "', '" + str(record['shivaScore']) + "', '" + str(record['spamassassinScore']) + "', " + phishingHumanCheck + ")"
+        insertSpam = "INSERT INTO `spam`(`id`, `ssdeep`, `to`, `from`, `textMessage`, `htmlMessage`, `subject`, `headers`, `sourceIP`, `sensorID`, `firstSeen`, `relayCounter`, `totalCounter`, `length`, `relayTime`, `shivaScore`, `spamassassinScore`, `derivedPhishingStatus`,`phishingHumanCheck`) VALUES ('" + str(record['s_id']) + "', '" + str(record['ssdeep']) + "', '" + str(record['to']) + "', '" + str(record['from']) + "', '" + str(record['text']) + "', '" + str(record['html']) + "', '" + str(record['subject']) + "', '" + str(record['headers']) + "', '" + str(record['sourceIP']) + "', '" + str(record['sensorID']) + "', '" + str(record['firstSeen']) + "', '" + str(record['relayed']) + "', '" + str(record['counter']) + "', '" + str(record['len']) + "', '" + str(record['firstRelayed']) + "', '" + str(record['shivaScore']) + "', '" + str(record['spamassassinScore']) + "', " + derivedPhishingStatus + ", " + phishingHumanCheck + ")"
         
         try:
             exeSql.execute(insertSpam)

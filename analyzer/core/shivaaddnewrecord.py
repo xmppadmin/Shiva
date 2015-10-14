@@ -36,7 +36,7 @@ def main(mailFields, key, msgMailRequest):
     if not sensor:
         sensor = 'default'
     
-    logging.info(sensor)
+    
     if re.match('.*phishingImport.*',sensor):
         probability_tuple = (-1,-1)
         phish_flag = True
@@ -81,6 +81,7 @@ def main(mailFields, key, msgMailRequest):
                 's_id':mailFields['s_id'], 
                 'len':mailFields['len'], 
                 'phishingHumanCheck': phishing_human_check,
+                'derivedPhishingStatus': phish_flag,
                 'shivaScore': probability_tuple[0],
                 'spamassassinScore': probability_tuple[1],
                 'counter':1, 
