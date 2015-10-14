@@ -330,6 +330,8 @@ def prepare_http_server():
     web_interface_address = '127.0.0.1'
     web_interface_port = '8080'
     web_bind_config = server.shivaconf.get('web', 'address')
+    auth_login = server.shivaconf.get('web','username')
+    auth_pass = server.shivaconf.get('web','password')
 
     if web_bind_config:
         web_interface_address, web_interface_port = web_bind_config.split(':')
@@ -338,10 +340,15 @@ def prepare_http_server():
     cherrypy.config.update({'server.socket_host': web_interface_address,
                         'server.socket_port': int(web_interface_port),
                        })
+
+    checkpassword = cherrypy.lib.auth_basic.checkpassword_dict({auth_login : auth_pass,})
     conf = {
         '/': {
             'tools.sessions.on': True,
-            'tools.staticdir.root': staticRoot
+            'tools.staticdir.root': staticRoot,
+            'tools.auth_basic.on': True,
+            'tools.auth_basic.realm': auth_login,
+            'tools.auth_basic.checkpassword': checkpassword,
         },
         '/static': {
             'tools.staticdir.on': True,
