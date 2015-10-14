@@ -24,11 +24,12 @@ def init_classifier():
     
     logging.info(os.getcwd())
     logging.info("Learning: Trying to load classifier from file.")
-    classifier_file = os.path.exists(CLASSIFIER_PKL)
-    if classifier_file:
-        classifier = pickle.load(classifier_file)
-        classifier_file.close()
-    
+    if os.path.exists(CLASSIFIER_PKL):
+        classifier_file = open(CLASSIFIER_PKL,'rb')
+        if classifier_file:
+            classifier = pickle.load(classifier_file)
+            classifier_file.close()
+        
     if classifier:
         logging.info("Learning: Classifier successfully loaded.")
     else:
@@ -95,7 +96,7 @@ def __learn_spamassassin():
     learn spamassassin Bayes filter on captured emails
     return False if error occurs, True otherwise
     """
-    import subprocess,os,fnmatch,shlex
+    import subprocess,fnmatch,shlex
     
     logging.info('Learning - re-learning spamassassin.')
     try:
