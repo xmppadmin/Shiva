@@ -6,7 +6,7 @@
 #
 
 
-base_dir=INSTALL_PATH
+base_dir=INSTALL_PATH/shiva
 reciever_dir=$base_dir/shivaReceiver/receiver
 analyzer_dir=$base_dir/shivaAnalyzer/analyzer
 

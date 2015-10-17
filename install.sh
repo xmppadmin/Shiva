@@ -202,6 +202,8 @@ create_dirs () {
     mkdir $INSTALL_PATH/attachments/inlines
     mkdir $INSTALL_PATH/attachments/hpfeedattach
     mkdir $INSTALL_PATH/rawspams
+    mkdir $INSTALL_PATH/rawspams/spam
+    mkdir $INSTALL_PATH/rawspams/phishing
     mkdir $INSTALL_PATH/rawspams/hpfeedspam
     
     ESCAPED_PATH=$(echo $INSTALL_PATH | sed -s 's/\//\\\//g')
