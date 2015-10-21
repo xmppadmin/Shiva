@@ -54,11 +54,10 @@ def prepare_matrix(filterType="none", matrixType="none"):
         
     recordcount = 0
     while True:
-
+        
         records = shivamaindb.retrieve(10, recordcount, filterType)
         if len(records) == 0 :
             break
-        
         for record in records:
             recordcount += 1
             recordresult = process_single_record(record)
@@ -69,7 +68,19 @@ def prepare_matrix(filterType="none", matrixType="none"):
     
 
 def process_single_record(mailFields):
-    return rulelist.apply_rules(mailFields)
+    
+    used_rules = []
+    computed_results = []
+    result = []
+    for rule in rulelist.get_rules():
+        rule_result = rule.apply_rule(mailFields)
+        result.append(rule_result)
+        used_rules.append({'code': rule.get_rule_code(), 'description': rule.get_rule_description()})
+        computed_results.append({'spamId': mailFields['s_id'], 'code': rule.get_rule_code(), 'result': rule_result})
+        
+        
+    shivamaindb.store_computed_results(computed_results,used_rules)
+    return result
 
 def output_graphs(statmatrix, unique=False, filterType="none"):
     aggregated = aggregate_statistics(statmatrix)
@@ -116,6 +127,42 @@ def aggregate_statistics(statmatrix):
             aggregated[column] += statmatrix[row][column]
     
     return aggregated
+
+
+def generate_rules_graph(data={}):
+        
+    color_list = 'rgbcmyk'
+    color_index = 0
+    rule_codes = data['_rule_codes']   
+
+    for sensor, rule_vals in data.iteritems():
+        if sensor.startswith('_rule') or sensor.startswith('_total'):
+            continue
+        current_color = color_list[color_index % 7]
+        color_index += 1
+        sensor_total = data['_total_' + sensor]
+        plot.plot(np.arange(len(rule_vals)) + 0.5, map(lambda a: (a / float(sensor_total)) * 100, rule_vals), 
+                label=sensor + ' ({})'.format(sensor_total), 
+                linestyle='-',
+                linewidth=0.8,
+                color=current_color,
+                markerfacecolor=current_color,
+                markersize=12, 
+                marker='o', 
+                antialiased=True)
+    
+    plot.xticks(np.arange(len(rule_codes)) + 0.5, rule_codes)
+    plot.legend(loc='upper center', bbox_to_anchor=(0.5,-0.2))
+    
+    
+    plot.grid(True)
+    plot.xlabel('Rules',fontsize=18)
+    plot.ylabel('Percentage of matching rules',fontsize=18)
+    plot.title("Statistics of rules matching by source of email\n", fontsize=20)
+    
+    plot.savefig('../../../web/images/rules_graph.png', bbox_inches='tight')
+    plot.close()
+
          
             
     

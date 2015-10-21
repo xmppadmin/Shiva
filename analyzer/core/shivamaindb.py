@@ -883,6 +883,81 @@ def __silent_remove_file(filename):
     except OSError:
         pass  
 
+def store_computed_results(computed_results=[],used_rules=[]):
+    
+    if len(computed_results) != len(used_rules):
+            logging.error('shivamaindb:store_computed_results: Mismatch between results and rules')
+            return
+
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        for i in range(0,len(computed_results)):
+            rule_id_query = "select `id` from rules where `code` = \'"+ used_rules[i]['code'] +"\'";
+            mainDb.execute(rule_id_query)
+            result = mainDb.fetchone()
+
+            rule_id = ''
+            if not result:
+                mainDb.execute('insert into rules(code,description) values (\'{0}\',\'{1}\')'.format(used_rules[i]['code'], used_rules[i]['description']))
+                mainDb.execute(rule_id_query)
+                rule_id = str(mainDb.fetchone()[0])
+            else:
+                rule_id = str(result[0])
+
+            query1 = 'delete from learningresults where ruleId = \'{0}\' and spamId = \'{1}\''.format(rule_id, computed_results[i]['spamId'])
+            query2 = 'insert into learningresults(ruleId,spamId,result) values(\'{0}\', \'{1}\', \'{2}\')'.format(rule_id, computed_results[i]['spamId'], str(computed_results[i]['result']))
+            
+            mainDb.execute(query1)
+            mainDb.execute(query2)
+            
+            
+    except mdb.Error, e:
+        logging.error(e)
+    
+    return
+
+def get_rule_results_for_statistics(): 
+    """ 
+    get aggreagated results of rules application by sensor
+    return {_rule_codes:['r1', 'r2' , 'r3']
+            _total_sensor1 = 10,
+            _total_sensor2 = 4,
+            sensor1 : [1, 0, 1],
+            sensor2 : [0, 0,1 1],
+            }
+    """
+    result = {}
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        
+        query = ('select code,sensorID,result from rules_overview_view')
+        mainDb.execute(query)
+        raw_result = mainDb.fetchall()
+        
+        all_rules = sorted(set(map(lambda a: a[0], raw_result)))
+        all_sensors = sorted(set(map(lambda a: a[1], raw_result)))
+          
+        for sensor in all_sensors:
+            result[sensor] = [0] * len(all_rules)
+        
+        result['_rule_codes'] = all_rules
+        for current_result in raw_result:
+            current_sensor = current_result[1]
+            current_rule = current_result[0]
+            result[current_sensor][all_rules.index(current_rule)] = int(current_result[2])
+            
+        query = ('SELECT se.sensorID,count(se.sensorID) FROM spam s INNER JOIN sensor_spam sse on s.id = sse.spam_id   INNER JOIN sensor se on sse.sensor_id = se.id  GROUP BY se.sensorID')
+        mainDb.execute(query)
+        raw_result = mainDb.fetchall()
+        
+        for current_result in raw_result:
+            result['_total_' + current_result[0]] = int(current_result[1])
+        
+        
+    except mdb.Error, e:
+        logging.error(e)
+    
+    return result
 
 if __name__ == '__main__':
     tempDb = shivadbconfig.dbconnect() 

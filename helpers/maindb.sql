@@ -242,6 +242,40 @@ CREATE TABLE IF NOT EXISTS `learningreport` (
 
 -- --------------------------------------------------------
 
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `rules`
+--
+
+CREATE TABLE IF NOT EXISTS `rules` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `code` char(10) NOT NULL,
+  `description`  mediumtext CHARACTER SET utf8 COLLATE utf8_unicode_ci COMMENT 'description of the rule',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1 ;
+
+
+-- --------------------------------------------------------
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `learning results`
+--
+
+CREATE TABLE IF NOT EXISTS `learningresults` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ruleId` int(11) NOT NULL,
+  `spamId` char(32) NOT NULL,
+  `result` int(11) NOT NULL COMMENT 'result of the rule',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 ;
+
+
+-- --------------------------------------------------------
+
 --
 -- Overview
 --
@@ -255,6 +289,21 @@ FROM spam
   ORDER BY sdate.lastSeen DESC;
 
 
+-- --------------------------------------------------------
+
+--
+-- view used for statistics computations
+--
+CREATE OR REPLACE VIEW rules_overview_view AS
+SELECT r.code,se.sensorID,sum(lr.result) as result 
+FROM spam s 
+ INNER JOIN learningresults lr on s.id = lr.spamId 
+ INNER JOIN rules r on r.id = lr.ruleId 
+ INNER JOIN sensor_spam sse on s.id = sse.spam_id 
+ INNER JOIN sensor se on sse.sensor_id = se.id 
+GROUP BY se.sensorID,r.code,r.description;
 
 
 
+select s.id,r.code,lr.result,se.sensorID from spam s INNER JOIN learningresults lr on s.id = lr.spamId INNER JOIN rules r on r.id = lr.ruleId INNER JOIN sensor_spam sse on s.id = sse.spam_id INNER JOIN sensor se on sse.sensor_id = se.id
+select r.code,r.description,se.sensorID,sum(lr.result) from spam s INNER JOIN learningresults lr on s.id = lr.spamId INNER JOIN rules r on r.id = lr.ruleId INNER JOIN sensor_spam sse on s.id = sse.spam_id INNER JOIN sensor se on sse.sensor_id = se.id group by se.sensorID,r.code,r.description;
