@@ -3,7 +3,6 @@ import re
 from bs4 import BeautifulSoup
 from string import split
 
-import pickle
 
 TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','accountants','active','actor','ad','ads','adult','ae','aero','af','afl','ag',
 'agency','ai','aig','airforce','al','allfinanz','alsace','am','amsterdam','an','android','ao','apartments','aq','aquarelle','ar','archi','army','arpa','as',
@@ -48,7 +47,7 @@ TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','ac
 'ws','wtc','wtf','xerox','xin','xn','xxx','xyz','yachts','yandex','ye','yodobashi','yoga','yokohama','youtube','yt','za','zip','zm','zone','zuerich','zw'];
 
 #URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:https?://|(www\d{0,3}[.])*|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
-URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
+URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9@]+|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
 URL_IP_PATTERN = re.compile(ur'(?:\d{1,3}\.){3}\d{1,3}')
 URL_DOMAIN_PATTERN = re.compile(ur'[a-z0-9.\-]+[.][a-z]{2,4}')
 
@@ -109,7 +108,7 @@ def extractalldomains(url):
     for match in re.findall(URL_DOMAIN_PATTERN, url):
         for tld in TLD_LIST:
             if match.endswith('.' + tld):
-                urls.append(match)
+                urls.append(re.sub('www\d{0,3}\.', '', match))
     return urls
 
 def getfinalurls(url_tuple):
@@ -397,13 +396,17 @@ class RuleC8(MailClassificationRule):
         self.description = "More than one domain in URL"
         
     def apply_rule(self, mailFields):
-        if not mailFields['html']:
-            return 0
-        soup = BeautifulSoup(mailFields['html'], 'html.parser')
-        for a_tag in soup.find_all('a'):
-            href = extractdomain(a_tag.get('href'))
-            if len(extractalldomains(href)) > 1:
-                return 1 
+        if mailFields['html']:
+            soup = BeautifulSoup(mailFields['html'], 'html.parser')
+            for a_tag in soup.find_all('a'):
+                if len(extractalldomains(a_tag.get('href'))) > 1:
+                    return 1 
+        
+        if mailFields['links']:
+            for link in mailFields['links']:
+                if len(extractalldomains(link)) > 1:
+                    return 1
+               
         return 0
             
 class RuleC9(MailClassificationRule):
@@ -412,13 +415,18 @@ class RuleC9(MailClassificationRule):
         self.description = "More than three subdomains in URL"
         
     def apply_rule(self, mailFields):
-        if not mailFields['html']:
-            return 0
-        soup = BeautifulSoup(mailFields['html'], 'html.parser')
-        for a_tag in soup.find_all('a'):
-            href = extractdomain(a_tag.get('href'))
-            if href and not extractip(href) and len(split(href, '.')) > 3:
-                return 1
+        if mailFields['html']:
+            soup = BeautifulSoup(mailFields['html'], 'html.parser')
+            for a_tag in soup.find_all('a'):
+                href = extractdomain(a_tag.get('href'))
+                if href and not extractip(href) and len(split(extractdomain(href), '.')) > 4:
+                    return 1
+                
+        if mailFields['links']:
+            for link in mailFields['links']:
+                if not extractip(link) and len(split(extractdomain(link), '.')) > 4:
+                    return 1
+        
         return 0
 
 class RuleC10(MailClassificationRule):
@@ -447,12 +455,14 @@ class RuleC11(MailClassificationRule):
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             href = extractdomain(a_tag.get('href'))
-            text = extractdomain(a_tag.get_text())
-            if (text):
-                if (href):
-                    return 0 if text.lower() == href.lower else 1
-                else:
+            text_link = extractdomain(a_tag.get_text())
+            
+            if not text_link:
+                return 1
+            if href:
+                if text_link.lower() != href.lower():
                     return 1
+                
         return 0
         
 
