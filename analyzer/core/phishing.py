@@ -59,9 +59,10 @@ def extractdomain(url):
     """
     if not url:
         return ''
-    m = re.match(URL_REGEX_PATTERN, url)
+    
+    m = re.match(URL_REGEX_PATTERN, url.strip())
     if m:
-        m = re.search(URL_DOMAIN_PATTERN, url)
+        m = re.search(URL_DOMAIN_PATTERN, url.strip())
         if m:
             return re.sub('^www\.', '', m.group())
     return ''
@@ -90,8 +91,8 @@ def samedomain(url1, url2):
     if not url1 or not url2:
         return False
     
-    url1_splitted = url1.split('.')
-    url2_splitted = url2.split('.')
+    url1_splitted = url1.strip().split('.')
+    url2_splitted = url2.strip().split('.')
     min_length = min(len(url1_splitted), len(url2_splitted))
     if min_length < 2 :
         return False
@@ -263,7 +264,6 @@ class HasShortenedUrl(MailClassificationRule):
     def apply_rule(self, mailFields):
         for url_tuple in mailFields['links']:
             if url_tuple[1]:
-                print url_tuple[1]
                 return 1
         return 0
 
@@ -291,7 +291,7 @@ class RuleC1(MailClassificationRule):
             text = extractdomain(a_tag.get_text())
             
             if not href or not text:
-                return 0
+                continue
             
             if not samedomain(href, text):
                 return 1 
@@ -309,16 +309,11 @@ class RuleC2(MailClassificationRule):
         for a_tag in soup.find_all('a'):
             text = a_tag.get_text()
             if not text:
-                return 0
+                continue
             
-            href = extractdomain(a_tag.get('href'))
-            href_split = href.split('.')
-            matches = True
-            for part in href_split:
-                matches &= True if re.match(r'\d+', part) else False
-           
-            if matches & len(href_split) > 0:
+            if extractip(a_tag.get('href')):
                 return 1
+              
         return 0
     
 class RuleC3(MailClassificationRule):
@@ -367,12 +362,9 @@ class RuleC6(MailClassificationRule):
         for img_tag in soup.find_all('img'):
             src_domain = extractdomain(img_tag.get('src'))
             if src_domain:
-                retval = False
                 for domain in domain_list:
-                    if samedomain(src_domain, domain):
-                        retval = True
-                if not retval:
-                    return 1
+                    if not samedomain(src_domain, domain):
+                        return 1
         return 0
 
 class RuleC7(MailClassificationRule):
@@ -403,7 +395,7 @@ class RuleC8(MailClassificationRule):
                     return 1 
         
         if mailFields['links']:
-            for link in mailFields['links']:
+            for link in getfinalurls(mailFields['links']):
                 if len(extractalldomains(link)) > 1:
                     return 1
                
@@ -423,7 +415,7 @@ class RuleC9(MailClassificationRule):
                     return 1
                 
         if mailFields['links']:
-            for link in mailFields['links']:
+            for link in getfinalurls(mailFields['links']):
                 if not extractip(link) and len(split(extractdomain(link), '.')) > 4:
                     return 1
         
