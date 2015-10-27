@@ -46,8 +46,7 @@ TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','ac
 'voyage','vu','wales','wang','watch','webcam','website','wed','wedding','weir','wf','whoswho','wien','wiki','williamhill','win','wme','work','works','world',
 'ws','wtc','wtf','xerox','xin','xn','xxx','xyz','yachts','yandex','ye','yodobashi','yoga','yokohama','youtube','yt','za','zip','zm','zone','zuerich','zw'];
 
-#URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:https?://|(www\d{0,3}[.])*|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
-URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:https?://|(www\d{0,3}|[a-z@]+)[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
+URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:(https?://)?(www[.])?[a-z0-9.\-@]+[.][a-z]{2,4}/?)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
 URL_IP_PATTERN = re.compile(ur'(?:\d{1,3}\.){3}\d{1,3}')
 URL_DOMAIN_PATTERN = re.compile(ur'[a-z0-9.\-]+[.][a-z]{2,4}')
 
@@ -105,7 +104,11 @@ def samedomain(url1, url2):
 
 def extractalldomains(url):
     """extract all domains from given url"""
+    
     urls = list()
+    if not url:
+        return urls
+    
     for match in re.findall(URL_DOMAIN_PATTERN, url):
         for tld in TLD_LIST:
             if match.endswith('.' + tld):
@@ -273,7 +276,7 @@ class PhischingHumanCheckRule(MailClassificationRule):
         self.description = "Marked as phishing by human"
         
     def apply_rule(self, mailFields):
-        if mailFields.get('phishingHumanCheck'):
+        if mailFields.get('phishingHuma76nCheck'):
             return 1
         return 0
         
