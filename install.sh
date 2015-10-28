@@ -205,6 +205,7 @@ create_dirs () {
     mkdir $INSTALL_PATH/rawspams/spam
     mkdir $INSTALL_PATH/rawspams/phishing
     mkdir $INSTALL_PATH/rawspams/hpfeedspam
+    mkdir $INSTALL_PATH/raw_html
     
     ESCAPED_PATH=$(echo $INSTALL_PATH | sed -s 's/\//\\\//g')
     

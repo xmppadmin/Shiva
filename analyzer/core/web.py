@@ -9,6 +9,7 @@ import server
 import shivamaindb
 import iohandler
 import learning
+import shivastatistics
 import os
 import logging
 import subprocess
@@ -19,6 +20,7 @@ class WebServer():
     def __init__(self, in_params):
         self.startup_time = in_params['startup_time'] if in_params['startup_time'] else None 
         self.attachmentsPath = in_params['attachmentsPath']
+        self.rawHtmlPath = in_params['rawHtmlPath']
         self.honypotLogFile = in_params['honeypot_log_file']
     
 # index page    
@@ -102,6 +104,10 @@ class WebServer():
     def relearn(self):
         learning.learn()
         raise cherrypy.HTTPRedirect("/learning")
+    
+    @cherrypy.expose
+    def stats(self):
+        shivastatistics.generate_rules_graph(shivamaindb.get_rule_results_for_statistics())
         
 # API handler
     @cherrypy.expose
@@ -200,13 +206,13 @@ class WebServer():
         return result
     
     def prepare_actions_template(self, email_id='', phishing_status=None):
-        result = '<img src="/static/icons/delete.png" title="Delete email from honeypot." onclick="delete_email(\'' + email_id + '\')">'
+        result = '<img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email(\'' + email_id + '\')">'
         if phishing_status == True:
-            result += '<img src="/static/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam(\'' + email_id + '\')" >'
+            result += '<img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam(\'' + email_id + '\')" >'
         elif phishing_status == False:
-            result += '<img src="/static/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing(\'' + email_id + '\')" >'
+            result += '<img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing(\'' + email_id + '\')" >'
         else:
-            result += '<img src="/static/icons/small_change_none.png" title="Marking not supported for imported emails.">'
+            result += '<img src="/static/images/icons/small_change_none.png" title="Marking not supported for imported emails.">'
         
         return result;
         
@@ -222,6 +228,11 @@ class WebServer():
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('To', mailFields['to'])
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Shiva score', mailFields['shivaScore'])
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Spamassassin score', mailFields['spamassassinScore'])
+        
+        firstRule = True
+        for rule_code,rule_description in shivamaindb.get_email_rules_status(mailFields['s_id']):
+            result += "<tr><td><b>{0}</b></td><td>{1}&nbsp;{2}</td></tr>".format('Matching rules' if firstRule else '', rule_code,rule_description)
+            firstRule = False
         
         firstLink = True
         for link in mailFields['links']:
@@ -242,12 +253,16 @@ class WebServer():
                 firstLine = False
         
         
-        if mailFields['html']:
-            firstLine = True
-            soup =  BeautifulSoup(mailFields['html'].encode('utf8'), "html.parser")
-            for line in cgi.escape(soup.prettify('utf8'), quote=True).replace('&gt;','&gt;<br/>').split('<br/>'):
-                result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Html' if firstLine else '', line)
-                firstLine = False
+        if mailFields['html'] and mailFields['s_id']:
+            email_id = mailFields['s_id']
+            # store html content to static file if it doesn't exist
+            staticHtmlFile = self.rawHtmlPath + '/' + email_id 
+            logging.critical(staticHtmlFile)
+            if not os.path.exists(staticHtmlFile):
+                f = open(staticHtmlFile, 'w')
+                f.write(mailFields['html'].encode('utf8'))
+                
+            result += '<tr><td><b>Html</b></td><td><iframe  width="800" height="800" style="border-width=5px;border-color=black" src=\"/raw_html/' + email_id.encode('utf8') + '" sandbox=\"allow-forms\" /></td></tr>'
         
         result += "</table>"
         
@@ -279,6 +294,8 @@ class WebServer():
         result += "</tbody></table>"
         
         result += """<p><a href="/relearn">Relearn honeypot now</a></p>"""
+        
+        result += """<img src="/static/images/rules_graph.png" />"""
         return result
         
         
@@ -325,6 +342,7 @@ class WebServer():
 def prepare_http_server():
     staticRoot = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../../"
     attachmentsPath = '/shiva/attachments'
+    rawHtmlPath = '/shiva/raw_html'
     
     
     web_interface_address = '127.0.0.1'
@@ -336,7 +354,7 @@ def prepare_http_server():
     if web_bind_config:
         web_interface_address, web_interface_port = web_bind_config.split(':')
     
-    in_params = {'startup_time' : time.time(), 'attachmentsPath' : attachmentsPath}
+    in_params = {'startup_time' : time.time(), 'attachmentsPath' : attachmentsPath, 'rawHtmlPath' : staticRoot + rawHtmlPath}
     cherrypy.config.update({'server.socket_host': web_interface_address,
                         'server.socket_port': int(web_interface_port),
                        })
@@ -358,6 +376,11 @@ def prepare_http_server():
             'tools.staticdir.on': True,
             'tools.staticdir.dir': '.' + attachmentsPath
         },
+        '/raw_html': {
+            'tools.staticdir.on': True,
+            'tools.staticdir.dir': '.' + rawHtmlPath
+        },
+        
         '/favicon.ico': {
             'tools.staticfile.on': True,
             'tools.staticfile.filename': staticRoot + 'web/favicon.png'

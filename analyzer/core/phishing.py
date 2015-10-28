@@ -277,7 +277,7 @@ class PhischingHumanCheckRule(MailClassificationRule):
         self.description = "Marked as phishing by human"
         
     def apply_rule(self, mailFields):
-        if mailFields.get('phishingHuma76nCheck'):
+        if mailFields.get('phishingHumanCheck'):
             return 1
         return 0
         
@@ -501,3 +501,4 @@ rulelist.add_rule(RuleC8())
 rulelist.add_rule(RuleC9())
 rulelist.add_rule(RuleC10())
 rulelist.add_rule(RuleC11())
+rulelist.add_rule(RuleA1())

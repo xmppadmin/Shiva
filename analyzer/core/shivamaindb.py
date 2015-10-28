@@ -959,6 +959,24 @@ def get_rule_results_for_statistics():
     
     return result
 
+def get_email_rules_status(email_id=''):
+    
+    result = []
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        
+        query = "select r.code,r.description from learningresults lr inner join rules r on lr.ruleId = r.id where spamId = %s and lr.result > 0"
+        mainDb.execute(query,(email_id,))
+        
+        for current in mainDb.fetchall():
+            result.append((current[0],current[1]))
+        
+    except mdb.Error, e:
+        logging.error(e)
+
+    return result
+
+
 if __name__ == '__main__':
     tempDb = shivadbconfig.dbconnect() 
     mainDb = shivadbconfig.dbconnectmain()
