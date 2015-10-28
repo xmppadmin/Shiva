@@ -407,6 +407,8 @@ def prepare_http_server():
     cherrypy.log.error_file = error_log_path
     cherrypy.log.access_file = access_log_path
     
+    cherrypy._cprequest.Response.timeout = 600
+    
     in_params['honeypot_log_file'] = log_dir + 'lamson.log'
     cherrypy.quickstart(WebServer(in_params),'/',conf)
     
