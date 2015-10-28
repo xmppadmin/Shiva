@@ -312,6 +312,29 @@ class TestHelperMethods(unittest.TestCase):
         assert rule.apply_rule(mailFields)
         
         
+    def test_rule_a1(self):
+        from phishing import RuleA1
+        rule = RuleA1()
+         
+        mail_body_html = """
+        <body>
+          <a href="https://www.some.site.com">http://www.some.site.com</a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        mailFields['links'] = []
+        assert rule.apply_rule(mailFields)
+        
+        mail_body_html = """
+        <body>
+          <a href="http://www.some.site.com">http://www.some.site.com</a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        mailFields['links'] = []
+        assert not rule.apply_rule(mailFields)
 
         
 if __name__ == "__main__":

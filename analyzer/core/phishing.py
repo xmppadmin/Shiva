@@ -46,7 +46,8 @@ TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','ac
 'voyage','vu','wales','wang','watch','webcam','website','wed','wedding','weir','wf','whoswho','wien','wiki','williamhill','win','wme','work','works','world',
 'ws','wtc','wtf','xerox','xin','xn','xxx','xyz','yachts','yandex','ye','yodobashi','yoga','yokohama','youtube','yt','za','zip','zm','zone','zuerich','zw'];
 
-URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:(https?://)?(www[.])?[a-z0-9.\-@]+[.][a-z]{2,4}/?)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
+
+URL_REGEX_PATTERN = re.compile(ur'(?i)(https?:\/\/)?([\da-z@\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?')
 URL_IP_PATTERN = re.compile(ur'(?:\d{1,3}\.){3}\d{1,3}')
 URL_DOMAIN_PATTERN = re.compile(ur'[a-z0-9.\-]+[.][a-z]{2,4}')
 
@@ -459,7 +460,28 @@ class RuleC11(MailClassificationRule):
                     return 1
                 
         return 0
+    
+class RuleA1(MailClassificationRule):
+    def __init__(self):
+        self.code = 'A1'
+        self.description = "HTTPS in visible link, HTTP in real destination"
+    
+    def apply_rule(self, mailFields):
+        if not mailFields['html']:
+            return 0
         
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
+        for a_tag in soup.find_all('a'):
+            href = a_tag.get('href')
+            text_link = a_tag.get_text()
+            
+            if not href or not text_link:
+                continue
+            
+            if re.search('https:\/\/', href) and re.search('http:\/\/',text_link):
+                return 1
+        
+        return 0
 
 
 rulelist = MailClassificationRuleList()
