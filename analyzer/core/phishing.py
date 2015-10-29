@@ -484,6 +484,32 @@ class RuleA1(MailClassificationRule):
         return 0
 
 
+class RuleA2(MailClassificationRule):
+    def __init__(self):
+        self.code = 'A2'
+        self.description = "URL contains username"
+    
+    def apply_rule(self, mailFields):
+        if mailFields['links']:
+            for link in mailFields['links']:
+                if link[0] and '@' in link[0]:
+                    return 1
+        
+        if not mailFields['html']:
+            return 0
+        
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
+        for a_tag in soup.find_all('a'):
+            url = a_tag.get('href')
+            print url
+            if url and '@' in url:
+                return 1
+            
+            url = a_tag.get_text()
+            if url and '@' in url:
+                return 1
+
+
 rulelist = MailClassificationRuleList()
 rulelist.add_rule(PhischingHumanCheckRule())
 rulelist.add_rule(ContainsUrlRule())

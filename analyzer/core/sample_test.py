@@ -8,7 +8,6 @@ import phishing
 
 class TestHelperMethods(unittest.TestCase):
 
-
     def test_extract_ip(self):
         assert '1.2.3.4' == phishing.extractip('http://1.2.3.4:8080/aaa')
         assert '' == phishing.extractip('http://1.2.3.4.cz:8080/aaa')
@@ -45,7 +44,8 @@ class TestHelperMethods(unittest.TestCase):
         assert phishing.samedomain('aaa.bbb.com', 'bbb.com')
         assert not phishing.samedomain('aaa.bbb.com', 'bbbb.com')
           
-          
+
+class TestRules(unittest.TestCase):
     def test_rule_c1(self):
         from phishing import RuleC1
         rule = RuleC1()
@@ -336,6 +336,31 @@ class TestHelperMethods(unittest.TestCase):
         mailFields['links'] = []
         assert not rule.apply_rule(mailFields)
 
+        
+    def test_rule_a2(self):
+        from phishing import RuleA2
+        rule = RuleA2()
+         
+        mail_body_html = """
+        <body>
+          <a href="http://www.some.site.com">http://user@some.site.com</a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        mailFields['links'] = []
+        assert rule.apply_rule(mailFields)
+        
+        mailFields = {}
+        mailFields['html'] = ''
+        mailFields['links'] = [('http://aaaaa.asdf@asdf.sdf.org','')]
+        assert rule.apply_rule(mailFields)
+        
+        mailFields = {}
+        mailFields['html'] = ''
+        mailFields['links'] = [('http://aaaaa.asdf.sdf.org','')]
+        assert not rule.apply_rule(mailFields)
+        
         
 if __name__ == "__main__":
     unittest.main()
