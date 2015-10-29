@@ -535,6 +535,7 @@ class RuleA2(MailClassificationRule):
             url = a_tag.get_text()
             if url and '@' in url:
                 return 1
+        return 0
 
 
 rulelist = MailClassificationRuleList()
