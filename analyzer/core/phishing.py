@@ -287,7 +287,7 @@ class RuleC1(MailClassificationRule):
         self.description = "Hyperlink with visible URL, pointing to different URL"
         
     def apply_rule(self, mailFields):
-        if not mailFields['html']:
+        if not 'html' in mailFields:
             return 0
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
@@ -307,7 +307,7 @@ class RuleC2(MailClassificationRule):
         self.description = "Hyperlink with visible text pointing to IP based URL"
         
     def apply_rule(self, mailFields):
-        if not mailFields['html']:
+        if not 'html' in mailFields:
             return 0
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
@@ -327,6 +327,34 @@ class RuleC3(MailClassificationRule):
         
     def apply_rule(self, mailFields):
         return 1 if mailFields['html'] else 0
+    
+class RuleC4(MailClassificationRule):
+    def __init__(self):
+        self.code = 'C4'
+        self.description = "Too complicated URL"
+        
+    def apply_rule(self, mailFields):
+        if 'links' in mailFields:
+            for link in mailFields['links']:
+                if (link.count('.' > 4)):
+                    return 1
+        
+        if not 'html' in mailFields:
+            return 0
+        
+        soup = BeautifulSoup(mailFields['html'], 'html.parser')
+        for a_tag in soup.find_all('a'):
+            url = a_tag.get('href')
+            if url and url.count('.') > 4:
+                return 1
+            
+            url = a_tag.get_text()
+            if url and url.count('.') > 4:
+                return 1
+        
+        return 0
+        
+        
 
 class RuleC5(MailClassificationRule):
     def __init__(self):
@@ -334,9 +362,9 @@ class RuleC5(MailClassificationRule):
         self.description = "Sender domain different from some URL in message body"
         
     def apply_rule(self, mailFields):
-        if not mailFields['from'] or not mailFields['links']:
+        if not 'from' in mailFields or not 'links' in mailFields:
             return 0
-        
+
         sender = mailFields['from'];
         sender_splitted = sender.split('@',2)
         if len(sender_splitted) < 2:
@@ -358,7 +386,7 @@ class RuleC6(MailClassificationRule):
         self.description = "Image with external domain different from URLs in email body"
         
     def apply_rule(self, mailFields):
-        if not mailFields['html'] or not mailFields['links']:
+        if not 'html' in mailFields or not 'links' in mailFields:
             return 0
         
         domain_list = filter(lambda url: url, (map(extractdomain, getfinalurls(mailFields['links']))))
@@ -377,7 +405,7 @@ class RuleC7(MailClassificationRule):
         self.description = "Image source is IP address"
         
     def apply_rule(self, mailFields):
-        if not mailFields['html']:
+        if not 'html' in mailFields:
             return 0
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for img_tag in soup.find_all('img'):
@@ -392,13 +420,13 @@ class RuleC8(MailClassificationRule):
         self.description = "More than one domain in URL"
         
     def apply_rule(self, mailFields):
-        if mailFields['html']:
+        if 'html' in mailFields:
             soup = BeautifulSoup(mailFields['html'], 'html.parser')
             for a_tag in soup.find_all('a'):
                 if len(extractalldomains(a_tag.get('href'))) > 1:
                     return 1 
         
-        if mailFields['links']:
+        if 'links' in mailFields:
             for link in getfinalurls(mailFields['links']):
                 if len(extractalldomains(link)) > 1:
                     return 1
@@ -411,14 +439,14 @@ class RuleC9(MailClassificationRule):
         self.description = "More than three subdomains in URL"
         
     def apply_rule(self, mailFields):
-        if mailFields['html']:
+        if 'html' in mailFields:
             soup = BeautifulSoup(mailFields['html'], 'html.parser')
             for a_tag in soup.find_all('a'):
                 href = extractdomain(a_tag.get('href'))
                 if href and not extractip(href) and len(split(extractdomain(href), '.')) > 4:
                     return 1
                 
-        if mailFields['links']:
+        if 'links' in mailFields:
             for link in getfinalurls(mailFields['links']):
                 if not extractip(link) and len(split(extractdomain(link), '.')) > 4:
                     return 1
@@ -431,7 +459,7 @@ class RuleC10(MailClassificationRule):
         self.description = "Hyperlink with image insted of visible text, image source is IP address"
         
     def apply_rule(self, mailFields):
-        if not mailFields['html']:
+        if not 'html' in mailFields:
             return 0
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
@@ -446,7 +474,7 @@ class RuleC11(MailClassificationRule):
         self.description = "Visible text in hyperlink contains no information about destination"
         
     def apply_rule(self, mailFields):
-        if not mailFields['html']:
+        if not 'html' in mailFields:
             return 0
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
@@ -467,7 +495,7 @@ class RuleA1(MailClassificationRule):
         self.description = "HTTPS in visible link, HTTP in real destination"
     
     def apply_rule(self, mailFields):
-        if not mailFields['html']:
+        if not 'html' in mailFields:
             return 0
         
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
@@ -490,12 +518,12 @@ class RuleA2(MailClassificationRule):
         self.description = "URL contains username"
     
     def apply_rule(self, mailFields):
-        if mailFields['links']:
+        if 'links' in mailFields:
             for link in mailFields['links']:
                 if link[0] and '@' in link[0]:
                     return 1
         
-        if not mailFields['html']:
+        if not 'html' in mailFields:
             return 0
         
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
@@ -519,6 +547,7 @@ rulelist.add_rule(HasShortenedUrl())
 rulelist.add_rule(RuleC1())
 rulelist.add_rule(RuleC2())
 rulelist.add_rule(RuleC3())
+rulelist.add_rule(RuleC4())
 rulelist.add_rule(RuleC5())
 rulelist.add_rule(RuleC6())
 rulelist.add_rule(RuleC7())

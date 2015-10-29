@@ -120,6 +120,32 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         assert not rule.apply_rule(mailFields)    
+        
+    def test_rule_c4(self):
+        from phishing import RuleC4
+        rule = RuleC4()
+        
+        mail_body_html = """
+        <body>
+          <a href="http://some.site.com/something/interesting.php">
+            something.boring.com
+          </a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        assert not rule.apply_rule(mailFields)
+        
+        mail_body_html = """
+        <body>
+          <a href="http://some.way.too.complicated.site.com/something/interesting.php">
+            something.boring.com
+          </a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        assert rule.apply_rule(mailFields)
          
     def test_rule_c5(self):
         from phishing import RuleC5
@@ -133,7 +159,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['from'] = 'sender@bbb.com'
         mailFields['links'] = [('aaaa.bbb.com',''), ('eeee.cccc.com','')]
-        assert rule.apply_rule(mailFields)    
+        assert rule.apply_rule(mailFields)
  
      
     def test_rule_c6(self):
