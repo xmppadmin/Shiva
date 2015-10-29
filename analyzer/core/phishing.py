@@ -501,7 +501,6 @@ class RuleA2(MailClassificationRule):
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             url = a_tag.get('href')
-            print url
             if url and '@' in url:
                 return 1
             
@@ -528,3 +527,4 @@ rulelist.add_rule(RuleC9())
 rulelist.add_rule(RuleC10())
 rulelist.add_rule(RuleC11())
 rulelist.add_rule(RuleA1())
+rulelist.add_rule(RuleA2())
