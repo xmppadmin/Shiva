@@ -3,6 +3,7 @@ import cgi
 import cherrypy
 import datetime
 import threading
+import textwrap
 import time
 
 import server
@@ -191,12 +192,17 @@ class WebServer():
             else:
                 phishingStatusTag = phishingStatusTag.format("black", "--")
             
+            subject = current['subject'].encode('utf8',errors='ignore')
+            subject_wrap = textwrap.wrap(subject, 150)
+            if len(subject_wrap) > 1:
+                subject = subject_wrap[0] + "..."
+            
             result += """<tr>
                   <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
                   <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td>
                 </tr>""".format(current_id,
                                 current['lastSeen'],
-                                current['subject'].encode('utf8',errors='ignore'),
+                                subject,
                                 current['shivaScore'],
                                 current['spamassassinScore'],
                                 current['sensorID'],
