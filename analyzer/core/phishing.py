@@ -536,7 +536,27 @@ class RuleA2(MailClassificationRule):
             if url and '@' in url:
                 return 1
         return 0
+    
+    
+class RuleA3(MailClassificationRule):
+    def __init__(self):
+        self.code = 'A3'
+        self.description = 'Presence of suspicious headers'
+        
+    def apply_rule(self, mailFields):
+        if 'headers' not in mailFields:
+            return 0
+        
+        content_type_regex = re.compile(ur'(?is)content.type.*?\)')
+        boundary_regex  = re.compile('(?i)boundary.{1,40}qzsoft_directmail_seperator')
 
+        for content in content_type_regex.findall(mailFields['headers']): 
+            if boundary_regex.search(content):
+                return 1
+            
+        return 0
+
+        
 
 rulelist = MailClassificationRuleList()
 rulelist.add_rule(PhischingHumanCheckRule())
@@ -558,3 +578,4 @@ rulelist.add_rule(RuleC10())
 rulelist.add_rule(RuleC11())
 rulelist.add_rule(RuleA1())
 rulelist.add_rule(RuleA2())
+rulelist.add_rule(RuleA3())
