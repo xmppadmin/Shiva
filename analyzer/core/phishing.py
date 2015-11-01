@@ -51,6 +51,41 @@ URL_REGEX_PATTERN = re.compile(ur'(?i)(https?:\/\/)?([\da-z@\.-]+)\.([a-z\.]{2,6
 URL_IP_PATTERN = re.compile(ur'(?:\d{1,3}\.){3}\d{1,3}')
 URL_DOMAIN_PATTERN = re.compile(ur'[a-z0-9.\-]+[.][a-z]{2,4}')
 
+
+#TODO load regexes from file
+SUSPICIOUS_SUBJECT_REGEX_LIST = []
+plain_regex = []
+plain_regex.append('(?i)account')
+plain_regex.append('(?i)your')
+plain_regex.append('(?i)update')
+plain_regex.append('(?i)security')
+plain_regex.append('(?i)secure')
+plain_regex.append('(?i)ebay')
+plain_regex.append('(?i)card')
+plain_regex.append('(?i)bank')
+plain_regex.append('(?i)verify')
+plain_regex.append('(?i)visa')
+plain_regex.append('(?i)confirm')
+
+for current in plain_regex:
+    SUSPICIOUS_SUBJECT_REGEX_LIST.append(re.compile(current))
+
+COMMON_SPAM_SUBJECT_REGEX_LIST = []
+plain_regex = []
+plain_regex.append('(?i)conf\.')
+plain_regex.append('(?i)conference')
+plain_regex.append('(?i)transcript')
+plain_regex.append('(?i)return')
+plain_regex.append('(?i)scien')
+plain_regex.append('(?i)nauc')
+plain_regex.append('(?i)pouz')
+plain_regex.append('(?i)posil')
+
+for current in plain_regex:
+    COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile(current))
+
+
+
 def extractdomain(url):
     """parse domain name from given url
 
@@ -555,6 +590,39 @@ class RuleA3(MailClassificationRule):
                 return 1
             
         return 0
+    
+class RuleA4(MailClassificationRule):
+    def __init__(self):
+        self.code='A4'
+        self.description = 'Common phishing keywords in subject '
+    
+    def apply_rule(self, mailFields):
+        if 'subject' not in mailFields or not mailFields['subject']:
+            return 0
+        
+        subject = mailFields['subject']
+        for pattern in SUSPICIOUS_SUBJECT_REGEX_LIST:
+            if pattern.search(subject):
+                return 1
+        return 0
+
+class RuleA5(MailClassificationRule):
+    def __init__(self):
+        self.code='A5'
+        self.description = 'Common spam keywords in subject'
+    
+    def apply_rule(self, mailFields):
+        if 'subject' not in mailFields or not mailFields['subject']:
+            return 0
+        
+        subject = mailFields['subject']
+        for pattern in COMMON_SPAM_SUBJECT_REGEX_LIST:
+            if pattern.search(subject):
+                return 1
+        return 0            
+        
+        
+        
 
         
 
@@ -579,3 +647,5 @@ rulelist.add_rule(RuleC11())
 rulelist.add_rule(RuleA1())
 rulelist.add_rule(RuleA2())
 rulelist.add_rule(RuleA3())
+rulelist.add_rule(RuleA4())
+rulelist.add_rule(RuleA5())

@@ -5,6 +5,7 @@ Created on Oct 22, 2015
 '''
 import unittest
 import phishing
+from cryptography.x509.extensions import SubjectAlternativeName
 
 class TestHelperMethods(unittest.TestCase):
 
@@ -422,7 +423,104 @@ class TestRules(unittest.TestCase):
         mailFields['headers'] = headers
         assert rule.apply_rule(mailFields)
         
+    def test_rule_a4(self):
+        from phishing import RuleA4
+        rule = RuleA4()
         
+        subject = 'PayPal Notification: Account Review'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert rule.apply_rule(mailFields)
+        
+        subject = 'Protect your VISA card'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert rule.apply_rule(mailFields)
+        
+        subject = 'Update your account'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert rule.apply_rule(mailFields)
+        
+        subject = 'RegionsNET? Security Notice ID - Identity Confirmation Request'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert rule.apply_rule(mailFields)
+        
+        subject = 'username, Participation Confirmation #32-157336252'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert rule.apply_rule(mailFields)
+        
+        subject = 'eBay Deals, starting from $1'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert rule.apply_rule(mailFields)
+        
+        subject = 'Returned mail: see transcript for details'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert not rule.apply_rule(mailFields)
+        
+        subject = 'The 12th International Conference on Knowledge, Economy and Management'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert not rule.apply_rule(mailFields)
+        
+        subject = 'International Scientific Events 2015, Bulgaria'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert not rule.apply_rule(mailFields)
+        
+    def test_rule_a5(self):
+        from phishing import RuleA5
+        rule = RuleA5()
+        
+        subject = 'PayPal Notification: Account Review'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert not rule.apply_rule(mailFields)
+        
+        subject = 'Protect your VISA card'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert not rule.apply_rule(mailFields)
+        
+        subject = 'Update your account'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert not rule.apply_rule(mailFields)
+        
+        subject = 'RegionsNET? Security Notice ID - Identity Confirmation Request'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert not rule.apply_rule(mailFields)
+        
+        subject = 'username, Participation Confirmation #32-157336252'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert not rule.apply_rule(mailFields)
+        
+        subject = 'eBay Deals, starting from $1'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert not rule.apply_rule(mailFields)
+        
+        subject = 'Returned mail: see transcript for details'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert rule.apply_rule(mailFields)
+        
+        subject = 'The 12th International Conference on Knowledge, Economy and Management'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert rule.apply_rule(mailFields)
+        
+        subject = 'International Scientific Events 2015, Bulgaria'
+        mailFields = {}
+        mailFields['subject'] = subject
+        assert rule.apply_rule(mailFields)
+    
         
 if __name__ == "__main__":
     unittest.main()
