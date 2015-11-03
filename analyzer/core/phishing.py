@@ -169,6 +169,8 @@ def getfinalurls(url_tuple):
 """     
 class MailClassificationRuleList(object):
     
+    weight = 1
+    
     def __init__(self):
         self.rulelist = list()
     
@@ -207,14 +209,17 @@ class MailClassificationRuleList(object):
     def get_vector_weigths(self):
         result = []
         for rule in self.rulelist:
-            result.append(rule.get_weigth())
+            result.append(rule.weight)
         return result;
+    
+    
 
 
 """Generic classification rule"""
 class MailClassificationRule(object):
     def __init__(self):
         self.description = "base_rule"
+        self.weight = 1
     
     def get_rule_description(self):
         return self.description
@@ -222,11 +227,15 @@ class MailClassificationRule(object):
     def get_rule_code(self):
         return self.code
     
-    def get_weigth(self):
-        return 0
-    
     def apply_rule(self, mailFields):
-        return 0
+        return -1
+    
+    def get_final_rule_score(self, mailFields):
+        result = self.apply_rule(mailFields)
+        if result > 0:
+            return result * self.weight
+        return result
+    
     
     
     
@@ -234,6 +243,7 @@ class Rule1(MailClassificationRule):
     def __init__(self):
         self.code = 'S1'
         self.description = "sample_rule_1"
+        self.weight = 1
             
     def apply_rule(self, mailFields):
         return 1
@@ -242,88 +252,96 @@ class Rule0(MailClassificationRule):
     def __init__(self):
         self.code = 'S0'
         self.description = "sample_rule_0"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
-        return 0
+        return -1
 
 class ContainsUrlRule(MailClassificationRule):
     def __init__(self):
         self.code = 'R1'
         self.description = "Email contains URL"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
-        return 1 if len(mailFields['links']) > 0  else 0
+        return 1 if len(mailFields['links']) > 0  else -1
 
 
 class ContainsImageAttachmentRule(MailClassificationRule):
     def __init__(self):
         self.code = 'R2'
         self.description = "Email contains image"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not mailFields.get('attachmentFileType'):
-            return 0
+            return -1
         
         for suffix in mailFields['attachmentFileType']:
             if re.match(r".*(jpg|jpeg|png|gif|swf)$", suffix, re.IGNORECASE):
                 return 1
-        return 0
+        return -1
 
 class ContainsExecutableAttachmentRule(MailClassificationRule):
     def __init__(self):
         self.code = 'R3'
         self.description = "Email contains executable attachment"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not mailFields.get('attachmentFileType'):
-            return 0
+            return -1
         for suffix in mailFields['attachmentFileType']:
             if re.match(r".*(sh|exe)$", suffix, re.IGNORECASE):
                 return 1
-        return 0
+        return -1
 
 class ContainsDocumentAttachmentRule(MailClassificationRule):
     def __init__(self):
         self.code = 'R4'
         self.description = "Email contains document(doc,pdf)"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not mailFields.get('attachmentFileType'):
-            return 0
+            return -1
         for suffix in mailFields['attachmentFileType']:
             if re.match(r".*(doc|docx|pdf)$", suffix, re.IGNORECASE):
                 return 1
-        return 0
+        return -1
 
 class HasShortenedUrl(MailClassificationRule):
     def __init__(self):
         self.code = 'R5'
         self.description = "At least one URL is shortened"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         for url_tuple in mailFields['links']:
             if url_tuple[1]:
                 return 1
-        return 0
+        return -1
 
 class PhischingHumanCheckRule(MailClassificationRule):
     def __init__(self):
         self.code = 'R6'
         self.description = "Marked as phishing by human"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if mailFields.get('phishingHumanCheck'):
             return 1
-        return 0
+        return -1
         
 class RuleC1(MailClassificationRule):
     def __init__(self):
         self.code = 'C1'
         self.description = "Hyperlink with visible URL, pointing to different URL"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
-            return 0
+            return -1
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             href = extractdomain(a_tag.get('href'))
@@ -334,16 +352,17 @@ class RuleC1(MailClassificationRule):
             
             if not samedomain(href, text):
                 return 1 
-        return 0
+        return -1
     
 class RuleC2(MailClassificationRule):
     def __init__(self):
         self.code = 'C2'
         self.description = "Hyperlink with visible text pointing to IP based URL"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
-            return 0
+            return -1
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             text = a_tag.get_text()
@@ -353,20 +372,22 @@ class RuleC2(MailClassificationRule):
             if extractip(a_tag.get('href')):
                 return 1
               
-        return 0
+        return -1
     
 class RuleC3(MailClassificationRule):
     def __init__(self):
         self.code = 'C3'
         self.description = "Email body in HTML format"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
-        return 1 if mailFields['html'] else 0
+        return 1 if mailFields['html'] else -1
     
 class RuleC4(MailClassificationRule):
     def __init__(self):
         self.code = 'C4'
         self.description = "Too complicated URL"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
@@ -375,7 +396,7 @@ class RuleC4(MailClassificationRule):
                     return 1
         
         if not 'html' in mailFields:
-            return 0
+            return -1
         
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
@@ -387,7 +408,7 @@ class RuleC4(MailClassificationRule):
             if url and url.count('.') > 4:
                 return 1
         
-        return 0
+        return -1
         
         
 
@@ -395,34 +416,36 @@ class RuleC5(MailClassificationRule):
     def __init__(self):
         self.code = 'C5'
         self.description = "Sender domain different from some URL in message body"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'from' in mailFields or not 'links' in mailFields:
-            return 0
+            return -1
 
         sender = mailFields['from'];
         sender_splitted = sender.split('@',2)
         if len(sender_splitted) < 2:
-            return 0
+            return -1
         
         m = re.search(URL_DOMAIN_PATTERN, sender_splitted[1])
         if not m:
-            return 0
+            return -1
         
         sender_domain = m.group()
         for url in getfinalurls(mailFields['links']):
             if not samedomain(sender_domain, url):
                 return 1
-        return 0
+        return -1
 
 class RuleC6(MailClassificationRule):
     def __init__(self):
         self.code = 'C6'
         self.description = "Image with external domain different from URLs in email body"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields or not 'links' in mailFields:
-            return 0
+            return -1
         
         domain_list = filter(lambda url: url, (map(extractdomain, getfinalurls(mailFields['links']))))
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
@@ -432,27 +455,29 @@ class RuleC6(MailClassificationRule):
                 for domain in domain_list:
                     if not samedomain(src_domain, domain):
                         return 1
-        return 0
+        return -1
 
 class RuleC7(MailClassificationRule):
     def __init__(self):
         self.code = 'C7'
         self.description = "Image source is IP address"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
-            return 0
+            return -1
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for img_tag in soup.find_all('img'):
             src_ip = extractip(img_tag.get('src'))
             if src_ip:
                 return 1
-        return 0
+        return -1
     
 class RuleC8(MailClassificationRule):
     def __init__(self):
         self.code = 'C8'
         self.description = "More than one domain in URL"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if 'html' in mailFields:
@@ -466,12 +491,13 @@ class RuleC8(MailClassificationRule):
                 if len(extractalldomains(link)) > 1:
                     return 1
                
-        return 0
+        return -1
             
 class RuleC9(MailClassificationRule):
     def __init__(self):
         self.code = 'C9'
         self.description = "More than three subdomains in URL"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if 'html' in mailFields:
@@ -486,31 +512,33 @@ class RuleC9(MailClassificationRule):
                 if not extractip(link) and len(split(extractdomain(link), '.')) > 4:
                     return 1
         
-        return 0
+        return -1
 
 class RuleC10(MailClassificationRule):
     def __init__(self):
         self.code = 'C10'
         self.description = "Hyperlink with image insted of visible text, image source is IP address"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
-            return 0
+            return -1
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             for img in a_tag.find_all('img'):
                 if extractip(img.get('src')):
                     return 1
-        return 0
+        return -1
 
 class RuleC11(MailClassificationRule):
     def __init__(self):
         self.code = 'C11'
         self.description = "Visible text in hyperlink contains no information about destination"
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
-            return 0
+            return -1
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             href = extractdomain(a_tag.get('href'))
@@ -522,16 +550,17 @@ class RuleC11(MailClassificationRule):
                 if text_link.lower() != href.lower():
                     return 1
                 
-        return 0
+        return -1
     
 class RuleA1(MailClassificationRule):
     def __init__(self):
         self.code = 'A1'
         self.description = "HTTPS in visible link, HTTP in real destination"
+        self.weight = 1
     
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
-            return 0
+            return -1
         
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
@@ -544,14 +573,15 @@ class RuleA1(MailClassificationRule):
             if re.search('https:\/\/', href) and re.search('http:\/\/',text_link):
                 return 1
         
-        return 0
+        return -1
 
 
 class RuleA2(MailClassificationRule):
     def __init__(self):
         self.code = 'A2'
         self.description = "URL contains username"
-    
+        self.weight = 1
+        
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
             for link in mailFields['links']:
@@ -559,7 +589,7 @@ class RuleA2(MailClassificationRule):
                     return 1
         
         if not 'html' in mailFields:
-            return 0
+            return -1
         
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
@@ -570,17 +600,18 @@ class RuleA2(MailClassificationRule):
             url = a_tag.get_text()
             if url and '@' in url:
                 return 1
-        return 0
+        return -1
     
     
 class RuleA3(MailClassificationRule):
     def __init__(self):
         self.code = 'A3'
         self.description = 'Presence of suspicious headers'
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if 'headers' not in mailFields:
-            return 0
+            return -1
         
         content_type_regex = re.compile(ur'(?is)content.type.*?\)')
         boundary_regex  = re.compile('(?i)boundary.{1,40}qzsoft_directmail_seperator')
@@ -589,37 +620,39 @@ class RuleA3(MailClassificationRule):
             if boundary_regex.search(content):
                 return 1
             
-        return 0
+        return -1
     
 class RuleA4(MailClassificationRule):
     def __init__(self):
-        self.code='A4'
+        self.code = 'A4'
+        self.weight = 10
         self.description = 'Common phishing keywords in subject '
-    
+        
     def apply_rule(self, mailFields):
         if 'subject' not in mailFields or not mailFields['subject']:
-            return 0
+            return -1
         
         subject = mailFields['subject']
         for pattern in SUSPICIOUS_SUBJECT_REGEX_LIST:
             if pattern.search(subject):
                 return 1
-        return 0
+        return -1
 
 class RuleA5(MailClassificationRule):
     def __init__(self):
-        self.code='A5'
+        self.code = 'A5'
+        self.weight = -5
         self.description = 'Common spam keywords in subject'
-    
+         
     def apply_rule(self, mailFields):
         if 'subject' not in mailFields or not mailFields['subject']:
-            return 0
+            return -1
         
         subject = mailFields['subject']
         for pattern in COMMON_SPAM_SUBJECT_REGEX_LIST:
             if pattern.search(subject):
                 return 1
-        return 0            
+        return -1            
         
         
         

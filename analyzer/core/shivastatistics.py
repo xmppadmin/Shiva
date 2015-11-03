@@ -73,11 +73,10 @@ def process_single_record(mailFields):
     computed_results = []
     result = []
     for rule in rulelist.get_rules():
-        rule_result = rule.apply_rule(mailFields)
+        rule_result = rule.get_final_rule_score(mailFields)
         result.append(rule_result)
         used_rules.append({'code': rule.get_rule_code(), 'description': rule.get_rule_description()})
-        computed_results.append({'spamId': mailFields['s_id'], 'code': rule.get_rule_code(), 'result': rule_result})
-        
+        computed_results.append({'spamId': mailFields['s_id'], 'code': rule.get_rule_code(), 'result': -1 if rule_result <= 0 else 1})
         
     shivamaindb.store_computed_results(computed_results,used_rules)
     return result
@@ -130,17 +129,18 @@ def aggregate_statistics(statmatrix):
 
 
 def generate_rules_graph(data={}):
-        
+  
     color_list = 'rgbcmyk'
     color_index = 0
     rule_codes = data['_rule_codes']   
-
+    
     for sensor, rule_vals in data.iteritems():
         if sensor.startswith('_rule') or sensor.startswith('_total'):
             continue
         current_color = color_list[color_index % 7]
         color_index += 1
         sensor_total = data['_total_' + sensor]
+
         plot.plot(np.arange(len(rule_vals)) + 0.5, map(lambda a: (a / float(sensor_total)) * 100, rule_vals), 
                 label=sensor + ' ({})'.format(sensor_total), 
                 linestyle='-',

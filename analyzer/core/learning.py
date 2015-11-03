@@ -61,6 +61,13 @@ def __learn_classifier():
     samples = map(lambda a: a[1:], learning_matrix[1:])
     results = map(lambda a: a[0],  learning_matrix[1:])
     
+    
+    boost_vector = learning_matrix[0][1:]
+    for i in range(0,len(samples)):
+        for j in range(0,len(samples[i])):
+            if samples[i][j] > 0:
+                samples[i][j] =  samples[i][j]  * boost_vector[j]
+    
     if not samples or not results:
         #nothing to - no mails database?
         return True
@@ -79,7 +86,7 @@ def __learn_classifier():
                          tol=0.001,
                          verbose=False)
     
-    
+
     classifier.fit(samples, results)
     
     f = open(CLASSIFIER_PKL, 'wb')
@@ -172,6 +179,7 @@ def check_mail(mailFields):
     init_classifier()
     global classifier
     mailVector = shivastatistics.process_single_record(mailFields)
+    logging.critical(mailVector[1:])
     return (classifier.predict_proba(mailVector[1:])[0][1],get_spamassassin_bayes_score(mailFields))
 
 def __check_learning_and_lock():
