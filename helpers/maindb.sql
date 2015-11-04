@@ -295,15 +295,10 @@ FROM spam
 -- view used for statistics computations
 --
 CREATE OR REPLACE VIEW rules_overview_view AS
-SELECT r.code,se.sensorID,sum(lr.result) as result 
+SELECT r.code,se.sensorID,sum(if(lr.result < 0,0,1)) as result 
 FROM spam s 
  INNER JOIN learningresults lr on s.id = lr.spamId 
  INNER JOIN rules r on r.id = lr.ruleId 
  INNER JOIN sensor_spam sse on s.id = sse.spam_id 
  INNER JOIN sensor se on sse.sensor_id = se.id 
 GROUP BY se.sensorID,r.code,r.description;
-
-
-
-select s.id,r.code,lr.result,se.sensorID from spam s INNER JOIN learningresults lr on s.id = lr.spamId INNER JOIN rules r on r.id = lr.ruleId INNER JOIN sensor_spam sse on s.id = sse.spam_id INNER JOIN sensor se on sse.sensor_id = se.id
-select r.code,r.description,se.sensorID,sum(lr.result) from spam s INNER JOIN learningresults lr on s.id = lr.spamId INNER JOIN rules r on r.id = lr.ruleId INNER JOIN sensor_spam sse on s.id = sse.spam_id INNER JOIN sensor se on sse.sensor_id = se.id group by se.sensorID,r.code,r.description;
