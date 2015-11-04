@@ -196,7 +196,7 @@ def insert(spam_id):
             if len(mailFields['links']) != 0:                                     # If links are present - insert into DB
                 i = 0
                 while i < len(mailFields['links']):
-                    insert_link = "INSERT INTO links (`date`, `hyperLink`, `longHyperLink`,`spam_id` ) VALUES('" + str(mailFields['date']) + "', '" + str(mailFields['links'][i][0]) + "', " + ("NULL" if not mailFields['links'][i][1] else "'" + str(mailFields['links'][i][1]) + "'") + ", '" + str(mailFields['s_id']) + "')"
+                    insert_link = "INSERT INTO links (`date`, `hyperLink`, `longHyperLink`,`spam_id` ) VALUES('" + str(mailFields['date']) + "', '" + mailFields['links'][i][0].encode('utf8') + "', " + ("NULL" if not mailFields['links'][i][1] else "'" + mailFields['links'][i][1].encode('utf8') + "'") + ", '" + str(mailFields['s_id']) + "')"
                     i += 1
                     try:
                         mainDb.execute(insert_link)
@@ -715,7 +715,7 @@ def delete_spam(email_id=''):
     records = mainDb.fetchall()
     if records:
         for record in records:
-            delete_queries.append("DELETE FROM ip WHERE email_id = '{}'".format(str(record[0])))
+            delete_queries.append("DELETE FROM ip WHERE id = '{}'".format(str(record[0])))
     
 
     dates_query = "SELECT date_id FROM sdate_spam WHERE spam_id = '{}'".format(email_id)
@@ -724,7 +724,7 @@ def delete_spam(email_id=''):
     records = mainDb.fetchall()
     if records:
         for record in records:
-            delete_queries.append("DELETE FROM sdate WHERE email_id = '{}'".format(str(record[0])))
+            delete_queries.append("DELETE FROM sdate WHERE id = '{}'".format(str(record[0])))
     
     
     sensors_query = "SELECT sensor_id FROM sensor_spam WHERE spam_id = '{}'".format(email_id)
@@ -733,10 +733,10 @@ def delete_spam(email_id=''):
     records = mainDb.fetchall()
     if records:
         for record in records:
-            delete_queries.append("DELETE FROM sensor WHERE email_id = '{}'".format(str(record[0])))
+            delete_queries.append("DELETE FROM sensor WHERE id = '{}'".format(str(record[0])))
     
 
-    delete_queries.append("DELETE FROM spam WHERE email_id = '{}'".format(email_id))
+    delete_queries.append("DELETE FROM spam WHERE id = '{}'".format(email_id))
     for query in delete_queries:
         try:
             mainDb.execute(query)
