@@ -252,6 +252,7 @@ CREATE TABLE IF NOT EXISTS `learningreport` (
 CREATE TABLE IF NOT EXISTS `rules` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` char(10) NOT NULL,
+  `boost` int(5) DEFAULT 1,
   `description`  mediumtext CHARACTER SET utf8 COLLATE utf8_unicode_ci COMMENT 'description of the rule',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1 ;
@@ -302,3 +303,21 @@ FROM spam s
  INNER JOIN sensor_spam sse on s.id = sse.spam_id 
  INNER JOIN sensor se on sse.sensor_id = se.id 
 GROUP BY se.sensorID,r.code,r.description;
+
+-- ---------------------------------------------------------
+--
+-- view used for rule integrity checking
+-- if any line is returned, there is inconsistency in stored rules result
+-- and deep relearning must be performed
+-- Inconsitency can be caused by adding new rules to honeypot without deep relearn
+--
+CREATE OR REPLACE VIEW ruleresults_integrity_check_view AS
+SELECT spamId
+  FROM learningresults 
+  GROUP BY spamId 
+  HAVING (select count(*) from rules) <> count(ruleId) 
+    OR (select count(*) from rules) <> count(distinct ruleId)
+UNION
+  SELECT id FROM spam WHERE id NOT IN (SELECT spamId FROM learningresults) 
+UNION 
+  SELECT spamId FROM learningresults WHERE spamId NOT IN (SELECT id FROM spam);

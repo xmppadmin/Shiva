@@ -884,6 +884,19 @@ def __silent_remove_file(filename):
         pass  
 
 def store_computed_results(computed_results=[],used_rules=[]):
+    """
+    store results of given given rulen into database
+    
+    length of of computed_results and used_rules must be same
+    computed_results =
+      list[
+        {'spamId': string, 'code': string, 'result': int}
+      ]
+    used_results =  
+      list[
+       {'code': string , 'boost': int, 'description': string }
+      ]
+    """
     
     if len(computed_results) != len(used_rules):
             logging.error('shivamaindb:store_computed_results: Mismatch between results and rules')
@@ -892,23 +905,23 @@ def store_computed_results(computed_results=[],used_rules=[]):
     try:
         mainDb = shivadbconfig.dbconnectmain()
         for i in range(0,len(computed_results)):
-            rule_id_query = "select `id` from rules where `code` = \'"+ used_rules[i]['code'] +"\'";
-            mainDb.execute(rule_id_query)
+            rule_id_query = "select `id` from rules where `code` = %s";
+            mainDb.execute(rule_id_query,(used_rules[i]['code'],))
             result = mainDb.fetchone()
 
             rule_id = ''
             if not result:
-                mainDb.execute('insert into rules(code,description) values (\'{0}\',\'{1}\')'.format(used_rules[i]['code'], used_rules[i]['description']))
-                mainDb.execute(rule_id_query)
+                mainDb.execute('insert into rules(code, boost, description) values (%s, %s, %s)',(used_rules[i]['code'], used_rules[i]['boost'], used_rules[i]['description']))
+                mainDb.execute(rule_id_query,(used_rules[i]['code'],))
                 rule_id = str(mainDb.fetchone()[0])
             else:
                 rule_id = str(result[0])
 
-            query1 = 'delete from learningresults where ruleId = \'{0}\' and spamId = \'{1}\''.format(rule_id, computed_results[i]['spamId'])
-            query2 = 'insert into learningresults(ruleId,spamId,result) values(\'{0}\', \'{1}\', \'{2}\')'.format(rule_id, computed_results[i]['spamId'], str(computed_results[i]['result']))
+            query1 = 'delete from learningresults where ruleId = %s and spamId = %s'
+            query2 = 'insert into learningresults(ruleId,spamId,result) values(%s, %s, %s)'
             
-            mainDb.execute(query1)
-            mainDb.execute(query2)
+            mainDb.execute(query1,(rule_id, computed_results[i]['spamId']),)
+            mainDb.execute(query2,(rule_id, computed_results[i]['spamId'], str(computed_results[i]['result']),))
             
             
     except mdb.Error, e:
@@ -923,7 +936,7 @@ def get_rule_results_for_statistics():
             _total_sensor1 = 10,
             _total_sensor2 = 4,
             sensor1 : [1, 0, 1],
-            sensor2 : [0, 0,1 1],
+            sensor2 : [0, 0, 1],
             }
     """
     result = {}
@@ -946,7 +959,7 @@ def get_rule_results_for_statistics():
             current_rule = current_result[0]
             result[current_sensor][all_rules.index(current_rule)] = int(current_result[2])
             
-        query = ('SELECT se.sensorID,count(se.sensorID) FROM spam s INNER JOIN sensor_spam sse on s.id = sse.spam_id   INNER JOIN sensor se on sse.sensor_id = se.id  GROUP BY se.sensorID')
+        query = ('SELECT se.sensorID,count(se.sensorID) FROM spam s INNER JOIN sensor_spam sse on s.id = sse.spam_id INNER JOIN sensor se on sse.sensor_id = se.id  GROUP BY se.sensorID')
         mainDb.execute(query)
         raw_result = mainDb.fetchall()
         
@@ -959,23 +972,105 @@ def get_rule_results_for_statistics():
     
     return result
 
-def get_email_rules_status(email_id=''):
+def get_results_of_email(email_id=''):
+    """
+    returns dictionary:
+     {
+       derivedStatus: True/False/None,
+       humanCheck: True/False/None ,
+       rules: [(code: string, description: string, result: int, boost: int)+]
+     }
+   
+    array
+    """
     
-    result = []
+    result = {}
     try:
         mainDb = shivadbconfig.dbconnectmain()
         
-        query = "select r.code,r.description from learningresults lr inner join rules r on lr.ruleId = r.id where spamId = %s and lr.result > 0"
+        query = "SELECT derivedPhishingStatus,phishingHumanCheck FROM spam WHERE id = %s"
         mainDb.execute(query,(email_id,))
         
+        status = mainDb.fetchone()
+        if status:
+            result['derivedStatus'] = {1: True, 0: False, 'NULL': None} [status[0]]
+            result['humanCheck'] = {1: True, 0: False, 'NULL': None} [status[1]]
+        
+        query = "SELECT r.code,r.description,r.boost,lr.result FROM learningresults lr INNER JOIN rules r ON lr.ruleId = r.id WHERE lr.spamId = %s ORDER BY lr.ruleId"
+        mainDb.execute(query,(email_id,))
+        
+        rules_resutls = []
         for current in mainDb.fetchall():
-            result.append((current[0],current[1]))
+            rules_resutls.append({'code': current[0], 'description': current[1], 'boost': current[2],'result':current[3]})
+        
+        result['rules'] = rules_resutls
         
     except mdb.Error, e:
-        logging.error(e)
+        logging.error(e)  
 
     return result
 
+def get_email_ids():
+    """
+    return list of all email ids in database
+    """
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        
+        query = "SELECT id from spam;"
+        mainDb.execute(query)
+        
+        return map(lambda a: a[0], mainDb.fetchall())
+        
+    except mdb.Error, e:
+        logging.error(e)
+    
+    return []
+
+def check_stored_rules_results_integrity():
+    """
+    performs integrity check on stored rules results in database
+    results are integral IFF for every email and every rule in database
+    exists computed result of rule application
+    
+    In other words, if at least one email is missing some rule result,
+    database is in inconsistent state and can't be used for learning
+    without deep relearn
+    """
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        
+        query = "SELECT IF((select count(*) from ruleresults_integrity_check_view) > 0,0,1)"
+        mainDb.execute(query)
+        
+        result = mainDb.fetchone()
+        return False if not result or result[0] != 1L else True
+        
+    except mdb.Error, e:
+        logging.error(e)
+    
+    return False
+
+def init_deep_relearn():
+    """
+    prepares database into state allowing deep relearn
+    all stored results are deleted
+    """
+    
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        
+        query = "truncate table learningresults"
+        mainDb.execute(query)
+        
+        query = "truncate table rules"
+        mainDb.execute(query)
+        
+    except mdb.Error, e:
+        logging.error(e)
+    
+
+    
 
 if __name__ == '__main__':
     tempDb = shivadbconfig.dbconnect() 

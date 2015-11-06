@@ -235,10 +235,22 @@ class WebServer():
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Shiva score', mailFields['shivaScore'])
         result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Spamassassin score', mailFields['spamassassinScore'])
         
-        firstRule = True
-        for rule_code,rule_description in shivamaindb.get_email_rules_status(mailFields['s_id']):
-            result += "<tr><td><b>{0}</b></td><td>{1}&nbsp;{2}</td></tr>".format('Matching rules' if firstRule else '', rule_code,rule_description)
-            firstRule = False
+        
+        email_result = shivamaindb.get_results_of_email(mailFields['s_id'])
+        
+        if 'derivedStatus' in email_result:
+            result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Status', {True: 'PHISHING',False:'SPAM',None:''} [email_result['derivedStatus']])
+        if 'humanCheck' in email_result and email_result['humanCheck'] != None:
+            result += "<tr><td><b>{0}</b></td><td>Manualy marked as {1}</td></tr>".format('Human check', {True: 'PHISHING',False:'SPAM'} [email_result['humanCheck']])
+        
+        
+        
+        if 'rules' in email_result:
+            firstRule = True
+            for rule in email_result['rules']:
+                if 'result' in rule and rule['result'] == True: 
+                    result += "<tr><td><b>{0}</b></td><td>{1}&nbsp;{2}</td></tr>".format('Matching rules' if firstRule else '', rule['code'],rule['description'])
+                    firstRule = False
         
         firstLink = True
         for link in mailFields['links']:

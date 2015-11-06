@@ -5,8 +5,10 @@ import os
 
 from sklearn import svm
 
-import shivastatistics
+
 import shivamaindb
+import shivastatistics
+from phishing import rulelist
 
 
 
@@ -14,10 +16,14 @@ CLASSIFIER_PKL = 'run/classifier.pkl'
 LEARNING_LOCK = 'run/learning.lock'
 classifier = None
 
-def init_classifier():
+def __init_classifier():
     """ 
     initialize classifier
+    
+    loads stored classifier from pickle file if exists,
+    otherwise is performs learning
     """
+    
     global classifier
     if classifier:
         return
@@ -56,22 +62,35 @@ def learn():
 
 def __learn_classifier():
     
+    
+    # check iff results can be read directly from database or 
+    # full relearning is needed
+
+    if not shivamaindb.check_stored_rules_results_integrity():
+        logging.info('DEEP RELEARN')
+        __deep_relearn()
+        
+        
+    
     learning_matrix = shivastatistics.prepare_matrix(filterType='none', matrixType='learning')
     
-    samples = map(lambda a: a[1:], learning_matrix[1:])
-    results = map(lambda a: a[0],  learning_matrix[1:])
+    keys_vector = learning_matrix[0][1:]
+    boost_vector = learning_matrix[1][1:]
+    sample_vectors = map(lambda a: a[1:], learning_matrix[2:])
+    result_vector = map(lambda a: a[0], learning_matrix[2:])
+
     
-    
-    boost_vector = learning_matrix[0][1:]
-    for i in range(0,len(samples)):
-        for j in range(0,len(samples[i])):
-            if samples[i][j] > 0:
-                samples[i][j] =  samples[i][j]  * boost_vector[j]
-    
-    if not samples or not results:
+    if not sample_vectors or not result_vector:
         #nothing to - no mails database?
         return True
     
+    for i in range(0,len(sample_vectors)):
+        for j in range(0,len(sample_vectors[i])):
+            if sample_vectors[i][j] > 0:
+                sample_vectors[i][j] =  sample_vectors[i][j]  * boost_vector[j]
+     
+   
+     
     classifier = svm.SVC(C=1.0, 
                          cache_size=200, 
                          class_weight='auto', 
@@ -85,15 +104,16 @@ def __learn_classifier():
                          shrinking=True,
                          tol=0.001,
                          verbose=False)
-    
-
-    classifier.fit(samples, results)
-    
+#     
+# 
+    classifier.fit(sample_vectors, result_vector)
+#     
     f = open(CLASSIFIER_PKL, 'wb')
     pickle.dump(classifier, f, pickle.HIGHEST_PROTOCOL)
     f.close()
     
     logging.info("Learning: Learning of classifier successfully finished.")
+    logging.info(classifier)
     return True
 
     
@@ -176,11 +196,41 @@ def check_mail(mailFields):
     return computed probability that given mail should be marked as phishing
     
     """
-    init_classifier()
+    __init_classifier()
     global classifier
-    mailVector = shivastatistics.process_single_record(mailFields)
+    mailVector = process_single_record(mailFields)
     logging.critical(mailVector[1:])
     return (classifier.predict_proba(mailVector[1:])[0][1],get_spamassassin_bayes_score(mailFields))
+
+def process_single_record(mailFields):
+    from phishing import rulelist
+    used_rules = []
+    computed_results = []
+    result = []
+    for rule in rulelist.get_rules():
+        rule_result = rule.get_final_rule_score(mailFields)
+        result.append(rule_result)
+        used_rules.append({'code': rule.get_rule_code(), 'boost': rule.get_rule_boost_factor(), 'description': rule.get_rule_description()})
+        computed_results.append({'spamId': mailFields['s_id'], 'code': rule.get_rule_code() ,'result': -1 if rule_result <= 0 else 1})
+        
+    shivamaindb.store_computed_results(computed_results,used_rules)
+    return result
+
+def __deep_relearn():
+    """
+    drops all computed results in database a computes everything again
+    """
+    shivamaindb.init_deep_relearn()
+    
+    rercord_count = 0
+    
+    while True:
+        records = shivamaindb.retrieve(10, rercord_count)
+        if len(records) == 0 :
+            break
+        for record in records:
+            process_single_record(record)
+            rercord_count += 1
 
 def __check_learning_and_lock():
     """ 
@@ -199,6 +249,8 @@ def __check_learning_and_lock():
 def free_learning_lock():
     """
     delete fiLe LEARNING_LOCK if exits
+    WARNING:
+    should be used only during restarting of honeypot in order to recover from error
     """
     if os.path.exists(LEARNING_LOCK):
         os.remove(LEARNING_LOCK)

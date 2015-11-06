@@ -227,6 +227,9 @@ class MailClassificationRule(object):
     def get_rule_code(self):
         return self.code
     
+    def get_rule_boost_factor(self):
+        return self.weight
+    
     def apply_rule(self, mailFields):
         return -1
     

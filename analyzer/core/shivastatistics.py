@@ -43,43 +43,50 @@ def prepare_matrix(filterType="none", matrixType="none"):
     
     apply phishing rules on all emails in database
     and prepare matrix from results for further processing
-    """
     
-    statmatrixunique = []
+    matrix format:
     
-    if matrixType == 'statistics':
-        statmatrixunique.append(rulelist.get_rule_names())
-    elif matrixType == 'learning':
-        statmatrixunique.append(rulelist.get_vector_weigths())
+    [ '_code'         , code1          , code2           ... codeN           ]
+    [ '_boost'        , boost1         , boost2          ...  boostN         ]
+    [ derived_status1 , rule_1_1_result, rule_2_1_result ... rule_1_N_result ]
+      
+    """     
+    matrix = []
+    
+    # indicator of walkthrough 
+    first_loop = True;
+    
+    for email_id in shivamaindb.get_email_ids():
         
-    recordcount = 0
-    while True:
-        
-        records = shivamaindb.retrieve(10, recordcount, filterType)
-        if len(records) == 0 :
-            break
-        for record in records:
-            recordcount += 1
-            recordresult = process_single_record(record)
-            statmatrixunique.append(recordresult)
-    
-    return statmatrixunique
+        email_result = shivamaindb.get_results_of_email(email_id)
+        if 'rules' in email_result:
+            
+            #sort rules to ensure same order in all rows of matrix
+            sorted_rules = sorted(email_result['rules'],key=lambda a: a['code'])
+            
+            #add first two rows into matrix (codes and boost) during first walkthrough
+            if first_loop:
+                first_row = ['_derived_result']
+                first_row.extend(map(lambda a: a['code'], sorted_rules))
+                second_row = ['_boost']     
+                second_row.extend(map(lambda a: a['boost'], sorted_rules))
+                
+                matrix.append(first_row)
+                matrix.append(second_row)
+                first_loop = False
+            
+            
+            # append row of matrix
+            sorted_resuls_vector = [1] if email_result['derivedStatus'] else [0]
+            sorted_resuls_vector.extend(map(lambda a: a['result'], sorted_rules))
+            matrix.append(sorted_resuls_vector)
+            
+    for row in matrix:
+        print row
+            
+    return matrix
 
     
-
-def process_single_record(mailFields):
-    
-    used_rules = []
-    computed_results = []
-    result = []
-    for rule in rulelist.get_rules():
-        rule_result = rule.get_final_rule_score(mailFields)
-        result.append(rule_result)
-        used_rules.append({'code': rule.get_rule_code(), 'description': rule.get_rule_description()})
-        computed_results.append({'spamId': mailFields['s_id'], 'code': rule.get_rule_code(), 'result': -1 if rule_result <= 0 else 1})
-        
-    shivamaindb.store_computed_results(computed_results,used_rules)
-    return result
 
 def output_graphs(statmatrix, unique=False, filterType="none"):
     aggregated = aggregate_statistics(statmatrix)
@@ -130,6 +137,7 @@ def aggregate_statistics(statmatrix):
 
 def generate_rules_graph(data={}):
   
+    
     color_list = 'rgbcmyk'
     color_index = 0
     rule_codes = data['_rule_codes']   
@@ -140,6 +148,8 @@ def generate_rules_graph(data={}):
         current_color = color_list[color_index % 7]
         color_index += 1
         sensor_total = data['_total_' + sensor]
+
+        logging.critical(str(rule_vals))
 
         plot.plot(np.arange(len(rule_vals)) + 0.5, map(lambda a: (a / float(sensor_total)) * 100, rule_vals), 
                 label=sensor + ' ({})'.format(sensor_total), 
