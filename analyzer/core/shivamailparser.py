@@ -200,6 +200,7 @@ def main(key, msgMailRequest):
     headerString = ''
     for h in hh.items():
         headerString += str(h) + '\n'
+        
 
     mailFields['headers'] = headerString
     mailFields['headers'] = str(mailFields['headers']).replace("'", "")

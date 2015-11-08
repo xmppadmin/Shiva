@@ -8,7 +8,7 @@ from sklearn import svm
 
 import shivamaindb
 import shivastatistics
-from phishing import rulelist
+from sklearn.tree.tree import DecisionTreeClassifier
 
 
 
@@ -72,14 +72,17 @@ def __learn_classifier():
         
         
     
-    learning_matrix = shivastatistics.prepare_matrix(filterType='none', matrixType='learning')
+    learning_matrix = shivastatistics.prepare_matrix()
     
+    # see shivastatistics.prepare_matrix()
     keys_vector = learning_matrix[0][1:]
     boost_vector = learning_matrix[1][1:]
     sample_vectors = map(lambda a: a[1:], learning_matrix[2:])
     result_vector = map(lambda a: a[0], learning_matrix[2:])
 
-    
+    boost_vector = __compute_new_chi2_boost_vector(sample_vectors,result_vector, boost_vector)
+    logging.critical('BOOST:' + str(boost_vector))
+
     if not sample_vectors or not result_vector:
         #nothing to - no mails database?
         return True
@@ -88,8 +91,8 @@ def __learn_classifier():
         for j in range(0,len(sample_vectors[i])):
             if sample_vectors[i][j] > 0:
                 sample_vectors[i][j] =  sample_vectors[i][j]  * boost_vector[j]
-     
-   
+#      
+    logging.critical(str(sample_vectors))
      
     classifier = svm.SVC(C=1.0, 
                          cache_size=200, 
@@ -104,10 +107,14 @@ def __learn_classifier():
                          shrinking=True,
                          tol=0.001,
                          verbose=False)
-#     
-# 
+    from sklearn import tree
+    classifier = DecisionTreeClassifier(max_features=10)
+    
+    from sklearn.neighbors import KNeighborsClassifier
+    classifier = KNeighborsClassifier(weights='distance',n_neighbors=15)
+ 
     classifier.fit(sample_vectors, result_vector)
-#     
+
     f = open(CLASSIFIER_PKL, 'wb')
     pickle.dump(classifier, f, pickle.HIGHEST_PROTOCOL)
     f.close()
@@ -199,29 +206,48 @@ def check_mail(mailFields):
     __init_classifier()
     global classifier
     mailVector = process_single_record(mailFields)
-    logging.critical(mailVector[1:])
-    return (classifier.predict_proba(mailVector[1:])[0][1],get_spamassassin_bayes_score(mailFields))
+    logging.critical(mailVector)
+    return (classifier.predict_proba(mailVector)[0][1],get_spamassassin_bayes_score(mailFields))
 
 def process_single_record(mailFields):
+    """
+    applies all phishing rules on email and returns list of results sorted by code of rule
+    """
+    
     from phishing import rulelist
     used_rules = []
     computed_results = []
     result = []
     for rule in rulelist.get_rules():
         rule_result = rule.get_final_rule_score(mailFields)
-        result.append(rule_result)
+        result.append({'code': rule.get_rule_code(), 'result': rule_result})
         used_rules.append({'code': rule.get_rule_code(), 'boost': rule.get_rule_boost_factor(), 'description': rule.get_rule_description()})
-        computed_results.append({'spamId': mailFields['s_id'], 'code': rule.get_rule_code() ,'result': -1 if rule_result <= 0 else 1})
         
+        db_result = rule_result
+        if rule_result > 1 or rule_result < -1:
+            # if score does't belong to interval (-1,1)
+            # it was boosted for sure and therefore rule passed
+            # this solves problems with negative boosting  
+            db_result = 1
+        
+        
+        computed_results.append({'spamId': mailFields['s_id'], 'code': rule.get_rule_code() ,'result': db_result})
+        
+    # stored result of email to database    
     shivamaindb.store_computed_results(computed_results,used_rules)
-    return result
+    
+    # return list of results sorted by rule code
+    sorted_rules = sorted(result,key=lambda a: a['code'])
+    return [x * y if x > 0 else x for x, y in zip(map(lambda a: a['result'], sorted_rules), [0.0, 1.0, 0.0, 321.0, -86.0, 28.0, 0.0, 18.0, 155.0, 19.0, 106.0, 25.0, 93.0, 1.0, 25.0, 1.0, 67.0])]
+#     return map(lambda a: a['result'], sorted_rules)
 
 def __deep_relearn():
     """
     drops all computed results in database a computes everything again
+    
+    essential in case of adding new detection rules to honeypot
     """
     shivamaindb.init_deep_relearn()
-    
     rercord_count = 0
     
     while True:
@@ -246,6 +272,63 @@ def __check_learning_and_lock():
     open(LEARNING_LOCK, 'a').close()
     return True
 
+def __compute_new_chi2_boost_vector(sample_vectors=[],result_vector=[],former_boost_vector=[]):
+    """
+    compute chi2 boost vector for next learning
+    
+    sample_vectors = list of lists of samples
+    result_vectors = list of results
+    former_boost_vector = list of boost factors
+    
+    It must hold:
+    len(sample_vectors[i]) == len(former_boost_vector)
+    len(sample_vectors == len(results)
+    
+    if condition doesn't hold or other problem occurs, formem_boost_vector is returned
+    """
+    
+    from sklearn.feature_selection import chi2
+    from math import ceil,isnan
+    from operator import and_
+    
+    required_len = len(former_boost_vector)
+    logging.info(str(sample_vectors))
+    logging.info(result_vector)
+    
+    # every vector of samples must have exactly same length as vector of results
+    if not reduce(and_, map(lambda a: len(a) == required_len, sample_vectors)):
+        logging.error('critical 1')
+        return former_boost_vector
+    
+    if not len(result_vector) == len(sample_vectors):
+        logging.error('critical 2')
+        return former_boost_vector
+    
+    score =  chi2(map(lambda a: map(lambda b: b if b > 0 else 0, a),sample_vectors), result_vector)
+    
+    chi2_boost_vector = []
+    for i in range(0,len(score[0])):
+        current_chi2_score = ceil(score[0][i]) if not isnan(score[0][i]) else .0
+#         if boost_vector[i] == 0:
+#             current_chi2_score = 0;
+        # ensure keeping of negative boost
+        if former_boost_vector[i] < 0:
+            current_chi2_score *= -1
+        chi2_boost_vector.append(current_chi2_score)
+        
+    return chi2_boost_vector
+    
+    
+def __compute_classifier_decision_treshold():
+    """
+    compute threshold for marking email as phishing
+    """
+    base_threshold = .5
+
+    
+   
+    
+    
 def free_learning_lock():
     """
     delete fiLe LEARNING_LOCK if exits

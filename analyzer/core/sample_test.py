@@ -3,6 +3,8 @@ Created on Oct 22, 2015
 
 @author: mertam
 '''
+
+
 import unittest
 import phishing
 from cryptography.x509.extensions import SubjectAlternativeName
@@ -467,10 +469,11 @@ class TestRules(unittest.TestCase):
         mailFields['subject'] = subject
         assert not rule.apply_rule(mailFields)
         
-        subject = 'International Scientific Events 2015, Bulgaria'
+        subject = 'ČISTÉ a dokonalé vidění s trendy filtrem'.encode('urf8')
         mailFields = {}
         mailFields['subject'] = subject
         assert not rule.apply_rule(mailFields)
+        
         
     def test_rule_a5(self):
         from phishing import RuleA5

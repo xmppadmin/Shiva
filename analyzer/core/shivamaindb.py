@@ -971,6 +971,25 @@ def get_rule_results_for_statistics():
         logging.error(e)
     
     return result
+        
+def get_data_for_roc_curves():
+    """
+    returns tuples (shivaScore, spamassassinScore, derivedStatus)
+    for all emails having scores >= 0 (all emails that wern't imported)
+    """
+    
+    result = []
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        query = 'SELECT shivaScore,spamassassinScore,derivedPhishingStatus FROM spam WHERE shivaScore >= 0 and spamassassinScore >= 0;'
+        
+        mainDb.execute(query)
+        result = mainDb.fetchall()
+        
+    except mdb.Error, e:
+        logging.error(e)
+    
+    return result
 
 def get_results_of_email(email_id=''):
     """
@@ -992,9 +1011,10 @@ def get_results_of_email(email_id=''):
         mainDb.execute(query,(email_id,))
         
         status = mainDb.fetchone()
+        logging.info(status)
         if status:
-            result['derivedStatus'] = {1: True, 0: False, 'NULL': None} [status[0]]
-            result['humanCheck'] = {1: True, 0: False, 'NULL': None} [status[1]]
+            result['derivedStatus'] = {1: True, 0: False, None: None} [status[0]]
+            result['humanCheck'] = {1: True, 0: False, None: None} [status[1]]
         
         query = "SELECT r.code,r.description,r.boost,lr.result FROM learningresults lr INNER JOIN rules r ON lr.ruleId = r.id WHERE lr.spamId = %s ORDER BY lr.ruleId"
         mainDb.execute(query,(email_id,))

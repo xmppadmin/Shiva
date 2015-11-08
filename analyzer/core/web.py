@@ -109,6 +109,7 @@ class WebServer():
     @cherrypy.expose
     def stats(self):
         shivastatistics.generate_rules_graph(shivamaindb.get_rule_results_for_statistics())
+        shivastatistics.generate_roc_graph((shivamaindb.get_data_for_roc_curves()))
         
 # API handler
     @cherrypy.expose
@@ -165,7 +166,7 @@ class WebServer():
         result = "<h2>{}</h2>".format(title) if title else "";
         
         result += """
-            <table>
+            <table class="hoverTable">
             <thead>
               <tr>
                 <td>Id</td>
@@ -280,7 +281,7 @@ class WebServer():
                 f = open(staticHtmlFile, 'w')
                 f.write(mailFields['html'].encode('utf8'))
                 
-            result += '<tr><td><b>Html</b></td><td><iframe  width="800" height="800" style="border-width=5px;border-color=black" src=\"/raw_html/' + email_id.encode('utf8') + '" sandbox=\"allow-forms\" /></td></tr>'
+            result += '<tr><td><b>Html</b></td><td><iframe  width="800" height="800" style="border-width=5px;border-color=black" src=\"/raw_html/' + email_id.encode('utf8') + '" sandbox=\"allow-forms\"> </iframe></td></tr>'
         
         result += "</table>"
         
@@ -314,6 +315,8 @@ class WebServer():
         result += """<p><a href="/relearn">Relearn honeypot now</a></p>"""
         
         result += """<img src="/static/images/rules_graph.png" />"""
+        result += "<br/>"
+        result += """<img src="/static/images/roc_graph.png" />"""
         return result
         
         

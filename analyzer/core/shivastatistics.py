@@ -6,50 +6,34 @@ import numpy as np
 
 
 import shivamaindb
-
-
-from phishing import rulelist
-
-
+    
+def prepare_matrix():
+    """     
+    reads results of learning into database and returns them as a matrix
+    suitable for further processing
+    
+    Method should be called  when database is in consistent state.
+    
+    Produced matrix has format [M + 2, N + 1]
+    
+    M is count of emails in database, first two rows contains rule codes and 
+    boost factor, respectivly.
+    Firs column of each of M rows contains derived status (1 for phishing, 0 for spam)
     
     
-
+    Entries [0][0], [1][0] are constant with no practical meaning
     
-
-def generate_statistics(filterType="none"):
-    """
-    apply all MailClassificationRules from rulelist on
-    each mail in the database
-    """  
+    Matrix format:
     
-    statmatrixunique = prepare_matrix(filterType,matrixType='statistics')
-    output_graphs(statmatrixunique, unique=True, filterType=filterType)
-  
-
-def prepare_matrix(filterType="none", matrixType="none"):
-    """ 
-    filterType = ('none','phish','spam')
-        none - all emails in databse will be used
-        phish - only emails marked as 'phishing' will be used
-        spam - only spam emails will be used (not marked as 'phishing')
-    
-    matrixType = ('none','learning','statistics')
-        none - return n*m matrix containing raw results only
-        learning - return (n+1)*m matrix, first row contains 
-                   vector of weights used for learning
-        statistics - return (n+1)*m matrix, first row contains 
-                   vector of strings describing rules
-    
-    
-    apply phishing rules on all emails in database
-    and prepare matrix from results for further processing
-    
-    matrix format:
     
     [ '_code'         , code1          , code2           ... codeN           ]
     [ '_boost'        , boost1         , boost2          ...  boostN         ]
-    [ derived_status1 , rule_1_1_result, rule_2_1_result ... rule_1_N_result ]
-      
+    [ derived_status1 , rule_1_1_result, rule_1_2_result ... rule_1_N_result ]
+    [ derived_status2 , rule_2_1_result, rule_2_2_result ... rule_2_N_result ]
+    .                   .                .                   .
+    .                   .                .                   .
+    .                   .                .                   .
+    [ derived_statusM , rule_M_1_result, rule_M_2_result ... rule_M_N_result ] 
     """     
     matrix = []
     
@@ -81,63 +65,16 @@ def prepare_matrix(filterType="none", matrixType="none"):
             sorted_resuls_vector.extend(map(lambda a: a['result'], sorted_rules))
             matrix.append(sorted_resuls_vector)
             
-    for row in matrix:
-        print row
+    out_file = open('../../../web/learning_output.csv','w')
+    if out_file:
+        for row in matrix:
+            out_file.write(','.join(map(lambda a: str(a), row)))
+            out_file.write('\n')
+        out_file.close()
             
     return matrix
 
-    
-
-def output_graphs(statmatrix, unique=False, filterType="none"):
-    aggregated = aggregate_statistics(statmatrix)
-    arr = np.arange(len(statmatrix[0]))
-    barwidth = 0.35
-    bars = plot.bar(arr, aggregated)
-    
-    plot.xticks(arr + barwidth, map(lambda a: a[:a.index(':')], statmatrix[0]))
-
-    colors = 'rgkymcb'
-    for i in range(0,len(arr)):
-        bars[i].set_color(colors[i % 7])
-        
-    """TODO load settings from configuration files"""
-
-    legend = plot.legend(bars, statmatrix[0], loc='upper center', bbox_to_anchor=(0.5,-0.1))
-    title =  'SHIVA honeypot - statistics of ' + str(len(statmatrix) -1)
-    outfile = 'plot'
-    if unique:
-        outfile += '-unique'
-        title += ' unique '
-    if filterType == "spam":
-        title += ' SPAM'
-        outfile += '-spam'
-    elif filterType == "phish":
-        title += ' PHISHING'
-        outfile += '-phishing'
-    else:
-        title += ' ALL'
-        outfile += '-all'
-    title += ' emails'
-    outfile += '.png'
-    plot.title(title)
-    plot.savefig(outfile, bbox_extra_artists=(legend,), bbox_inches='tight')
-    plot.close()
-    
-def aggregate_statistics(statmatrix):
-    aggregated = list();
-    for i in range(0,len(statmatrix[0])):
-        aggregated.append(0);
-    
-    for row in range(1, len(statmatrix)):
-        for column in range(0, len(statmatrix[i])):
-            aggregated[column] += statmatrix[row][column]
-    
-    return aggregated
-
-
 def generate_rules_graph(data={}):
-  
-    
     color_list = 'rgbcmyk'
     color_index = 0
     rule_codes = data['_rule_codes']   
@@ -172,6 +109,40 @@ def generate_rules_graph(data={}):
     
     plot.savefig('../../../web/images/rules_graph.png', bbox_inches='tight')
     plot.close()
+    
+def generate_roc_graph(data=[]):
+    from sklearn import metrics
+    
+    if not data:
+        return
+
+    shiva_score_probs = map(lambda a: a[0], data)
+    spamass_score_probs = map(lambda a: a[1], data) 
+    derived_results = map(lambda a: a[2], data)
+
+    logging.info(shiva_score_probs)
+    logging.info(spamass_score_probs)
+    logging.info(derived_results)
+
+    fpr_shiva, tpr_shiva, thresholds_shiva = metrics.roc_curve(derived_results, shiva_score_probs, pos_label=1)
+    fpr_spamass, tpr_spamass, thresholds_spamass = metrics.roc_curve(derived_results, spamass_score_probs, pos_label=1)
+    
+    roc_auc_shiva = metrics.auc(fpr_shiva, tpr_shiva)
+    roc_auc_spamass = metrics.auc(fpr_spamass, tpr_spamass)
+ 
+    plot.figure()
+    plot.plot(fpr_shiva, tpr_shiva, label='ROC curve SHIVA (area = %0.2f)' % roc_auc_shiva)
+    plot.plot(fpr_spamass, tpr_spamass, label='ROC curve spamassassin (area = %0.2f)' % roc_auc_spamass)
+    plot.plot([0, 1], [0, 1], 'k--')
+    plot.xlim([0.0, 1.0])
+    plot.ylim([0.0, 1.05])
+    plot.xlabel('False Positive Rate')
+    plot.ylabel('True Positive Rate')
+    plot.title('Shiva honeypot classification ROC')
+    plot.legend(loc="lower right")
+    plot.savefig('../../../web/images/roc_graph.png', bbox_inches='tight')
+    plot.close()
+    
 
          
             
