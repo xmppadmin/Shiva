@@ -73,7 +73,7 @@ plain_regex.append('(?i)nalehav')
 plain_regex.append('(?i)dulez')
 plain_regex.append('(?i)platn')
 plain_regex.append('(?i)ukonceni')
-plain_regex.append('(?i)\send')
+plain_regex.append('(?i)\bend')
 plain_regex.append('(?i)podezrel')
 plain_regex.append('(?i)over')
 plain_regex.append('(?i)naleh')
@@ -165,21 +165,28 @@ def extractalldomains(url):
                 urls.append(re.sub('www\d{0,3}\.', '', match))
     return urls
 
-def getfinalurls(url_tuple):
+def getfinalurls(url_info={}):
     """return list of urls from url_tuple. Unshortened Url is alwas prefered"""
     url_list = list()
-    if not url_tuple:
+    if not url_info:
         return url_list
     
-    for current in url_tuple:
-        if current[0]:
-            url_list.append(current[0])
+    for current in url_info:
+        if current['LongUrl']:
+            url_list.append(current['LongUrl'])
     return url_list
         
 def strip_accents(s):
-    return ''.join(c for c in unicodedata.normalize('NFD', s.decode('utf8', 'replace'))
-                  if unicodedata.category(c) != 'Mn')
-#     return unicodedata.normalize('NFD', s.decode('utf8', 'replace'))
+    if isinstance(s, unicode):
+        return ''.join(c for c in unicodedata.normalize('NFD', s) 
+                   if unicodedata.category(c) != 'Mn')
+        
+
+    return ''.join(c for c in unicodedata.normalize('NFD', s.decode('utf8','replace')) 
+                   if unicodedata.category(c) != 'Mn')
+
+
+
 """Class represents list of MailClassificationRules to be
    applied on mail
 """     
@@ -248,12 +255,6 @@ class MailClassificationRule(object):
     
     def apply_rule(self, mailFields):
         return -1
-    
-    def get_final_rule_score(self, mailFields):
-        result = self.apply_rule(mailFields)
-#         if result > 0:
-#             return result * self.weight
-        return result
     
     
     
@@ -336,8 +337,8 @@ class HasShortenedUrl(MailClassificationRule):
         self.weight = 36
         
     def apply_rule(self, mailFields):
-        for url_tuple in mailFields['links']:
-            if url_tuple[1]:
+        for url_info in mailFields['links']:
+            if url_info['LongUrl']:
                 return 1
         return -1
 
@@ -410,8 +411,9 @@ class RuleC4(MailClassificationRule):
         
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
-            for link in mailFields['links']:
-                if (link.count('.' > 4)):
+            for link_info in mailFields['links']:
+                logging.error(link_info['raw_link'])
+                if 'raw_link' in link_info and str(link_info['raw_link']).count('.') > 4:
                     return 1
         
         if not 'html' in mailFields:
@@ -588,7 +590,7 @@ class RuleA1(MailClassificationRule):
             
             if not href or not text_link:
                 continue
-            
+
             if re.search('https:\/\/', href) and re.search('http:\/\/',text_link):
                 return 1
         
@@ -603,8 +605,9 @@ class RuleA2(MailClassificationRule):
         
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
-            for link in mailFields['links']:
-                if link[0] and '@' in link[0]:
+            for link_info in mailFields['links']:
+                logging.error(link_info)
+                if link_info['raw_link'] and '@' in link_info['raw_link']:
                     return 1
         
         if not 'html' in mailFields:
@@ -654,7 +657,6 @@ class RuleA4(MailClassificationRule):
         subject = strip_accents(mailFields['subject'])
         for pattern in SUSPICIOUS_SUBJECT_REGEX_LIST:
             if pattern.search(subject):
-                logging.critical('match: ' + subject)
                 return 1
         return -1
 
@@ -671,7 +673,6 @@ class RuleA5(MailClassificationRule):
         subject = strip_accents(mailFields['subject'])
         for pattern in COMMON_SPAM_SUBJECT_REGEX_LIST:
             if pattern.search(subject):
-                logging.critical('match: ' + subject)
                 return 1
         return -1            
         

@@ -13,8 +13,6 @@ import ssdeep
 import shivaaddnewrecord
 import shivaprocessold
 
-import shivastatistics
-
 def main(mailFields, key, msgMailRequest):
     """Decides if a spam is new or old.
     Takes following parameters:

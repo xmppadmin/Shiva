@@ -21,8 +21,6 @@ def main():
     fetchfromtempdb = "SELECT `id`, `ssdeep`, `length` FROM `spam` WHERE 1"
     fetchfrommaindb = "SELECT `id`, `ssdeep`, `length` FROM `spam` WHERE 1"
     
-    
-    
     try:
         tempDb.execute(fetchfromtempdb)
         mainDb.execute(fetchfrommaindb)
@@ -79,11 +77,12 @@ def insert(spam_id):
     
     attachments = "SELECT `id`, `spam_id`, `file_name`, `attach_type`, `attachmentFileMd5`, `date`, `attachment_file_path` FROM `attachments` WHERE `spam_id` = '" + str(spam_id) + "'"
     
-    url = "SELECT `id`, `spam_id`, `hyperlink`, `longhyperlink`, `date` FROM `links` WHERE `spam_id` = '" + str(spam_id) + "'"
+    url = "SELECT `id`, `spam_id`, `hyperlink` `date` FROM `links` WHERE `spam_id` = '" + str(spam_id) + "'"
     
     sensor = "SELECT `id`, `sensorID` FROM `spam` WHERE `id` = '" + str(spam_id) + "'"
     
     try:
+        print "INSERTING"
         # Saving 'spam' table's data
         tempDb.execute(spam)
         
@@ -111,7 +110,7 @@ def insert(spam_id):
             tempDb.execute(url)
             urlrecords = tempDb.fetchall()
             for record in urlrecords:
-                mailFields['links'].append((record[2], record[3]))
+                mailFields['links'].append(record[2])
             
             # Saving 'sensor' table's data
             tempDb.execute(sensor)
@@ -196,7 +195,7 @@ def insert(spam_id):
             if len(mailFields['links']) != 0:                                     # If links are present - insert into DB
                 i = 0
                 while i < len(mailFields['links']):
-                    insert_link = "INSERT INTO links (`date`, `hyperLink`, `longHyperLink`,`spam_id` ) VALUES('" + str(mailFields['date']) + "', '" + mailFields['links'][i][0].encode('utf8') + "', " + ("NULL" if not mailFields['links'][i][1] else "'" + mailFields['links'][i][1].encode('utf8') + "'") + ", '" + str(mailFields['s_id']) + "')"
+                    insert_link = "INSERT INTO links (`date`, `hyperLink`, `spam_id` ) VALUES('" + str(mailFields['date']) + "', '" + mailFields['links'][i].encode('utf8') + "', '" + str(mailFields['s_id']) + "')"
                     i += 1
                     try:
                         mainDb.execute(insert_link)
@@ -249,7 +248,7 @@ def insert(spam_id):
 def update(tempid, mainid):
     mailFields = {'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'links':[],  'date': '', 'to': ''}
     
-    tempurls = "SELECT `hyperlink`, `longhyperlink` FROM `links` WHERE `spam_id` = '" + str(tempid) + "'"
+    tempurls = "SELECT `hyperlink` FROM `links` WHERE `spam_id` = '" + str(tempid) + "'"
     tempattachs = "SELECT `file_name`, `attachment_file_path`, `attach_type`, `attachmentFileMd5` FROM `attachments` WHERE `spam_id` = '" + str(tempid) + "'"
     tempsensors = "SELECT `sensorID` FROM `sensors` WHERE `spam_id` = '" + str(tempid) + "'"
     tempspam = "SELECT `firstSeen`, `relayCounter`, `relayTime`, `sourceIP`, `totalCounter`, `to` FROM `spam` WHERE `id` = '" + str(tempid) + "'"
@@ -259,7 +258,7 @@ def update(tempid, mainid):
         records = tempDb.fetchall()
         
         for record in records:
-            mailFields['links'].append((record[0],record[1]))
+            mailFields['links'].append(record[0])
             
             
         tempDb.execute(tempattachs)
@@ -415,8 +414,8 @@ def update(tempid, mainid):
         checkSensorID = "SELECT sensor.sensorID FROM sensor JOIN sensor_spam ON (sensor.id = sensor_spam.sensor_id) WHERE .sensor_spam.spam_id = '" + str(mainid) + "' AND sensor.sensorID = '" + str(sensor) + "'"
         
         try:
-           mainDb.execute(checkSensorID)
-           if len(mainDb.fetchall()) >= 1:
+            mainDb.execute(checkSensorID)
+            if len(mainDb.fetchall()) >= 1:
                 sensorStatus = 0
         except mdb.Error, e:
             logging.error("[-] Error (Module shivamaindb.py) - checkSensorID %s" % e)
@@ -458,7 +457,7 @@ def update(tempid, mainid):
             urlstatus = 0
         
         if urlstatus == 1:
-            insert_url = "INSERT INTO `links`(`date`, `hyperLink`, `longHyperLink`, `spam_id`) VALUES ('" + str(mailFields['date']) + "', '" + str(url[0]) + "', " + ("NULL" if not url[1] else "'" + str(url[1]) + "'") + ", '" + str(mainid) + "')"
+            insert_url = "INSERT INTO `links`(`date`, `hyperLink`, `spam_id`) VALUES ('" + str(mailFields['date']) + "', '" + str(url[0]) + "', '" + str(mainid) + "')"
             try:
                 mainDb.execute(insert_url)
             except mdb.Error, e:
@@ -571,11 +570,11 @@ def retrieve(limit, offset, filterType="none"):
     if filterType == 'spam':
         whereclause = 'phishingHumanCheck is not true'
 
-    fetchidsquery = "SELECT `id` FROM `spam` WHERE " + whereclause + " ORDER BY `id` LIMIT " + str(limit) + " OFFSET " + str(offset)
+    fetchidsquery = "SELECT `id` FROM `spam` WHERE %s ORDER BY `id` LIMIT %s OFFSET %s"
     
     try:
         mainDb = shivadbconfig.dbconnectmain()
-        mainDb.execute(fetchidsquery)
+        mainDb.execute(fetchidsquery,(whereclause,int(limit),int(offset),))
         
         ids = mainDb.fetchall()
         return retrieve_by_ids(map(lambda a: a[0], ids if ids else []))
@@ -586,17 +585,21 @@ def retrieve(limit, offset, filterType="none"):
     return []
 
 def retrieve_by_ids(email_ids = []):
+    """
+    return mailFields for email with given id
+    """
+    
     resultlist = []
     try:
         for current_id in email_ids:
             mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'attachmentFileType':[], 'links':[],  'date': '' }
             
             """fetch basic spam information from database"""
-            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck`,`shivaScore`,`spamassassinScore` FROM `spam` WHERE `id` = '" + current_id + "'"
+            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck`,`shivaScore`,`spamassassinScore` FROM `spam` WHERE `id` = %s "
             mailFields['s_id'] = current_id
             
             mainDb = shivadbconfig.dbconnectmain()
-            mainDb.execute(spamquery)
+            mainDb.execute(spamquery,(current_id,))
 
             current_record = mainDb.fetchone()
             if not current_record: 
@@ -615,19 +618,13 @@ def retrieve_by_ids(email_ids = []):
             mailFields['shivaScore'] = current_record[10]
             mailFields['spamassassinScore'] = current_record[11]
             
-            """fetch links for current spam"""
-            linksquery = "SELECT `hyperLink`, `longHyperLink`  FROM `links` WHERE `spam_id` = '" + current_id + "'"
-            mainDb.execute(linksquery);
-            links = mainDb.fetchall()
-            linkList = []
-            """check for possible url shortening"""
-            for link in links:
-                linkList.append((link[0],link[1]))
-            mailFields['links'] = linkList
+            """fetch links for current spam"""            
+            mailFields['links'] = get_permament_url_info_for_email(current_id)
+
             
             """fetch attachments for current spam"""
-            attachmentsquery = "SELECT `attachment_file_name`,`attachment_file_path`,`attachment_file_type` FROM `attachment` WHERE `spam_id` = '" + current_id + "'"
-            mainDb.execute(attachmentsquery);
+            attachmentsquery = "SELECT `attachment_file_name`,`attachment_file_path`,`attachment_file_type` FROM `attachment` WHERE `spam_id` = %s"
+            mainDb.execute(attachmentsquery,(current_id,));
             attachments = mainDb.fetchall()
             for row in attachments:
                 mailFields['attachmentFileName'].append(row[0]) 
@@ -646,14 +643,14 @@ def retrieve_by_ids(email_ids = []):
 def get_overview(start=0,limit=10):
     overview_list = []
     try:
-        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID`,`derivedPhishingStatus` from `spam_overview_view` LIMIT {0} OFFSET {1}".format(str(limit),str(start))
+        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID`,`derivedPhishingStatus`,`phishingHumanCheck` from `spam_overview_view` LIMIT %s OFFSET %s "
         
         mainDb = shivadbconfig.dbconnectmain()
-        mainDb.execute(overview_query)
+        mainDb.execute(overview_query,(int(limit),int(start),))
         result = mainDb.fetchall()
         
         for record in result:
-            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6], 'derivedPhishingStatus':record[7]})
+            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6], 'derivedPhishingStatus':record[7], 'phishingHumanCheck':record[8]})
         
         
     except mdb.Error, e:
@@ -750,17 +747,16 @@ def delete_spam(email_id=''):
 def mark_as_phishing(email_id=''):
     """mark email with given id as phishing"""
     
-    logging.info(get_derived_phishing_status(email_id))
     if get_derived_phishing_status(email_id):
-        logging.info("Atempnt to re-mark email with id '{}' as phishing, nothing to do".format(email_id))
+        logging.info("Atempt to re-mark email with id '{}' as phishing, nothing to do".format(email_id))
         return
     
     logging.info("Manually marking email with id '{}' as phishing.".format(email_id))
     
-    update_query = "update spam set derivedPhishingStatus = true where id = '{}'".format(email_id)
+    update_query = "update spam set derivedPhishingStatus = True, phishingHumanCheck = True where id = %s"
     try:
         mainDb = shivadbconfig.dbconnectmain()
-        mainDb.execute(update_query)
+        mainDb.execute(update_query,(email_id,))
     except mdb.Error, e:
         logging.error(e)
         return
@@ -774,22 +770,24 @@ def mark_as_spam(email_id=''):
     """mark email with given id as spam"""
     
     if get_derived_phishing_status(email_id) == False:
-        logging.info("Atempnt to re-mark email with id '{}' as spam, nothing to do".format(email_id))
+        logging.info("Atempt to re-mark email with id '{}' as spam, nothing to do".format(email_id))
         return
     
     logging.info("Manually marking email with id '{}' as spam.".format(email_id))
     
-    update_query = "update spam set derivedPhishingStatus = False where id = '{}'".format(email_id)
+    update_query = "update spam set derivedPhishingStatus = False, phishingHumanCheck = False where id = %s"
     try:
         mainDb = shivadbconfig.dbconnectmain()
-        mainDb.execute(update_query)
+        mainDb.execute(update_query,(email_id,))
     except mdb.Error, e:
         logging.error(e)
-        return
     
     __move_mail_by_id(email_id, True)
     
 def __move_mail_by_id(email_id='',spam_to_pshishing=True):
+    """
+    move email from one folder to other
+    """
     rawspampath = server.shivaconf.get('analyzer', 'rawspampath')
     phish_path = rawspampath + 'phishing/'
     spam_path = rawspampath + 'spam/'
@@ -800,7 +798,7 @@ def __move_mail_by_id(email_id='',spam_to_pshishing=True):
 
     files_to_move = list()
     from os import walk,rename
-    for dirpath, dirnames, filenames in walk(from_path):
+    for _, _, filenames in walk(from_path):
         for filename in filenames:
             if filename.startswith(email_id):
                 files_to_move.append(filename)
@@ -905,17 +903,21 @@ def store_computed_results(computed_results=[],used_rules=[]):
     try:
         mainDb = shivadbconfig.dbconnectmain()
         for i in range(0,len(computed_results)):
-            rule_id_query = "select `id` from rules where `code` = %s";
-            mainDb.execute(rule_id_query,(used_rules[i]['code'],))
+            rule_query = "select `id`,`boost` from rules where `code` = %s";
+            
+            mainDb.execute(rule_query,(used_rules[i]['code'],))
             result = mainDb.fetchone()
-
-            rule_id = ''
             if not result:
+                # store new rule into DB
                 mainDb.execute('insert into rules(code, boost, description) values (%s, %s, %s)',(used_rules[i]['code'], used_rules[i]['boost'], used_rules[i]['description']))
-                mainDb.execute(rule_id_query,(used_rules[i]['code'],))
+                mainDb.execute(rule_query,(used_rules[i]['code'],))
                 rule_id = str(mainDb.fetchone()[0])
             else:
                 rule_id = str(result[0])
+                
+                # update boost in database if nescessary
+                if result[1] != used_rules[i]['boost']:
+                    mainDb.execute('update rules set boost = %s where id = %s', (result[0],int(used_rules[i]['boost'])))
 
             query1 = 'delete from learningresults where ruleId = %s and spamId = %s'
             query2 = 'insert into learningresults(ruleId,spamId,result) values(%s, %s, %s)'
@@ -1011,7 +1013,6 @@ def get_results_of_email(email_id=''):
         mainDb.execute(query,(email_id,))
         
         status = mainDb.fetchone()
-        logging.info(status)
         if status:
             result['derivedStatus'] = {1: True, 0: False, None: None} [status[0]]
             result['humanCheck'] = {1: True, 0: False, None: None} [status[1]]
@@ -1024,6 +1025,7 @@ def get_results_of_email(email_id=''):
             rules_resutls.append({'code': current[0], 'description': current[1], 'boost': current[2],'result':current[3]})
         
         result['rules'] = rules_resutls
+        logging.info(result)
         
     except mdb.Error, e:
         logging.error(e)  
@@ -1089,7 +1091,93 @@ def init_deep_relearn():
     except mdb.Error, e:
         logging.error(e)
     
+    
+def get_permament_url_info(link=''):
+    """
+    returns stored infomation about URL
+    """    
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        query = 'select longHyperLink,whoisAge,redirectCount,googlePageRank,alexaTrafficRank from permamentlinkdetails where hyperLink = %s'
+        
+        mainDb.execute(query,(link,))
+        result = mainDb.fetchone();
+        
+        if result:
+            url_data = {}
+            url_data['raw_link'] = link        
+            url_data['LongUrl'] = result[0]
+            url_data['WhoisAge'] = result[1]
+            url_data['RedirectCount'] = result[2]
+            url_data['GooglePageRank'] = result[3]
+            url_data['AlexaTrafficRank'] = result[4]
+            logging.critical('Fetching:' + str(url_data))
+            return url_data
+            
+    except mdb.Error, e:
+        logging.error(e)
+        
+    
+    return {}
 
+def get_permament_url_info_for_email(email_id=''):
+    """
+    return list of url_info
+    """    
+
+    result = []
+    
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        query = 'select hyperLink from links where spam_id= %s;'
+        
+        mainDb.execute(query,(email_id,))
+        links = mainDb.fetchall()
+        
+        for current in links:
+            current_info = get_permament_url_info(current[0])
+            if current_info:
+                result.append(current_info)
+                
+    except mdb.Error, e:
+        logging.error(e)
+        
+    return result
+
+
+def store_permament_url_info(url_data={}):
+    """
+    stores pemament URL info 
+    url_data={
+        raw_link:''
+        GooglePageRank=''
+        WhoisAge=''
+        RedirectCount=''
+        LongUrl=''
+        AlexaTrafficRank=''
+    }
+    """
+    
+    if not url_data or 'raw_link' not in url_data:
+        return
+    
+    logging.critical('Storing:' + str(url_data))
+    try:
+        from datetime import datetime
+        mainDb = shivadbconfig.dbconnectmain()
+        
+        query = 'insert into permamentlinkdetails (hyperLink,longHyperLink,whoisAge,redirectCount,googlePageRank,alexaTrafficRank,date) values (%s,%s,%s,%s,%s,%s,NOW())'
+        
+        mainDb.execute(query,(
+                              str(url_data['raw_link']),
+                              str(url_data['hyperLink']) if url_data['LongUrl'] else None,
+                              url_data['WhoisAge'].date().isoformat() if isinstance(url_data['WhoisAge'], datetime) else None,
+                              int(url_data['RedirectCount']),
+                              int(url_data['GooglePageRank']),
+                              int(url_data['AlexaTrafficRank']),
+                              ))
+    except mdb.Error, e:
+        logging.error(e)
     
 
 if __name__ == '__main__':

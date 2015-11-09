@@ -171,12 +171,13 @@ class WebServer():
               <tr>
                 <td>Id</td>
                 <td>Last seen</td>
-                </td><td>Subject</td>
-                </td><td>Shiva score</td>
-                </td><td>Spamassassin score</td>
-                </td><td>SensorID</td>
-                </td><td>Status</td>
-                </td><td>Actions</td>
+                <td>Subject</td>
+                <td>Shiva score</td>
+                <td>Spamassassin score</td>
+                <td>SensorID</td>
+                <td>Status</td>
+                <td>Actions</td>
+                <td>Maked by human</td>
               </tr>
             </thead>
             <tbody>
@@ -192,6 +193,8 @@ class WebServer():
                 phishingStatusTag = phishingStatusTag.format("green", "SPAM")
             else:
                 phishingStatusTag = phishingStatusTag.format("black", "--")
+                
+#             marked_by_human = False if current['phishingHumanCheck']
             
             subject = current['subject'].encode('utf8',errors='ignore')
             subject_wrap = textwrap.wrap(subject, 150)
@@ -200,7 +203,7 @@ class WebServer():
             
             result += """<tr>
                   <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
-                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td>
+                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td><td>{8}</td>
                 </tr>""".format(current_id,
                                 current['lastSeen'],
                                 subject,
@@ -208,18 +211,20 @@ class WebServer():
                                 current['spamassassinScore'],
                                 current['sensorID'],
                                 phishingStatusTag,
-                                self.prepare_actions_template(current_id, current['derivedPhishingStatus']))
+                                self.prepare_actions_template(current_id, current['derivedPhishingStatus']),
+                                '' if current['phishingHumanCheck'] == None else '<img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>'
+                                )
         result += "</tbody></table>"
         return result
     
     def prepare_actions_template(self, email_id='', phishing_status=None):
-        result = '<img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email(\'' + email_id + '\')">'
+        result = '<img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email(\'' + email_id + '\')"/>'
         if phishing_status == True:
-            result += '<img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam(\'' + email_id + '\')" >'
+            result += '<img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam(\'' + email_id + '\')" />'
         elif phishing_status == False:
-            result += '<img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing(\'' + email_id + '\')" >'
+            result += '<img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing(\'' + email_id + '\')" />'
         else:
-            result += '<img src="/static/images/icons/small_change_none.png" title="Marking not supported for imported emails.">'
+            result += '<img src="/static/images/icons/small_change_none.png" title="Marking not supported for imported emails."/>'
         
         return result;
         
@@ -255,7 +260,8 @@ class WebServer():
         
         firstLink = True
         for link in mailFields['links']:
-            result += "<tr><td><b>{0}</b></td><td><a href=\"{1}\">{1}</a>{2}</td></tr>".format('Links' if firstLink else '', link[0], '(' + link[1] + ')' if link[1] else '')
+            logging.critical('WEB' + str(link))
+            result += "<tr><td><b>{0}</b></td><td><a href=\"{1}\">{1}</a></td></tr>".format('Links' if firstLink else '', link['raw_link'].decode('utf8','ignore'))
             firstLink = False
         
         if (mailFields['attachmentFilePath']):

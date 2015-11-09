@@ -16,8 +16,6 @@ import server
 import shivadbconfig
 import shivanotifyerrors
 
-import shivamaindb
-
 def push():
     logging.info("[+]Inside shivapushtodb Module")
     notify = server.shivaconf.getboolean('notification', 'enabled')
@@ -103,7 +101,7 @@ def push():
         if len(record['links']) > 0:
             i = 0
             for link in record['links']:
-                insertLink = "INSERT INTO `links` (`spam_id`, `hyperlink`, `longHyperLink`, `date`) VALUES ('" + str(record['s_id']) + "', '" + str(link[0]) + "', " + ("NULL" if not link[1] else "'" + str(link[1]) + "'") + ", '" + str(record['date']) + "')"
+                insertLink = "INSERT INTO `links` (`spam_id`, `hyperlink`, `date`) VALUES ('" + str(record['s_id']) + "', '" + str(link['raw_link']) + "', '" + str(record['date']) + "')"
                 try:
                     exeSql.execute(insertLink)
                     i += 1
@@ -111,7 +109,6 @@ def push():
                     logging.critical("[-] Error (shivapushtodb insert_link) - %d: %s" % (e.args[0], e.args[1]))
                     if notify is True:
                         shivanotifyerrors.notifydeveloper("[-] Error (Module shivapushtodb.py) - insertLink %s" % e)
-
 
         # Extracting and saving name of the sensor
         insertSensor = "INSERT INTO `sensors` (`spam_id`, `sensorID`, `date`) VALUES ('" + str(record['s_id']) + "', '" + str(record['sensorID']) + "', '" + str(record['date']) + "')"
@@ -122,6 +119,7 @@ def push():
             logging.critical("[-] Error (shivapushtodb insert_sensor - %d: %s" % (e.args[0], e.args[1]))
             if notify is True:
                 shivanotifyerrors.notifydeveloper("[-] Error (Module shivapushtodb.py) - insertSensor %s" % e)
+          
           
     subprocess.Popen(['python', os.path.dirname(os.path.realpath(__file__)) + '/shivamaindb.py'])
     exeSql.close()

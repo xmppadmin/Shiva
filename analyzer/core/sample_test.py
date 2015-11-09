@@ -7,7 +7,7 @@ Created on Oct 22, 2015
 
 import unittest
 import phishing
-from cryptography.x509.extensions import SubjectAlternativeName
+
 
 class TestHelperMethods(unittest.TestCase):
 
@@ -62,7 +62,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
          
         mail_body_html = """
         <body>
@@ -73,7 +73,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
          
         mail_body_html = """
         <body>
@@ -84,7 +84,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
  
         mail_body_html = """
         <body>
@@ -122,7 +122,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert not rule.apply_rule(mailFields)    
+        assert 0 > rule.apply_rule(mailFields)    
         
     def test_rule_c4(self):
         from phishing import RuleC4
@@ -137,7 +137,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         mail_body_html = """
         <body>
@@ -157,7 +157,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['from'] = 'sender@bbb.com'
         mailFields['links'] = [('aaaa.bbb.com','')]
-        assert not rule.apply_rule(mailFields)    
+        assert 0 > rule.apply_rule(mailFields)    
          
         mailFields = {}
         mailFields['from'] = 'sender@bbb.com'
@@ -177,7 +177,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = [('aaaa.bbb.com',''), ('eeeee.bbb.com','')]
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
          
         mail_body_html = """
         <body>
@@ -209,7 +209,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
          
      
     def test_rule_c8(self):
@@ -245,7 +245,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
          
         mailFields = {}
         mailFields['html'] = ''
@@ -265,7 +265,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
          
         mail_body_html = """
         <body>
@@ -281,7 +281,7 @@ class TestRules(unittest.TestCase):
         mailFields['html'] = ''
         mailFields['links'] = [('http://www.aaaa.aaaa.eee.com','')]
         rule = RuleC9()
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
          
         mailFields = {}
         mailFields['html'] = ''
@@ -301,7 +301,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
          
         mail_body_html = """
         <body>
@@ -328,7 +328,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         mail_body_html = """
         <body>
@@ -363,7 +363,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert not rule.apply_rule(mailFields)
+        assert 0 >  rule.apply_rule(mailFields)
 
         
     def test_rule_a2(self):
@@ -388,7 +388,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = ''
         mailFields['links'] = [('http://aaaaa.asdf.sdf.org','')]
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
     def test_rule_a3(self):
         from phishing import RuleA3
@@ -462,17 +462,12 @@ class TestRules(unittest.TestCase):
         subject = 'Returned mail: see transcript for details'
         mailFields = {}
         mailFields['subject'] = subject
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         subject = 'The 12th International Conference on Knowledge, Economy and Management'
         mailFields = {}
         mailFields['subject'] = subject
-        assert not rule.apply_rule(mailFields)
-        
-        subject = 'ČISTÉ a dokonalé vidění s trendy filtrem'.encode('urf8')
-        mailFields = {}
-        mailFields['subject'] = subject
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         
     def test_rule_a5(self):
@@ -482,32 +477,32 @@ class TestRules(unittest.TestCase):
         subject = 'PayPal Notification: Account Review'
         mailFields = {}
         mailFields['subject'] = subject
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         subject = 'Protect your VISA card'
         mailFields = {}
         mailFields['subject'] = subject
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         subject = 'Update your account'
         mailFields = {}
         mailFields['subject'] = subject
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         subject = 'RegionsNET? Security Notice ID - Identity Confirmation Request'
         mailFields = {}
         mailFields['subject'] = subject
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         subject = 'username, Participation Confirmation #32-157336252'
         mailFields = {}
         mailFields['subject'] = subject
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         subject = 'eBay Deals, starting from $1'
         mailFields = {}
         mailFields['subject'] = subject
-        assert not rule.apply_rule(mailFields)
+        assert 0 > rule.apply_rule(mailFields)
         
         subject = 'Returned mail: see transcript for details'
         mailFields = {}

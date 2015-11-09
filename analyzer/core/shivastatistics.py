@@ -64,7 +64,8 @@ def prepare_matrix():
             sorted_resuls_vector = [1] if email_result['derivedStatus'] else [0]
             sorted_resuls_vector.extend(map(lambda a: a['result'], sorted_rules))
             matrix.append(sorted_resuls_vector)
-            
+         
+    # write matrix to file   
     out_file = open('../../../web/learning_output.csv','w')
     if out_file:
         for row in matrix:
@@ -124,8 +125,8 @@ def generate_roc_graph(data=[]):
     logging.info(spamass_score_probs)
     logging.info(derived_results)
 
-    fpr_shiva, tpr_shiva, thresholds_shiva = metrics.roc_curve(derived_results, shiva_score_probs, pos_label=1)
-    fpr_spamass, tpr_spamass, thresholds_spamass = metrics.roc_curve(derived_results, spamass_score_probs, pos_label=1)
+    fpr_shiva, tpr_shiva, _ = metrics.roc_curve(derived_results, shiva_score_probs, pos_label=1)
+    fpr_spamass, tpr_spamass, _= metrics.roc_curve(derived_results, spamass_score_probs, pos_label=1)
     
     roc_auc_shiva = metrics.auc(fpr_shiva, tpr_shiva)
     roc_auc_spamass = metrics.auc(fpr_spamass, tpr_spamass)

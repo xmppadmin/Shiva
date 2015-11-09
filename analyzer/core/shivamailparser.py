@@ -27,9 +27,12 @@ from bs4 import BeautifulSoup
 import shivaconclude
 import shivanotifyerrors
 import server
+import domaininfo
+
 
 
 from phishing import samedomain,extractdomain
+import shivamaindb
 
 # Global dictionary to store parsed fields of spam
 mailFields = {'headers':'', 'to':'', 'from':'', 'subject':'', 'date':'', 'firstSeen':'', 'lastSeen':'', 'firstRelayed':'', 'lastRelayed':'', 'sourceIP':'', 'sensorID':'', 'text':'', 'html':'', 'inlineFileName':[], 'inlineFile':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFile':[], 'attachmentFileMd5':[], 'links':[], 'ssdeep':'', 's_id':'', 'len':''}
@@ -52,23 +55,21 @@ def linkparser(input_body):
     
     URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\'".,<>?\xab\xbb\u201c\u201d\u2018\u2019]))')
     url_list = set([mgroups[0] for mgroups in URL_REGEX_PATTERN.findall(input_body)])
+    
+    url_list = list(set(url_list))
     result_list = list()
     
     for link in url_list:
-        try:
-            req = urllib2.urlopen('http://api.longurl.org/v2/expand?format=xml&url=' + link)
-            content = req.read()
-            soup = BeautifulSoup(content, 'html.parser')
-            longUlr = soup.find("long-url").getText()
-            if samedomain(extractdomain(link), extractdomain(longUlr)):
-                longUlr = ''
-            """resolved domain is different from given"""
-            result_list.append((link,longUlr))
-        except (HTTPError, URLError):
-            """ invalid url """
-            result_list.append((link,''))
+        persistent_link_info = shivamaindb.get_permament_url_info(link);
+        if persistent_link_info:
+            result_list.append(persistent_link_info)
+        else:
+            url_data = domaininfo.get_domain_info(link)
+            logging.critical(url_data)
+            shivamaindb.store_permament_url_info(url_data)
+            result_list.append(url_data)
             
-    return list(set(result_list))
+    return result_list
 
 def getfuzzyhash():
     """Returns fuzzy hash of spam.
@@ -287,9 +288,11 @@ def main(key, msgMailRequest):
         try:
             mailFields['links'] = linkparser(mailFields['html'])
             mailFields['links'].extend(linkparser(mailFields['text']))
+            
+#             logging.critical(str(mailFields['links']))
 
         except Exception, e:
-            logging.critical(e.__class__.__name__)
+            logging.critical(e)
             logging.critical("[-] Error (Module shivamailparser.py) - some issue in parsing 'links' field %s" % key)
             movebadsample(key, "[-] Error (Module shivamailparser.py) - some issue in parsing 'links' field %s %s \n" % (key, e))
             return None
