@@ -172,6 +172,7 @@ def getfinalurls(url_info={}):
         return url_list
     
     for current in url_info:
+        url_list.append(current['raw_link'])
         if current['LongUrl']:
             url_list.append(current['LongUrl'])
     return url_list
@@ -412,7 +413,6 @@ class RuleC4(MailClassificationRule):
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
             for link_info in mailFields['links']:
-                logging.error(link_info['raw_link'])
                 if 'raw_link' in link_info and str(link_info['raw_link']).count('.') > 4:
                     return 1
         
@@ -469,6 +469,7 @@ class RuleC6(MailClassificationRule):
             return -1
         
         domain_list = filter(lambda url: url, (map(extractdomain, getfinalurls(mailFields['links']))))
+        logging.critical(domain_list)
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for img_tag in soup.find_all('img'):
             src_domain = extractdomain(img_tag.get('src'))
@@ -606,8 +607,7 @@ class RuleA2(MailClassificationRule):
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
             for link_info in mailFields['links']:
-                logging.error(link_info)
-                if link_info['raw_link'] and '@' in link_info['raw_link']:
+                if link_info['raw_link'] and '@' in link_info['raw_link'] and link_info['raw_link'].startswith('http'):
                     return 1
         
         if not 'html' in mailFields:
@@ -674,7 +674,24 @@ class RuleA5(MailClassificationRule):
         for pattern in COMMON_SPAM_SUBJECT_REGEX_LIST:
             if pattern.search(subject):
                 return 1
-        return -1            
+        return -1
+    
+class RuleA6(MailClassificationRule):
+    def __init__(self):
+        self.code = 'A6'
+        self.weight = 1
+        self.description = 'Suspicious amount of redirections'
+         
+    def apply_rule(self, mailFields):
+        if 'links' not in mailFields:
+            return -1
+        
+        for link_info in mailFields['links']:
+            if 'RedirectCount' in link_info and link_info['RedirectCount'] > 6:
+                return 1
+        return -1        
+    
+       
         
         
         

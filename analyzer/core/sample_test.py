@@ -62,7 +62,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
          
         mail_body_html = """
         <body>
@@ -84,7 +84,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
  
         mail_body_html = """
         <body>
@@ -95,7 +95,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
          
                  
     def test_rule_c2(self):
@@ -111,7 +111,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert rule.apply_rule(mailFields)   
+        self.rule_assert(rule.apply_rule(mailFields))   
          
         mail_body_html = """
         <body>
@@ -122,7 +122,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert 0 > rule.apply_rule(mailFields)    
+        self.rule_assert_not(rule.apply_rule(mailFields))    
         
     def test_rule_c4(self):
         from phishing import RuleC4
@@ -137,7 +137,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         mail_body_html = """
         <body>
@@ -148,7 +148,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
          
     def test_rule_c5(self):
         from phishing import RuleC5
@@ -156,13 +156,16 @@ class TestRules(unittest.TestCase):
          
         mailFields = {}
         mailFields['from'] = 'sender@bbb.com'
-        mailFields['links'] = [('aaaa.bbb.com','')]
-        assert 0 > rule.apply_rule(mailFields)    
+        link1 = {'raw_link' : 'aaaa.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))    
          
         mailFields = {}
         mailFields['from'] = 'sender@bbb.com'
-        mailFields['links'] = [('aaaa.bbb.com',''), ('eeee.cccc.com','')]
-        assert rule.apply_rule(mailFields)
+        link1 = {'raw_link' : 'aaaa.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        link2 = {'raw_link' : 'eeee.ccc.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1, link2]
+        self.rule_assert(rule.apply_rule(mailFields))
  
      
     def test_rule_c6(self):
@@ -176,8 +179,10 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        mailFields['links'] = [('aaaa.bbb.com',''), ('eeeee.bbb.com','')]
-        assert 0 > rule.apply_rule(mailFields)
+        link1 = {'raw_link' : 'aaaa.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        link2 = {'raw_link' : 'eeee.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1,link2]
+        self.rule_assert_not(rule.apply_rule(mailFields))
          
         mail_body_html = """
         <body>
@@ -186,8 +191,10 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        mailFields['links'] = [('aaaa.bbb.com',''), ('eeeee.ccccccc.com','')]
-        assert rule.apply_rule(mailFields)
+        link1 = {'raw_link' : 'aaaa.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        link2 = {'raw_link' : 'eeeee.ccccccc.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1,link2]
+        self.rule_assert(rule.apply_rule(mailFields))
           
     def test_rule_c7(self):
         from phishing import RuleC7
@@ -200,7 +207,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
           
         mail_body_html = """
         <body>
@@ -209,7 +216,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['html'] = mail_body_html
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
          
      
     def test_rule_c8(self):
@@ -224,7 +231,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
          
          
         mail_body_html = """
@@ -235,7 +242,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
          
         mail_body_html = """
         <body>
@@ -245,13 +252,14 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
          
         mailFields = {}
         mailFields['html'] = ''
-        mailFields['links'] = [('wwww.asdf.qwer.edu:/lkqewr/qwer/qwer/?eer=324&bbbb.ggggg.org','')]
+        link1 = {'raw_link' : 'wwww.asdf.qwer.edu:/lkqewr/qwer/qwer/?eer=324&bbbb.ggggg.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
         rule = RuleC8()
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
          
     def test_rule_c9(self):
         from phishing import RuleC9
@@ -265,7 +273,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
          
         mail_body_html = """
         <body>
@@ -275,17 +283,19 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
          
         mailFields = {}
         mailFields['html'] = ''
-        mailFields['links'] = [('http://www.aaaa.aaaa.eee.com','')]
+        link1 = {'raw_link' : 'http://www.aaaa.aaaa.eee.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
         rule = RuleC9()
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
          
         mailFields = {}
         mailFields['html'] = ''
-        mailFields['links'] = [('http://www.aaaa.aaaa.eee.eeee.com','')]
+        link1 = {'raw_link' : 'http://www.aaaa.aaaa.eee.eeee.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
         assert rule.apply_rule(mailFields)
          
      
@@ -301,7 +311,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
          
         mail_body_html = """
         <body>
@@ -328,7 +338,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         mail_body_html = """
         <body>
@@ -338,7 +348,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         
     def test_rule_a1(self):
@@ -353,7 +363,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         mail_body_html = """
         <body>
@@ -363,7 +373,7 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
-        assert 0 >  rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
 
         
     def test_rule_a2(self):
@@ -382,13 +392,21 @@ class TestRules(unittest.TestCase):
         
         mailFields = {}
         mailFields['html'] = ''
-        mailFields['links'] = [('http://aaaaa.asdf@asdf.sdf.org','')]
-        assert rule.apply_rule(mailFields)
+        link1 = {'raw_link' : 'http://aaaaa.asdf@asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
         
         mailFields = {}
         mailFields['html'] = ''
-        mailFields['links'] = [('http://aaaaa.asdf.sdf.org','')]
-        assert 0 > rule.apply_rule(mailFields)
+        link1 = {'raw_link' : 'asdf@aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        mailFields = {}
+        mailFields['html'] = ''
+        link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
     def test_rule_a3(self):
         from phishing import RuleA3
@@ -423,7 +441,7 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['headers'] = headers
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
     def test_rule_a4(self):
         from phishing import RuleA4
@@ -432,42 +450,42 @@ class TestRules(unittest.TestCase):
         subject = 'PayPal Notification: Account Review'
         mailFields = {}
         mailFields['subject'] = subject
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         subject = 'Protect your VISA card'
         mailFields = {}
         mailFields['subject'] = subject
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         subject = 'Update your account'
         mailFields = {}
         mailFields['subject'] = subject
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         subject = 'RegionsNET? Security Notice ID - Identity Confirmation Request'
         mailFields = {}
         mailFields['subject'] = subject
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         subject = 'username, Participation Confirmation #32-157336252'
         mailFields = {}
         mailFields['subject'] = subject
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         subject = 'eBay Deals, starting from $1'
         mailFields = {}
         mailFields['subject'] = subject
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         subject = 'Returned mail: see transcript for details'
         mailFields = {}
         mailFields['subject'] = subject
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         subject = 'The 12th International Conference on Knowledge, Economy and Management'
         mailFields = {}
         mailFields['subject'] = subject
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         
     def test_rule_a5(self):
@@ -477,48 +495,68 @@ class TestRules(unittest.TestCase):
         subject = 'PayPal Notification: Account Review'
         mailFields = {}
         mailFields['subject'] = subject
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         subject = 'Protect your VISA card'
         mailFields = {}
         mailFields['subject'] = subject
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         subject = 'Update your account'
         mailFields = {}
         mailFields['subject'] = subject
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         subject = 'RegionsNET? Security Notice ID - Identity Confirmation Request'
         mailFields = {}
         mailFields['subject'] = subject
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         subject = 'username, Participation Confirmation #32-157336252'
         mailFields = {}
         mailFields['subject'] = subject
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         subject = 'eBay Deals, starting from $1'
         mailFields = {}
         mailFields['subject'] = subject
-        assert 0 > rule.apply_rule(mailFields)
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
         subject = 'Returned mail: see transcript for details'
         mailFields = {}
         mailFields['subject'] = subject
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         subject = 'The 12th International Conference on Knowledge, Economy and Management'
         mailFields = {}
         mailFields['subject'] = subject
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
         
         subject = 'International Scientific Events 2015, Bulgaria'
         mailFields = {}
         mailFields['subject'] = subject
-        assert rule.apply_rule(mailFields)
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        
+    def test_rule_a6(self):
+        from phishing import RuleA6
+        rule = RuleA6()
+        
+        mailFields = {}
+        link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields)) 
+        
+        mailFields = {}
+        link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : 7, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields)) 
     
+    def rule_assert(self,result):
+        assert result > 0
+    
+    def rule_assert_not(self,result):
+        assert result < 0
         
 if __name__ == "__main__":
     unittest.main()
