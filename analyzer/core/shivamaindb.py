@@ -1098,7 +1098,7 @@ def get_permament_url_info(link=''):
     """    
     try:
         mainDb = shivadbconfig.dbconnectmain()
-        query = 'select longHyperLink,whoisAge,redirectCount,googlePageRank,alexaTrafficRank from permamentlinkdetails where hyperLink = %s'
+        query = 'select longHyperLink,redirectCount,googlePageRank,alexaTrafficRank,inPhishTank from permamentlinkdetails where hyperLink = %s'
         
         mainDb.execute(query,(link,))
         result = mainDb.fetchone();
@@ -1107,11 +1107,10 @@ def get_permament_url_info(link=''):
             url_data = {}
             url_data['raw_link'] = link        
             url_data['LongUrl'] = result[0]
-            url_data['WhoisAge'] = result[1]
-            url_data['RedirectCount'] = result[2]
-            url_data['GooglePageRank'] = result[3]
-            url_data['AlexaTrafficRank'] = result[4]
-            logging.critical('Fetching:' + str(url_data))
+            url_data['RedirectCount'] = result[1]
+            url_data['GooglePageRank'] = result[2]
+            url_data['AlexaTrafficRank'] = result[3]
+            url_data['InPhishTank'] = result[4]
             return url_data
             
     except mdb.Error, e:
@@ -1151,30 +1150,28 @@ def store_permament_url_info(url_data={}):
     url_data={
         raw_link:''
         GooglePageRank=''
-        WhoisAge=''
         RedirectCount=''
         LongUrl=''
         AlexaTrafficRank=''
+        InPhishTank=''
     }
     """
     
     if not url_data or 'raw_link' not in url_data:
         return
-    
-    logging.critical('Storing:' + str(url_data))
+
     try:
-        from datetime import datetime
         mainDb = shivadbconfig.dbconnectmain()
         
-        query = 'insert into permamentlinkdetails (hyperLink,longHyperLink,whoisAge,redirectCount,googlePageRank,alexaTrafficRank,date) values (%s,%s,%s,%s,%s,%s,NOW())'
+        query = 'insert into permamentlinkdetails (hyperLink,longHyperLink,redirectCount,googlePageRank,alexaTrafficRank,inPhishTank,date) values (%s , %s , %s , %s , %s , %s ,NOW())'
         
         mainDb.execute(query,(
                               str(url_data['raw_link']),
-                              str(url_data['hyperLink']) if url_data['LongUrl'] else None,
-                              url_data['WhoisAge'].date().isoformat() if isinstance(url_data['WhoisAge'], datetime) else None,
+                              str(url_data['LongUrl']) if url_data['LongUrl'] else None,
                               int(url_data['RedirectCount']),
                               int(url_data['GooglePageRank']),
                               int(url_data['AlexaTrafficRank']),
+                              url_data['InPhishTank'],
                               ))
     except mdb.Error, e:
         logging.error(e)

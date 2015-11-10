@@ -8,7 +8,9 @@ import whois
 import urlparse
 import requests
 
-from phishing import samedomain,extractdomain
+import logging
+import server
+# from phishing import samedomain,extractdomain
 
 class RankProvider(object):
     """Abstract class for obtaining the page rank (popularity)
@@ -195,20 +197,6 @@ GoogleToolbar 2.0.111-big; Windows XP 5.1)")]
     def _wsub(a, b):
         return (a - b) % 4294967296
 
-
-class WhoisAge(RankProvider):
-    
-    def __init__(self, host="", proxy=None, timeout=30):
-        super(WhoisAge, self).__init__(host, proxy, timeout)
-    
-    def get_rank(self, url):
-        try:
-            domain = whois.query(url)
-            if domain.__dict__['creation_date']:
-                return domain.__dict__['creation_date']
-        except Exception:
-            return None
-        return None
     
 class RedirectCount(RankProvider):
     """
@@ -261,7 +249,7 @@ class LongUrl(RankProvider):
             r = requests.get(req_url + '?' + data)
             response = r.json()
             if response and 'long-url' in response:
-                response['long-url']             
+                return response['long-url']             
 
         except Exception:
             return ''
@@ -269,39 +257,41 @@ class LongUrl(RankProvider):
 
         
     
-class PhishTank(RankProvider):
+class InPhishTank(RankProvider):
     
     def __init__(self, host="", proxy=None, timeout=30):
-        super(PhishTank, self).__init__(host, proxy, timeout)
+        super(InPhishTank, self).__init__(host, proxy, timeout)
         
     def get_rank(self, url):
         try:
+            
+            api_key = server.shivaconf.get('analyzer','phishtankapikey')
+            
             req_url = 'http://checkurl.phishtank.com/checkurl/'
             params = {'format':'json',
                           'url': url,
-                          'app_key':'7040a8150761bfaaccb6d18a8c90677b3ebf3a788c7eb977543d99ddf308b02d' 
                            }
-            data = urllib.urlencode(params)
-            r = requests.post(req_url,data=data)
+            if api_key:
+                params['app_key'] = api_key
+            
+            r = requests.post(req_url,data=params)
             response = r.json()
-            if response and 'in_database' in response:
-                return response['in_database']
+            if response and 'results' in response and 'in_database' in response['results']:
+                return response['results']['in_database']
         except Exception:
             return False
         return False
-    
-    
+     
+
 def get_domain_info(url):
     domain = re.sub('https?://', '', url)
     result = {}
     result['raw_link'] = url
-    providers = (AlexaTrafficRank(),  WhoisAge(), RedirectCount(), GooglePageRank(), LongUrl())
+    providers = (AlexaTrafficRank(), RedirectCount(), GooglePageRank(), LongUrl(), InPhishTank())
     for p in providers:
         result[p.__class__.__name__] = p.get_rank(domain)
     return result
 
-
-
-
-    
+p = InPhishTank()
+print p.get_rank('http://garthaziz.co.za/wp-admin/link-add.php/')
 

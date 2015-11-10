@@ -92,7 +92,6 @@ CREATE TABLE IF NOT EXISTS `links` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` date NOT NULL,
   `hyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
-  `longHyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `spam_id` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
@@ -100,6 +99,44 @@ CREATE TABLE IF NOT EXISTS `links` (
   KEY `date` (`date`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `permamentlinkdetails`
+--
+
+CREATE TABLE IF NOT EXISTS `permamentlinkdetails` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+   `hyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `date` datetime NOT NULL,
+  `longHyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci,
+  `redirectCount` int(3) DEFAULT -1,
+  `googlePageRank` int(3) DEFAULT -1,
+  `alexaTrafficRank` int(10) DEFAULT -1,
+  `inPhishTank` BOOL DEFAULT FALSE,
+  PRIMARY KEY (`id`),
+  KEY `hyperLink` (`hyperLink`)
+) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `learning results`
+--
+
+CREATE TABLE IF NOT EXISTS `learningresults` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `ruleId` int(11) NOT NULL,
+  `spamId` char(32) NOT NULL,
+  `result` int(11) NOT NULL COMMENT 'result of the rule',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 ;
+
+
+-- --------------------------------------------------------
 
 -- --------------------------------------------------------
 
@@ -281,7 +318,7 @@ CREATE TABLE IF NOT EXISTS `learningresults` (
 -- Overview
 --
 CREATE OR REPLACE VIEW spam_overview_view AS
-SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore,sensor.sensorID,spam.derivedPhishingStatus
+SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore,sensor.sensorID,spam.derivedPhishingStatus,spam.phishingHumanCheck
 FROM spam
   INNER JOIN sdate_spam ON sdate_spam.spam_id = spam.id 
   INNER JOIN sdate ON sdate_spam.id = sdate.id 
