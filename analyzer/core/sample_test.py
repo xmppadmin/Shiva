@@ -550,6 +550,22 @@ class TestRules(unittest.TestCase):
         mailFields = {}
         link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : 7, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
         mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields)) 
+        
+    def test_rule_a7(self):
+        from phishing import RuleA7
+        rule = RuleA7()
+        
+        mailFields = {}
+        link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 10, 'InPhishTank' : False}
+        link2 = {'raw_link' : 'http://wqer.ewr.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 1000, 'InPhishTank' : False}
+        mailFields['links'] = [link1,link2]
+        self.rule_assert(rule.apply_rule(mailFields)) 
+        
+        mailFields = {}
+        link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 10000, 'InPhishTank' : False}
+        link2 = {'raw_link' : 'http://wqer.ewr.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 1000, 'InPhishTank' : False}
+        mailFields['links'] = [link1,link2]
         self.rule_assert_not(rule.apply_rule(mailFields)) 
     
     def rule_assert(self,result):

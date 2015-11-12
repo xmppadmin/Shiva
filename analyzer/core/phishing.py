@@ -3,7 +3,6 @@ import re
 from bs4 import BeautifulSoup
 from string import split
 import unicodedata
-import logging
 
 
 TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','accountants','active','actor','ad','ads','adult','ae','aero','af','afl','ag',
@@ -469,7 +468,6 @@ class RuleC6(MailClassificationRule):
             return -1
         
         domain_list = filter(lambda url: url, (map(extractdomain, getfinalurls(mailFields['links']))))
-        logging.critical(domain_list)
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for img_tag in soup.find_all('img'):
             src_domain = extractdomain(img_tag.get('src'))
@@ -691,7 +689,27 @@ class RuleA6(MailClassificationRule):
                 return 1
         return -1        
     
-       
+class RuleA7(MailClassificationRule):
+    def __init__(self):
+        self.code = 'A7'
+        self.weight = 1
+        self.description = 'Suspicious Alexa ranks in links'
+         
+    def apply_rule(self, mailFields):
+        if 'links' not in mailFields:
+            return -1
+        
+        rank_sum = 0
+        rank_count = 0
+        for link_info in mailFields['links']:
+            if 'AlexaTrafficRank' in link_info and link_info['AlexaTrafficRank'] > 0:
+                rank_sum += link_info['AlexaTrafficRank']
+                rank_count += 1
+                
+        if rank_sum and rank_count > 0 and rank_sum / rank_count < 1000:
+            return 1
+            
+        return -1        
         
         
         
@@ -721,3 +739,5 @@ rulelist.add_rule(RuleA2())
 rulelist.add_rule(RuleA3())
 rulelist.add_rule(RuleA4())
 rulelist.add_rule(RuleA5())
+rulelist.add_rule(RuleA6())
+rulelist.add_rule(RuleA7())
