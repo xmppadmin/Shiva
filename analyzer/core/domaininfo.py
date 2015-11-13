@@ -4,11 +4,9 @@ import urllib2
 import httplib
 import re
 import xml.etree.ElementTree
-import whois
 import urlparse
 import requests
 
-import logging
 import server
 # from phishing import samedomain,extractdomain
 
