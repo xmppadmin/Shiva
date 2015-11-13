@@ -312,16 +312,12 @@ def __compute_new_chi2_boost_vector(sample_vectors=[],result_vector=[],former_bo
     from operator import and_
     
     required_len = len(former_boost_vector)
-    logging.info(str(sample_vectors))
-    logging.info(result_vector)
     
     # every vector of samples must have exactly same length as vector of results
     if not reduce(and_, map(lambda a: len(a) == required_len, sample_vectors)):
-        logging.error('critical 1')
         return former_boost_vector
     
     if not len(result_vector) == len(sample_vectors):
-        logging.error('critical 2')
         return former_boost_vector
     
     score = chi2(map(lambda a: map(lambda b: b if b > 0 else 0, a),sample_vectors), result_vector)
@@ -330,7 +326,7 @@ def __compute_new_chi2_boost_vector(sample_vectors=[],result_vector=[],former_bo
     for i in range(0,len(score[0])):
         current_chi2_score = ceil(score[0][i]) if not isnan(score[0][i]) else .0
         
-        # ensure keeping of negative boost
+        # ensure keeping negative boost
         if former_boost_vector[i] < 0:
             current_chi2_score *= -1
         chi2_boost_vector.append(current_chi2_score)
