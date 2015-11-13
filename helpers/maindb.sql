@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS `ip_spam` (
 CREATE TABLE IF NOT EXISTS `links` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` date NOT NULL,
-  `hyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `hyperLink` varchar(1000) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `spam_id` char(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`),
   KEY `spam_id` (`spam_id`),
@@ -109,9 +109,9 @@ CREATE TABLE IF NOT EXISTS `links` (
 
 CREATE TABLE IF NOT EXISTS `permamentlinkdetails` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-   `hyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
+  `hyperLink` varchar(1000) CHARACTER SET utf8 COLLATE utf8_unicode_ci NOT NULL,
   `date` datetime NOT NULL,
-  `longHyperLink` varchar(255) CHARACTER SET utf8 COLLATE utf8_unicode_ci,
+  `longHyperLink` varchar(1000) CHARACTER SET utf8 COLLATE utf8_unicode_ci,
   `redirectCount` int(3) DEFAULT -1,
   `googlePageRank` int(3) DEFAULT -1,
   `alexaTrafficRank` int(10) DEFAULT -1,

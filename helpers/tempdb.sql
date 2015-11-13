@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS `links` (
   `id` int(255) NOT NULL AUTO_INCREMENT,
   `spam_id` varchar(32) NOT NULL COMMENT 'MD5 of spam from spam table, foreign key',
   `longHyperLink` varchar(255) COMMENT 'Long version of Hyperlink from the spam',
-  `hyperlink` varchar(255) DEFAULT NULL COMMENT 'Hyperlink from the spam',
+  `hyperlink` varchar(1000) DEFAULT NULL COMMENT 'Hyperlink from the spam',
   `date` date NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
