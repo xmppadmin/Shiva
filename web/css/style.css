@@ -3,14 +3,13 @@ thead {
 }
 
 thead tr {
-    background: lightgray; 
+    background: lightgray;
 }
 
-table { 
-    border-spacing: 10px;
+table {
     border-collapse: separate;
+    border-bottom: 10px;
 }
-
 hoverTable {
   width:100%;
   border-collapse:collapse;
@@ -18,9 +17,20 @@ hoverTable {
 .hoverTable td{
   padding:7px;
 }
-.hoverTable tr{
-  background: #eeeeee;
+tr.regularRow {
+  background: #f2f2f2;
 }
-.hoverTable tr:hover {
+tr.regularRow:hover {
   background-color: #ffff99;
 }
+
+tr.newRow  {
+  background: #d7eef4;
+}
+tr.newRow:hover {
+  background-color: #ffff99;
+}
+span.id_link {
+  font-family: "Courier New", Courier, monospace;
+}
+
