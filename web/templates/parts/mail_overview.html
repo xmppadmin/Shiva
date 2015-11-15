@@ -1,0 +1,81 @@
+<table class="hoverTable">
+  <thead>
+    <tr>
+      <td>Id</td>
+      <td>Last seen</td>
+      <td>Subject</td>
+      <td>Shiva score</td>
+      <td>Spamassassin score</td>
+      <td>SensorID</td>
+      <td>Status</td>
+      <td>Actions</td>
+      <td>Maked by human</td>
+    </tr>
+  </thead>
+  <tbody>
+  
+  
+<%
+  import datetime
+  today_date = datetime.date.today()
+%>
+
+%  for current in overview_list:
+   
+<%         
+      current_id = current['id']
+      phishingStatus = current['derivedPhishingStatus']
+      status_color = 'black'
+      status_str = '--'
+      
+      if phishingStatus == True:
+          status_color = 'red'
+          status_str = 'PHISHING'
+      elif phishingStatus == False:
+          status_color = 'green'
+          status_str = 'SPAM'
+      
+      import textwrap
+      subject = current['subject']
+      subject_wrap = textwrap.wrap(subject, 150)
+      if len(subject_wrap) > 1:
+          subject = subject_wrap[0] + "..."
+%>
+
+% if current['lastSeen'] and current['lastSeen'].date() == today_date:  
+  <tr class="newRow">
+% else:
+  <tr class="regularRow">
+% endif
+ 
+      <td><a href="/view_email?email_id=${current_id|h}"><span class="id_link">${current_id|h}</span></a></td>
+      <td>${current['lastSeen']|h}</td>
+      <td>${subject|h}</td>
+      
+      <%
+        shvia_score_str =  '{0:.3f}'.format(current['shivaScore'])
+        spamassassin_score_str =  '{0:.3f}'.format(current['spamassassinScore'])
+      %>
+      <td>${shvia_score_str|h}</td>
+      <td>${spamassassin_score_str|h}</td>
+      <td>${current['sensorID']|h}</td>
+      <td><font color="${status_color|h}">${status_str|h}</font></td>
+      <td>
+        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('${current_id|h}')"/>
+        % if current['derivedPhishingStatus'] == True:
+            <img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam('${current_id}')" />
+        % elif current['derivedPhishingStatus'] == False:
+            <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing('${current_id|h}')" />
+        % else:
+            <img src="/static/images/icons/small_change_none.png" title="Marking not supported for imported emails."/>
+        % endif
+      </td>
+      <td>
+        % if current['phishingHumanCheck'] != None:
+          <img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>
+        % endif
+      </td>
+    </tr>                    
+% endfor
+  
+</table>

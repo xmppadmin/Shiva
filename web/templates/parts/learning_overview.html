@@ -1,0 +1,27 @@
+
+<% attempt_count = str(len(report_overview)) %>
+<h2>Overview of last ${attempt_count|h} honeypot learning attempts</h2>
+        
+<table>
+  <thead>
+    <tr>
+      <td>Learning date</td>
+      <td>Count of emails</td>
+      </td><td>Shiva classifier status</td>
+      </td><td>Spamassassin status</td>
+    </tr>
+  </thead>
+  <tbody>
+        
+  %for current_report in report_overview:
+    <tr>
+      <td>${current_report['learningDate']|h}</td>
+      <td>${current_report['learningMailCount']|h}</td>
+      <td>${current_report['shivaStatus']|h}</td>
+      <td>${current_report['spamassassinStatus']|h}</td>
+    </tr>
+  % endfor
+  </tbody>
+</table>
+        
+<p><a href="/relearn">Relearn honeypot now</a></p>

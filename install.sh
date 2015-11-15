@@ -162,9 +162,12 @@ analyzer () {
     pip install MySQL-python==1.2.5
     pip install ssdeep==3.1
     pip install docutils
+    pip install pbr==0.9
     pip install python-daemon==2.0.2
     pip install beautifulsoup4==4.4.0
     pip install cherrypy==3.8.0
+    pip install requests
+    pip install mako
 
     printf "\n[*] Installing Lamson (analyzer) and creating project:\n"
     pip install lamson==1.3.4
