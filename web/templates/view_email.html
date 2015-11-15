@@ -1,0 +1,138 @@
+<%include file="parts/header.html" />
+
+
+% if not mailFields or 's_id' not in mailFields or not mailFields['s_id']:
+  <p>Email not found.</p>
+  <% return STOP_RENDERING %>
+% endif
+
+<%
+  email_id = mailFields['s_id']
+%>   
+
+<h1>SHIVA honeypot: view email: ${email_id|h}</h1>
+
+
+<table>
+  <tr>
+    <td><b>Subject</b></td>
+    <td>${mailFields['subject']|h}</td>
+  </tr>
+  
+  <tr>
+    <td><b>From</b></td>
+    <td>${mailFields['from']|h}</td>
+  </tr>
+  
+  <tr>
+    <td><b>To</b></td>
+    <td>${mailFields['to']|h}</td>
+  </tr>
+  
+  <tr>
+    <td><b>Shiva score</b></td>
+    <td>${mailFields['shivaScore']|h}</td>
+  </tr>
+  
+  <tr>
+    <td><b>Spamassassin score</b></td>
+    <td>${mailFields['spamassassinScore']|h}</td>
+  </tr>
+        
+           
+  % if 'derivedStatus' in email_result:
+    <%
+      verdict_str = {True: 'PHISHING',False:'SPAM',None:''} [email_result['derivedStatus']]
+    %>
+    <tr>
+      <td><b>Status</b></td>
+      <td>${verdict_str|h}</td>
+    </tr>
+  % endif
+  
+  % if 'humanCheck' in email_result and email_result['humanCheck'] != None:
+    <% 
+      human_check_str = {True: 'PHISHING',False:'SPAM'} [email_result['humanCheck']] 
+    %>
+    <tr>
+      <td><b>Human check</b></td>
+      <td>Manualy marked as ${human_check_str|h}</td>
+    </tr>
+  % endif
+        
+        
+        
+  % if 'rules' in email_result:
+    <% 
+      firstRule = True 
+    %>
+    % for rule in email_result['rules']:
+      % if 'result' in rule and rule['result'] == True:
+        <% 
+          row_name_str = 'Matching rules' if firstRule else ''
+          firstRule = False
+        %>
+          <tr>
+            <td><b>${row_name_str|h}</b></td>
+            <td>${rule['code']}&nbsp;${rule['description']}</td>
+          </tr>
+      % endif
+    %endfor
+  % endif 
+  
+  
+  % if 'links' in mailFields['links']:
+    <% firstLink = True %>
+    %for link in mailFields['links']:
+      <%
+        row_name_str = 'Links' if firstLink else '' 
+        firstLink = False
+      %>
+      <tr>
+         <td><b>${row_name_str}</b></td>
+         <td><a href="${link['raw_link']}">${link['raw_link']}</a></td>
+      </tr>
+    %endfor
+  %endif
+  
+  % if 'attachmentFilePath' in mailFields:
+     % for i in range(0, len(mailFields['attachmentFilePath'])):
+       <%
+         index = mailFields['attachmentFilePath'][i].find(attachmentsPath)
+         row_name_str = 'Attachments' if i == 0 else ''
+         file_path_str = mailFields['attachmentFilePath'][i][index + len(attachmentsPath):]
+       %>
+       % if index > 0:    
+         <tr>
+           <td><b>${row_name_str|h}</b></td>
+           <td><a href="attachments/${file_path_str|h}">${mailFields['attachmentFileName'][i]|h}</a></td>
+         </tr>
+       % endif
+     % endfor
+  % endif  
+  
+  <% firstLine = True %>
+  % if mailFields['text']:
+    % for line in mailFields['text'].split('\n'):
+      <%
+        row_name_str = 'Plain text' if firstLine else ''
+        firstLine = False
+      %>
+      <tr>
+        <td><b>${row_name_str|h}</b></td>
+        <td>${line|h}<br/></td>
+      </tr>
+    % endfor
+  % endif
+  
+  % if 'html' in mailFields and mailFields['html'] and 's_id' in mailFields and mailFields['s_id'] and staticHtmlFile:           
+      <tr>
+        <td><b>Html</b></td>
+        <td><iframe  width="800" height="800" style="border-width=5px;border-color=black" src="/raw_html/${email_id|h}" sandbox="allow-forms"></iframe></td>
+      </tr>
+  % endif
+   
+        
+</table>
+
+<%include file="parts/footer.html"/>

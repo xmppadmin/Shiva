@@ -1,0 +1,37 @@
+<%include file="parts/header.html" />
+
+<h1>SHIVA honeypot: list ${count|h} emails starting from ${start|h}</h1>
+
+<%include file="parts/mail_overview.html"/>
+
+
+<p>Nagivate:</p>
+        
+% if start == 0:
+  <button><<</button>
+  <button><</button>
+% else:
+  <%
+    actual_start = (start - count) if (start - count) > 0 else 0
+  %>
+
+  <a href="list_emails?start=0&count=${count}"><button><<</button></a>
+  <a href="list_emails?start=${actual_start}&count=${count}"><button><</button></a>
+            
+% endif            
+           
+% if start + count < total:
+
+  <%
+    actual_start = start + count
+    end = total - (total % count)
+  %>
+  <a href="list_emails?start=${actual_start}&count=${count}"><button>></button></a>
+  <a href="list_emails?start=${end}&count=${count}"><button>>></button></a>
+        
+% else:
+  <button>></button>
+  <button>>></button>
+% endif
+        
+<%include file="parts/footer.html"/>

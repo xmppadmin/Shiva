@@ -1,19 +1,19 @@
-from bs4 import BeautifulSoup
-import cgi
 import cherrypy
 import datetime
 import threading
-import textwrap
 import time
+import subprocess
+import os
+
+from mako.template import Template
+from mako.lookup import TemplateLookup
 
 import server
 import shivamaindb
-import iohandler
 import learning
 import shivastatistics
-import os
 import logging
-import subprocess
+
 
 
 class WebServer():
@@ -23,76 +23,40 @@ class WebServer():
         self.attachmentsPath = in_params['attachmentsPath']
         self.rawHtmlPath = in_params['rawHtmlPath']
         self.honypotLogFile = in_params['honeypot_log_file']
+        self.template_lookup = TemplateLookup(directories=[in_params['templates_root']])
     
 # index page    
     @cherrypy.expose
     def index(self):
         return self.index_template()
     
-    def index_template(self):
-        title='SHIVA honeypot: mainpage'
-        overview_title = 'Overview of last 10 emails'
-        overview_list=shivamaindb.get_overview()
-        learning_overview_list=shivamaindb.get_learning_overview(10)
-        return map(lambda a: a.decode('utf8','ignore'), (self.header_template(title),
-                             self.headline_template(title),
-                             self.statistics_template(),
-                             self.overview_template(overview_list,title=overview_title,start=0,count=10), 
-                             self.learning_template(learning_overview_list), 
-                             self.footer_template())) 
 # view email page
     @cherrypy.expose
     def view_email(self,email_id = ''):
-        emails = shivamaindb.retrieve_by_ids([email_id])
-        mailFields = []
-        if emails:
-            mailFields = emails[0]
-        title='SHIVA honeypot: view email: ' + email_id;
-        
-        return map(lambda a: a.decode('utf8','ignore'), (self.header_template(title),
-                             self.headline_template(title),
-                             self.email_detail_template(mailFields), 
-                             self.footer_template()))
-
-    @cherrypy.expose
-    def delete_email(self,email_id = ''):
-        shivamaindb.delete_spam(email_id)
+        return self.email_detail_template(email_id)
         
 # go throught all emails
     @cherrypy.expose
     def list_emails(self,start=0,count=30):
-        title='SHIVA honeypot: list emails'
-        headline_title = 'SHIVA honeypot: list {0} emails starting from {1}'.format(count,start)
-        overview_list=shivamaindb.get_overview(start,count)
-        total = shivamaindb.get_mail_count()
-        return map(lambda a: a.decode('utf8'), (self.header_template(title),
-                            self.headline_template(headline=headline_title),
-                            self.overview_template(overview_list=overview_list, title='', start=start, count=count),
-                            self.view_list_navigation_template(start=int(start),count=int(count),total=total),
-                            self.footer_template()))
-        
+        return self.list_emails_template(start, count)
+            
 # learning page
     @cherrypy.expose
     def learning(self):
-        title='SHIVA honeypot: learning'
-        headline_title = 'SHIVA honeypot: learning status'
-        return map(lambda a: a.decode('utf8'), (self.header_template(title),
-                            self.headline_template(headline=headline_title),
-                            self.learning_template(shivamaindb.get_learning_overview()),
-                            self.footer_template()))
+        return self.learning_template(shivamaindb.get_learning_overview())
         
 #logs accessibility
     @cherrypy.expose
     def logs(self):
-        title='SHIVA honeypot: log file view'
-        headline_title = 'SHIVA honeypot: log file view'
-        return map(lambda a: a.decode('utf8'), (self.header_template(title),
-                            self.headline_template(headline=headline_title),
-                            self.log_file_template(),
-                            self.footer_template()))
+        return self.log_file_template()
         
  
-# handle relearn
+# honeypot manipulation
+
+    @cherrypy.expose
+    def delete_email(self,email_id = ''):
+        shivamaindb.delete_spam(email_id)
+
     @cherrypy.expose
     def mark_as_phishing(self,email_id = ''):
         shivamaindb.mark_as_phishing(email_id)     
@@ -109,263 +73,101 @@ class WebServer():
     @cherrypy.expose
     def stats(self):
         shivastatistics.generate_rules_graph(shivamaindb.get_rule_results_for_statistics())
-        shivastatistics.generate_roc_graph((shivamaindb.get_data_for_roc_curves()))
-        
-# API handler
-    @cherrypy.expose
-    @cherrypy.tools.json_in()
-    @cherrypy.tools.json_out()
-    def api(self):
-        if not hasattr(cherrypy.request, 'json'):
-            return {'error': 'invalid document suplied'}
-        data = cherrypy.request.json
-        
-        if (data.has_key('action')):
-            return {'status': 'success' if iohandler.handle_api_request(data) else 'failure'}
-        
-        return {'error': 'unknown action'}
+        shivastatistics.generate_roc_graph((shivamaindb.get_data_for_roc_curves())) 
     
-    def view_list_navigation_template(self,start,count,total):
-        result = '<p>Nagivate:</p>'
-        
-        if start == 0:
-            result += '<button><<</button>'
-            result += '<button><</button>'
-        else:
-            result += '<a href="list_emails?start={0}&count={1}"><button><<</button></a>'.format(0,count)
-            result += '<a href="list_emails?start={0}&count={1}"><button><</button></a>'.format((start - count) if (start - count) > 0 else 0,count)
-            
-        if start + count < total:
-            result += '<a href="list_emails?start={0}&count={1}"><button>></button></a>'.format(start + count, count)
-            result += '<a href="list_emails?start={0}&count={1}"><button>>></button></a>'.format(total - (total % count) , count)
-        else:
-            result += '<button>></button>'
-            result += '<button>>></button>'
-        
-        return result        
+
+
+
+
+# templates ====================================================================    
     
-    def statistics_template(self):
+    def index_template(self):
+        title='SHIVA honeypot: mainpage'
+        start = 0
+        count = 10
+        overview_list=shivamaindb.get_overview(start,count)
+        learning_overview_list=shivamaindb.get_learning_overview(5)
+        
+        total_mails = shivamaindb.get_mail_count()
+        today_mails = shivamaindb.get_mail_count_for_date(datetime.date.today(), datetime.date.today() + datetime.timedelta(days=1))
+        
+        uptime_str = 'uknown'
         uptime = time.time() - self.startup_time if self.startup_time else 0
         if uptime > 0:
-            uptime_str = "{:.0f} days {:.0f} hours {:.0f} minutes {:.0f} seconds".format(uptime / 60 / 60 / 24, (uptime / 60 / 60) % 24, (uptime / 60) % 60, uptime % 60)
-        else:
-            uptime_str = 'unknown'
-        return"""
-            <h2>Runtime statistics</h2>
-            <table>
-                <tr><td>uptime</td><td>{0}</td></tr>
-                <tr><td>email since startup</td><td>xxx</td></tr>
-                <tr><td>emails in database</td><td>{1}</td></tr>
-            </table>
-        """.format(uptime_str,str(shivamaindb.get_mail_count()))
+            days, remainder = divmod(uptime, 24 * 60 * 60)
+            hours, remainder = divmod(remainder, 60 * 60)
+            minutes, _ = divmod(remainder, 60) 
+            uptime_str = "{:.0f} days {:.0f} hours {:.0f} minutes".format(days,hours,minutes)
+        
+        
+        template = Template('<%include file="index.html"/>', lookup=self.template_lookup, output_encoding='utf-8', encoding_errors='replace')
+        return template.render(title=title, overview_list=overview_list, start=start,count=count,report_overview=learning_overview_list, uptime=uptime_str, total_mails=total_mails, today_mails=today_mails)
+    
+    
     
     def overview_template(self, overview_list, title, start=0, count=10):
-        if not overview_list:
-            return "<p>No emails found.</p>"
+        template = Template('<%include file="overview.html"/>', lookup=self.template_lookup, output_encoding='utf-8', encoding_errors='replace')
+        return template.render(headline=title, title=title, overview_list=overview_list, start=start, count=count)
         
-        result = "<h2>{}</h2>".format(title) if title else "";
+    
+    def email_detail_template(self, email_id=''):
+        emails = shivamaindb.retrieve_by_ids([email_id])
+        mailFields = []
+        if emails:
+            mailFields = emails[0]
+        title='SHIVA honeypot: view email'
         
-        result += """
-            <table class="hoverTable">
-            <thead>
-              <tr>
-                <td>Id</td>
-                <td>Last seen</td>
-                <td>Subject</td>
-                <td>Shiva score</td>
-                <td>Spamassassin score</td>
-                <td>SensorID</td>
-                <td>Status</td>
-                <td>Actions</td>
-                <td>Maked by human</td>
-              </tr>
-            </thead>
-            <tbody>
-            """
-        
-        for current in overview_list:
-            current_id = current['id']
-            phishingStatus = current['derivedPhishingStatus']
-            phishingStatusTag = '<font color="{0}">{1}</font>';
-            if phishingStatus == True:
-                phishingStatusTag = phishingStatusTag.format("red", "PHISHING")
-            elif phishingStatus == False:
-                phishingStatusTag = phishingStatusTag.format("green", "SPAM")
+        # store html content to static file if it doesn't exist
+        staticHtmlFile = self.rawHtmlPath + '/' + email_id 
+
+        if not os.path.exists(staticHtmlFile):
+            f = open(staticHtmlFile, 'w')
+            if f:
+                f.write(mailFields['html'].encode('utf8'))
+                f.close()
             else:
-                phishingStatusTag = phishingStatusTag.format("black", "--")
-                
-#             marked_by_human = False if current['phishingHumanCheck']
-            
-            subject = current['subject'].encode('utf8',errors='ignore')
-            subject_wrap = textwrap.wrap(subject, 150)
-            if len(subject_wrap) > 1:
-                subject = subject_wrap[0] + "..."
-            
-            result += """<tr>
-                  <td><a href=\"/view_email?email_id={0}\">{0}</a></td>
-                  <td>{1}</td></td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td><td>{8}</td>
-                </tr>""".format(current_id,
-                                current['lastSeen'],
-                                subject,
-                                current['shivaScore'],
-                                current['spamassassinScore'],
-                                current['sensorID'],
-                                phishingStatusTag,
-                                self.prepare_actions_template(current_id, current['derivedPhishingStatus']),
-                                '' if current['phishingHumanCheck'] == None else '<img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>'
-                                )
-        result += "</tbody></table>"
-        return result
-    
-    def prepare_actions_template(self, email_id='', phishing_status=None):
-        result = '<img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email(\'' + email_id + '\')"/>'
-        if phishing_status == True:
-            result += '<img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam(\'' + email_id + '\')" />'
-        elif phishing_status == False:
-            result += '<img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing(\'' + email_id + '\')" />'
-        else:
-            result += '<img src="/static/images/icons/small_change_none.png" title="Marking not supported for imported emails."/>'
-        
-        return result;
-        
-        
-    
-    def email_detail_template(self, mailFields):
-        if not mailFields:
-            return "<p>Email not found.</p>"
-    
-        result = "<table>"
-        result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Subject', mailFields['subject'].encode('utf8'))
-        result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('From', mailFields['from'])
-        result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('To', mailFields['to'])
-        result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Shiva score', mailFields['shivaScore'])
-        result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Spamassassin score', mailFields['spamassassinScore'])
-        
+                staticHtmlFile = ''
         
         email_result = shivamaindb.get_results_of_email(mailFields['s_id'])
+        template = Template('<%include file="view_email.html"/>', lookup=self.template_lookup, output_encoding='utf-8', encoding_errors='replace')
+        return template.render(title=title, email_result=email_result, mailFields=mailFields, attachmentsPath=self.attachmentsPath,staticHtmlFile=staticHtmlFile)
         
-        if 'derivedStatus' in email_result:
-            result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Status', {True: 'PHISHING',False:'SPAM',None:''} [email_result['derivedStatus']])
-        if 'humanCheck' in email_result and email_result['humanCheck'] != None:
-            result += "<tr><td><b>{0}</b></td><td>Manualy marked as {1}</td></tr>".format('Human check', {True: 'PHISHING',False:'SPAM'} [email_result['humanCheck']])
-        
-        
-        
-        if 'rules' in email_result:
-            firstRule = True
-            for rule in email_result['rules']:
-                if 'result' in rule and rule['result'] == True: 
-                    result += "<tr><td><b>{0}</b></td><td>{1}&nbsp;{2}</td></tr>".format('Matching rules' if firstRule else '', rule['code'],rule['description'])
-                    firstRule = False
-        
-        firstLink = True
-        for link in mailFields['links']:
-            logging.critical('WEB' + str(link))
-            result += "<tr><td><b>{0}</b></td><td><a href=\"{1}\">{1}</a></td></tr>".format('Links' if firstLink else '', link['raw_link'].decode('utf8','ignore'))
-            firstLink = False
-        
-        if (mailFields['attachmentFilePath']):
-            for i in range(0, len(mailFields['attachmentFilePath'])):
-                index = mailFields['attachmentFilePath'][i].find(self.attachmentsPath)
-                if index < 0:
-                    continue
-                result += "<tr><td><b>{0}</b></td><td><a href=\"attachments/{1}\">{2}</a></td></tr>".format('Attachments' if i == 0 else '', mailFields['attachmentFilePath'][i][index + len(self.attachmentsPath):], mailFields['attachmentFileName'][i])
-            
-        if mailFields['text']:
-            firstLine = True
-            for line in mailFields['text'].replace('\n','<br/>').split('<br/>'):
-                result += "<tr><td><b>{0}</b></td><td>{1}</td></tr>".format('Plain text' if firstLine else '', line.encode('utf8'))
-                firstLine = False
-        
-        
-        if mailFields['html'] and mailFields['s_id']:
-            email_id = mailFields['s_id']
-            # store html content to static file if it doesn't exist
-            staticHtmlFile = self.rawHtmlPath + '/' + email_id 
-            logging.critical(staticHtmlFile)
-            if not os.path.exists(staticHtmlFile):
-                f = open(staticHtmlFile, 'w')
-                f.write(mailFields['html'].encode('utf8'))
-                
-            result += '<tr><td><b>Html</b></td><td><iframe  width="800" height="800" style="border-width=5px;border-color=black" src=\"/raw_html/' + email_id.encode('utf8') + '" sandbox=\"allow-forms\"> </iframe></td></tr>'
-        
-        result += "</table>"
-        
-        return result
     
     def learning_template(self,report_overview=[]):
-        result = "<h2>Overview of last {} honeypot learning attempts</h2>".format(str(len(report_overview)))
-        
-        result += """
-        <table>
-            <thead>
-              <tr>
-                <td>Learning date</td>
-                <td>Count of emails</td>
-                </td><td>Shiva classifier status</td>
-                </td><td>Spamassassin status</td>
-              </tr>
-            </thead>
-            <tbody>
-        """
-        
-        for current_report in report_overview:
-            result += "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>".format(
-                str(current_report['learningDate']),
-                str(current_report['learningMailCount']),
-                current_report['shivaStatus'],
-                current_report['spamassassinStatus'])
-        
-        result += "</tbody></table>"
-        
-        result += """<p><a href="/relearn">Relearn honeypot now</a></p>"""
-        
-        result += """<img src="/static/images/rules_graph.png" />"""
-        result += "<br/>"
-        result += """<img src="/static/images/roc_graph.png" />"""
-        return result
+        template = Template('<%include file="learning.html"/>', lookup=self.template_lookup, output_encoding='utf-8', encoding_errors='replace')
+        return template.render(title='SHIVA honeypot: learning',report_overview=report_overview)
         
         
     def log_file_template(self):
-        result = "<table>"
+        log_lines = []
         try:
             out = subprocess.check_output(['tail', '-n', '100', self.honypotLogFile])
             for o in out.splitlines():
-                result += "<tr><td>" + o + "</td></tr>"
+                log_lines.append(o)
         except subprocess.CalledProcessError:
             pass
-        
-        
-        result += """</table><p id="end_of_log"></p>"""
-        return result;
-        
 
-    
-    def header_template(self, title=''):
-        return """<html>
-        <head>
-          <link href="/static/css/style.css" rel="stylesheet">
-          <script type="text/javascript" src="/static/js/requests.js"></script>
-          <title>""" + title + """</title>
-        </head>
-          <body>"""
-     
-    def headline_template(self, headline=''):
-        return """<h1>""" + headline + """</h1>"""
-         
-    def footer_template(self):
-        return """
-            <hr>
-            <footer>Quick navigation: <a href="/">Main page</a>&nbsp;<a href="/list_emails">List emails</a>&nbsp;<a href="/learning">Learning</a>&nbsp;<a href="/logs#end_of_log">Logs</a></footer>
-            <foooter>Rendered: """ + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") + """</footer>
-          </body>
-        </html>"""
-    
-    
-   
-   
+        template = Template('<%include file="logs.html"/>', lookup=self.template_lookup)
+        return template.render(headline="SHIVA honeypot: log file view", title="SHIVA honeypot: log file view", rows=log_lines)
  
     
+    def list_emails_template(self,start=0,count=30):
+        title='SHIVA honeypot: list emails'
+        headline_title = 'SHIVA honeypot: list {0} emails starting from {1}'.format(start,count)
+        
+        overview_list=shivamaindb.get_overview(start,count)
+        total = shivamaindb.get_mail_count()
+
+        template = Template('<%include file="list_emails.html"/>', lookup=self.template_lookup)
+        return template.render(headline=headline_title, title=title, overview_list=overview_list, total=int(total), start=int(start), count=int(count))
+     
+     
+     
+     
+     
+     
+# configuration ================================================================
+
 def prepare_http_server():
     staticRoot = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../../"
     attachmentsPath = '/shiva/attachments'
@@ -381,7 +183,11 @@ def prepare_http_server():
     if web_bind_config:
         web_interface_address, web_interface_port = web_bind_config.split(':')
     
-    in_params = {'startup_time' : time.time(), 'attachmentsPath' : attachmentsPath, 'rawHtmlPath' : staticRoot + rawHtmlPath}
+    in_params = {'startup_time' : time.time(),
+                 'attachmentsPath' : attachmentsPath,
+                 'rawHtmlPath' : staticRoot + rawHtmlPath,
+                 'templates_root' : staticRoot + 'web/templates/'
+                 }
     cherrypy.config.update({'server.socket_host': web_interface_address,
                         'server.socket_port': int(web_interface_port),
                        })

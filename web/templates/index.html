@@ -1,0 +1,28 @@
+<%include file="parts/header.html" />
+
+<h1>SHIVA honeypot: mainpage</h1>
+
+<h2>Runtime statistics</h2>
+
+<table>
+    <tr>
+      <td>uptime</td>
+      <td>${uptime|h}</td>
+    </tr>
+    <tr>
+      <td>emails today</td>
+      <td>${today_mails|}</td>
+    </tr>
+    <tr>
+      <td>emails in database</td>
+      <td>${total_mails|h}</td>
+    </tr>
+</table>
+
+<h2>Overview of last ${count|h} emails</h2>
+
+<%include file="parts/mail_overview.html" />
+
+<%include file="parts/learning_overview.html" />
+
+<%include file="parts/footer.html" />

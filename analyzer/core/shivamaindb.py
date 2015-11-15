@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-
-from datetime import date
-import time
-import sys
 import os
 
 import server
@@ -12,9 +8,6 @@ import logging
 
 import ssdeep
 import MySQLdb as mdb
-
-import urllib2
-from urllib2 import HTTPError
 
 def main():
     
@@ -671,6 +664,20 @@ def get_mail_count():
         
     return result
 
+def get_mail_count_for_date(from_datetime,to_datetime):
+    query = "select count(*) from sdate where lastSeen between %s and %s";
+    
+    result = 0
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(query,(from_datetime,to_datetime,))
+        result = mainDb.fetchone()[0]
+    except mdb.Error, e:
+        logging.error(e)
+        
+    return result
+    
+
 def delete_spam(email_id=''):
     """delete email from database and remove all related files"""
     if not email_id:
@@ -1164,7 +1171,7 @@ def store_permament_url_info(url_data={}):
         mainDb = shivadbconfig.dbconnectmain()
         
         query = 'insert into permamentlinkdetails (hyperLink,longHyperLink,redirectCount,googlePageRank,alexaTrafficRank,inPhishTank,date) values (%s , %s , %s , %s , %s , %s ,NOW())'
-        
+        logging.info(str(url_data['raw_link']) + ":" + str(url_data['InPhishTank']))
         mainDb.execute(query,(
                               str(url_data['raw_link']),
                               str(url_data['LongUrl']) if url_data['LongUrl'] else None,

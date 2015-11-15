@@ -1,0 +1,14 @@
+<%include file="parts/header.html" />
+
+<h1>${headline|h}</h1>
+
+<table>
+
+% for log_row in rows:
+   <tr><td>${log_row|h}</td></tr>
+% endfor
+
+</table id="">
+<div id="end_of_log" />
+
+<%include file="parts/footer.html"/>
