@@ -614,11 +614,11 @@ class RuleA2(MailClassificationRule):
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             url = a_tag.get('href')
-            if url and '@' in url:
+            if url and not url.startswith('mailto') and '@' in url:
                 return 1
             
             url = a_tag.get_text()
-            if url and '@' in url:
+            if url and not url.startswith('mailto') and '@' in url:
                 return 1
         return -1
     

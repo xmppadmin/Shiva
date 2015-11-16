@@ -408,6 +408,14 @@ class TestRules(unittest.TestCase):
         mailFields['links'] = [link1]
         self.rule_assert_not(rule.apply_rule(mailFields))
         
+        mailFields = {}
+        mailFields['html'] = ''
+        link1 = {'raw_link' : 'mailto:johny@aaaaa.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        
+        
     def test_rule_a3(self):
         from phishing import RuleA3
         rule = RuleA3()
