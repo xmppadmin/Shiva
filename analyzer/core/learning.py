@@ -2,7 +2,6 @@ import pickle
 import logging
 import server
 import os
-import copy
 
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -19,6 +18,8 @@ LEARNING_LOCK = 'run/learning.lock'
 #global variables
 boost_vector = None
 classifier = None
+global_shiva_threshold = 0.5
+global_sa_threshold = 0.5
 
 def __init_classifier():
     """ 
@@ -30,9 +31,15 @@ def __init_classifier():
     
     global classifier
     global boost_vector
+    global global_shiva_threshold
+    global global_sa_threshold
     
     if classifier and boost_vector:
         return
+    
+    
+    global_shiva_threshold, global_sa_threshold = shivamaindb.get_current_detection_thresholds()
+    logging.info("Learning: Loaded thresholds: {0} {1}".format(global_shiva_threshold,global_sa_threshold))
     
     logging.info("Learning: Trying to load classifier from file.")
     if os.path.exists(CLASSIFIER_PKL):
@@ -53,6 +60,7 @@ def __init_classifier():
     
     if classifier:
         logging.info("Learning: Classifier successfully loaded.")
+    
     else:
         logging.info("Learning: Classifier not found, trying to re-learn...")
         learn()
@@ -71,21 +79,28 @@ def learn():
     classifier_status = __learn_classifier()
     spamassassin_status = __learn_spamassassin()
     
-    shivamaindb.save_learning_report(classifier_status, spamassassin_status)
+    shiva_threshold, sa_threshold = __compute_classifier_decision_tresholds()
+    
+    global  global_shiva_threshold
+    global global_sa_threshold
+    global_shiva_threshold = shiva_threshold
+    global_sa_threshold = sa_threshold
+    
+    shivamaindb.save_learning_report(classifier_status, spamassassin_status, shiva_threshold, sa_threshold)
     
     free_learning_lock()
 
 def __learn_classifier():
+    """
+    check if results can be read directly from database or 
+    deep relearning is needed
+    """
     
-    
-    # check iff results can be read directly from database or 
-    # full relearning is needed
-
     if not shivamaindb.check_stored_rules_results_integrity():
         logging.info('DEEP RELEARN')
         __deep_relearn()
         
-        
+    
     
     learning_matrix = shivastatistics.prepare_matrix()
     
@@ -109,7 +124,7 @@ def __learn_classifier():
             if sample_vectors[i][j] > 0:
                 sample_vectors[i][j] =  sample_vectors[i][j]  * local_boost_vector[j]
       
-    logging.critical(str(sample_vectors))
+#     logging.critical(str(sample_vectors))
     
     classifier = KNeighborsClassifier(weights='distance',n_neighbors=15)
  
@@ -208,14 +223,35 @@ def get_spamassassin_bayes_score(mailFields):
     
 def check_mail(mailFields):
     """ 
-    return computed probability that given mail should be marked as phishing
+    return computed probability and decision whether email should be considered as phishing
+    
+    dict {
+      verdict: True/False
+      shiva_prob: float
+      sa_prob: float
+    }
     
     """
     __init_classifier()
     global classifier
+    global global_shiva_threshold
+    global global_sa_threshold
+    
+    
     mailVector = process_single_record(mailFields)
     logging.critical(mailVector)
-    return (classifier.predict_proba(mailVector)[0][1],get_spamassassin_bayes_score(mailFields))
+    
+    
+    shiva_prob = classifier.predict_proba(mailVector)[0][1]
+    sa_prob = get_spamassassin_bayes_score(mailFields)
+    
+    
+    result = {'verdict' : shiva_prob >= global_shiva_threshold or sa_prob >= global_sa_threshold,
+              'shiva_prob' : shiva_prob,
+              'sa_prob' : sa_prob }
+    logging.info('VERDICT: ' + str(result))
+    
+    return result
 
 def process_single_record(mailFields):
     """
@@ -334,11 +370,57 @@ def __compute_new_chi2_boost_vector(sample_vectors=[],result_vector=[],former_bo
     return chi2_boost_vector
     
     
-def __compute_classifier_decision_treshold():
+def __compute_classifier_decision_tresholds():
     """
-    compute threshold for marking email as phishing
+    compute optimal thresholds for marking emails as phishing
     """
-    base_threshold = .5
+    from sklearn.metrics import f1_score
+    classification_results = shivamaindb.get_detection_results_for_thresholds()
+    
+    if not classification_results:
+        return 
+    
+    expected_results = []
+    for line in classification_results:
+        if line[3] != None:
+            expected_results.append(line[3])
+        else:
+            expected_results.append(1 if line[2] == 1 else 0)
+
+    best_thres_shiva = 0.
+    best_score_shiva = 0.
+    
+    best_thres_sa = 0. 
+    best_score_sa = 0.
+    
+    try:
+        # go through possible thresholds and find best suitable threshold for each classifier
+        for i in range(5, 100, 5):
+            current_thres =  i / 100.0
+            
+            shiva_result = map(lambda a: 1 if a[0] > current_thres else 0, classification_results)
+            sa_result = map(lambda a: 1 if a[1] > current_thres else 0, classification_results)
+           
+            shiva_score = f1_score(expected_results, shiva_result, average='binary')
+            sa_score = f1_score(expected_results, sa_result, average='binary')
+    
+            
+            if best_score_shiva <= shiva_score:
+                best_score_shiva = shiva_score
+                best_thres_shiva = current_thres
+            if best_score_sa <= sa_score:
+                best_score_sa = sa_score
+                best_thres_sa = current_thres
+                
+                
+        return (best_thres_shiva, best_thres_sa,)
+    
+    except Exception, e:
+        logging.error(e)
+        
+    # return default thresholds if error occurs
+    return (.5,.5,)
+        
 
     
    

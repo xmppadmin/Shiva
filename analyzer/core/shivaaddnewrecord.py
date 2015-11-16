@@ -47,8 +47,9 @@ def main(mailFields, key, msgMailRequest):
         phishing_human_check = False
     else:
         # mail is not manually imported, compute score
-        probability_tuple = compute_phishing_probabilities(mailFields, key, msgMailRequest)
-        phish_flag = decide(probability_tuple)
+        email_verdict = check_mail(mailFields)
+        probability_tuple = (email_verdict['shiva_prob'],email_verdict['sa_prob'])
+        phish_flag = email_verdict['verdict']
     
     if phish_flag:
         destination = rawspampath + "phishing/" + filename
@@ -123,16 +124,3 @@ def main(mailFields, key, msgMailRequest):
     records.insert(0, newRecord) #Inserting new record at the first position.
     del newRecord
     
-def compute_phishing_probabilities(mailFields, key, msgMailRequest):
-    """ return tuple (float,float) of computed probabilities"""
-    prob = check_mail(mailFields)
-    logging.info("Computed probability: " + str(prob))
-    
-    return prob
-
-def decide(probabilityTuple):
-    """ return True if given probability tuple should be considered as phishing """
-    if not probabilityTuple or len(probabilityTuple) < 2:
-        return False
-    
-    return True if probabilityTuple[0] > .5 or probabilityTuple[1] > .5 else False

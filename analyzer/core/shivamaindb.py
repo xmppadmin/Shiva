@@ -812,7 +812,6 @@ def __move_mail_by_id(email_id='',spam_to_pshishing=True):
     
              
     for filename in files_to_move:
-        logging.info(from_path + filename)
         rename(from_path + filename, to_path + filename)
     
     
@@ -841,24 +840,22 @@ def get_derived_phishing_status(email_id=''):
     return None
     
 
-def save_learning_report(classifier_status=False,spamassassin_status=False):
+def save_learning_report(classifier_status=False,spamassassin_status=False,shiva_threshreshold=.5,sa_threshold=.5):
     """ 
     store report of honeypot learning into database
     """
-    
-    import datetime
-    report_time = datetime.datetime.now()
+
     report_classifier = "success" if classifier_status else "failure"
     report_spamassassin = "success" if spamassassin_status else "failure"
     
-    query = "insert into `learningreport` (`learningDate`,`learningMailCount`,`spamassassinStatus`,`shivaStatus`) values ('{0}', (select count(*) from spam), '{1}','{2}')".format(report_time,report_spamassassin,report_classifier);
+    query = "insert into `learningreport` (`learningDate`,`learningMailCount`,`spamassassinStatus`,`shivaStatus`, `shiva_threshold`, `sa_threshold`) values ( NOW(), (select count(*) from spam), %s , %s , %s , %s)"
     
     try:
         mainDb = shivadbconfig.dbconnectmain()
-        mainDb.execute(query)
+        mainDb.execute(query,(report_spamassassin,report_classifier,shiva_threshreshold,sa_threshold,))
     except mdb.Error, e:
         logging.error(e)
-        return
+        
     
 def get_learning_overview(limit=10):
     """
@@ -866,15 +863,15 @@ def get_learning_overview(limit=10):
     """
     
     overview_list = []
-    query = 'select learningDate,learningMailCount,spamassassinStatus,shivaStatus from learningreport order by learningDate desc limit ' + str(limit)
+    query = 'select learningDate,learningMailCount,spamassassinStatus,shivaStatus,shiva_threshold,sa_threshold from learningreport order by learningDate desc limit %s'
     
     try:
         mainDb = shivadbconfig.dbconnectmain()
-        mainDb.execute(query)
+        mainDb.execute(query,(int(limit),))
         
         result = mainDb.fetchall()
         for record in result:
-            overview_list.append({'learningDate':record[0], 'learningMailCount':record[1], 'spamassassinStatus':record[2], 'shivaStatus':record[3]})
+            overview_list.append({'learningDate':record[0], 'learningMailCount':record[1], 'spamassassinStatus':record[2], 'shivaStatus':record[3], 'shiva_threshold': record[4], 'sa_threshold':record[5]})
         
     except mdb.Error, e:
         logging.error(e)
@@ -1032,7 +1029,6 @@ def get_results_of_email(email_id=''):
             rules_resutls.append({'code': current[0], 'description': current[1], 'boost': current[2],'result':current[3]})
         
         result['rules'] = rules_resutls
-        logging.info(result)
         
     except mdb.Error, e:
         logging.error(e)  
@@ -1112,7 +1108,7 @@ def get_permament_url_info(link=''):
         
         if result:
             url_data = {}
-            url_data['raw_link'] = link        
+            url_data['raw_link'] = link.replace('|', '').replace(' ','')      
             url_data['LongUrl'] = result[0]
             url_data['RedirectCount'] = result[1]
             url_data['GooglePageRank'] = result[2]
@@ -1144,7 +1140,7 @@ def get_permament_url_info_for_email(email_id=''):
             current_info = get_permament_url_info(current[0])
             if current_info:
                 result.append(current_info)
-                
+            
     except mdb.Error, e:
         logging.error(e)
         
@@ -1171,18 +1167,50 @@ def store_permament_url_info(url_data={}):
         mainDb = shivadbconfig.dbconnectmain()
         
         query = 'insert into permamentlinkdetails (hyperLink,longHyperLink,redirectCount,googlePageRank,alexaTrafficRank,inPhishTank,date) values (%s , %s , %s , %s , %s , %s ,NOW())'
-        logging.info(str(url_data['raw_link']) + ":" + str(url_data['InPhishTank']))
         mainDb.execute(query,(
-                              str(url_data['raw_link']),
+                              str(url_data['raw_link']).replace('|', ''),
                               str(url_data['LongUrl']) if url_data['LongUrl'] else None,
                               int(url_data['RedirectCount']),
                               int(url_data['GooglePageRank']),
                               int(url_data['AlexaTrafficRank']),
-                              url_data['InPhishTank'],
+                              '1' if url_data['InPhishTank'] else '0'
                               ))
     except mdb.Error, e:
         logging.error(e)
+        
+        
+def get_detection_results_for_thresholds():
     
+    result = []
+    try:
+        mainDb = shivadbconfig.dbconnectmain()
+        
+        query = 'select  shivaScore, spamassassinScore, derivedPhishingStatus, phishingHumanCheck from email_classification_view'
+        mainDb.execute(query)
+        
+        for current in mainDb.fetchall():
+            result.append(current)
+    except mdb.Error, e:
+        logging.error(e)
+        
+    return result
+
+def get_current_detection_thresholds():
+    
+    try:
+        query = 'select shiva_threshold, sa_threshold from learningreport order by learningDate desc limit 1'
+        
+        mainDb = shivadbconfig.dbconnectmain()
+        mainDb.execute(query)
+        
+        result = mainDb.fetchone()
+        if result:
+            logging.info('THESHOLDS: ' + str(result))
+            return result
+    except mdb.Error, e:
+        logging.error(e)
+        
+    return (0.5,0.5,)
 
 if __name__ == '__main__':
     tempDb = shivadbconfig.dbconnect() 
