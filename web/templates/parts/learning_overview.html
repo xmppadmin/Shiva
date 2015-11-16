@@ -9,6 +9,8 @@
       <td>Count of emails</td>
       </td><td>Shiva classifier status</td>
       </td><td>Spamassassin status</td>
+      </td><td>Shiva threshold</td>
+      </td><td>Spamassassin threshold</td>
     </tr>
   </thead>
   <tbody>
@@ -19,6 +21,8 @@
       <td>${current_report['learningMailCount']|h}</td>
       <td>${current_report['shivaStatus']|h}</td>
       <td>${current_report['spamassassinStatus']|h}</td>
+      <td>${current_report['shiva_threshold']|h}</td>
+      <td>${current_report['sa_threshold']|h}</td>
     </tr>
   % endfor
   </tbody>
