@@ -8,30 +8,19 @@ from email.header import decode_header
 import email.Message
 import email.Parser
 import logging
-import os
 import re
 import datetime
 import hashlib
 import base64
-import ConfigParser
 import shutil
 from email.utils import parseaddr
 
 import ssdeep
-
-import urllib2
-from urllib2 import HTTPError
-from urllib2 import URLError
-from bs4 import BeautifulSoup
-
+import string
 import shivaconclude
 import shivanotifyerrors
 import server
 import domaininfo
-
-
-
-from phishing import samedomain,extractdomain
 import shivamaindb
 
 # Global dictionary to store parsed fields of spam
@@ -60,6 +49,10 @@ def linkparser(input_body):
     result_list = list()
     
     for link in url_list:
+        
+        # prevent rare error with unknown bytes in URL
+        link = filter(lambda x: x in string.printable, link)
+        
         persistent_link_info = shivamaindb.get_permament_url_info(link);
         if persistent_link_info:
             result_list.append(persistent_link_info)
