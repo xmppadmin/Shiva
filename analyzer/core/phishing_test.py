@@ -1,7 +1,7 @@
 '''
 Created on Oct 22, 2015
 
-@author: mertam
+Unit tests for module analyzer.core.phishing
 '''
 
 
@@ -414,7 +414,15 @@ class TestRules(unittest.TestCase):
         mailFields['links'] = [link1]
         self.rule_assert_not(rule.apply_rule(mailFields))
         
-        
+        mail_body_html = """
+        <body>
+          <a href="mailto:mailto:johny@aaaaa.sdf.org">johny@aaaaa.sdf.org</a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        mailFields['links'] = []
+        self.rule_assert_not(rule.apply_rule(mailFields))
         
     def test_rule_a3(self):
         from phishing import RuleA3

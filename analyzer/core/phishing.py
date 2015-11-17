@@ -4,6 +4,8 @@ from bs4 import BeautifulSoup
 from string import split
 import unicodedata
 
+import logging
+
 
 TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','accountants','active','actor','ad','ads','adult','ae','aero','af','afl','ag',
 'agency','ai','aig','airforce','al','allfinanz','alsace','am','amsterdam','an','android','ao','apartments','aq','aquarelle','ar','archi','army','arpa','as',
@@ -614,11 +616,13 @@ class RuleA2(MailClassificationRule):
         soup = BeautifulSoup(mailFields['html'], 'html.parser')
         for a_tag in soup.find_all('a'):
             url = a_tag.get('href')
-            if url and not url.startswith('mailto') and '@' in url:
+            if not url or url.startswith('mailto'):
+                continue
+            if '@' in url:
                 return 1
             
             url = a_tag.get_text()
-            if url and not url.startswith('mailto') and '@' in url:
+            if url and '@' in url:
                 return 1
         return -1
     
