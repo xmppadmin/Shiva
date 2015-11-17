@@ -45,11 +45,14 @@ class WebServer():
     def learning(self):
         return self.learning_template(shivamaindb.get_learning_overview())
         
-#logs accessibility
+# logs accessibility
     @cherrypy.expose
     def logs(self):
         return self.log_file_template()
-        
+# help page
+    @cherrypy.expose
+    def help(self):
+        return self.help_template()        
  
 # honeypot manipulation
 
@@ -161,7 +164,9 @@ class WebServer():
         template = Template('<%include file="list_emails.html"/>', lookup=self.template_lookup)
         return template.render(headline=headline_title, title=title, overview_list=overview_list, total=int(total), start=int(start), count=int(count))
      
-     
+    def help_template(self,report_overview=[]):
+        template = Template('<%include file="help.html"/>', lookup=self.template_lookup, output_encoding='utf-8', encoding_errors='replace')
+        return template.render(title='SHIVA honeypot: help') 
      
      
      

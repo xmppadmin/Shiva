@@ -1,0 +1,37 @@
+<%include file="parts/header.html" />
+
+<h1>SHIVA honeypot: HELP</h1>
+   
+ <h2>Sensor</h2>
+ <p>Sensor represents source of email.</p>
+
+ <table>
+   <thead>
+     <tr>
+	  <td>sensor</td>
+	  <td>description</td>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+       <td><b>shiva</b></td>
+       <td>email was caught by honeypot</td>
+     </tr>
+     <tr>
+       <td><b>.*spamImport.*</b></td>
+       <td>email was manually imported to honeypot as <b>spam</b></td>
+     </tr>
+     <tr>
+       <td><b>.*phishingImportImport.*</b></td>
+       <td>email was manually imported to honeypot as <b>phishing</b></td>
+    </tr>	 
+  </tbody>
+ </table>
+
+ <h2>Scores</h2>
+   <p>Honeypot computes two scores. Each score represents probability that email is phishing.<br/><p></p>
+   <p></p><i>Shiva score</i> is result of phishing detection technique implemented in honeypot.<br/>
+   <i>Spamassassin score</i> is result of Bayes classifier in Spamassassin.</p>
+   <p><b>IMPORTANT</b> imported emails (sensors .*spamImport.*,.*phishingImport.*) have always default score -1, they are used as learning data only</p>
+   
+<%include file="parts/footer.html" />
