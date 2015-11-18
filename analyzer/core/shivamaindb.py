@@ -75,7 +75,6 @@ def insert(spam_id):
     sensor = "SELECT `id`, `sensorID` FROM `spam` WHERE `id` = '" + str(spam_id) + "'"
     
     try:
-        print "INSERTING"
         # Saving 'spam' table's data
         tempDb.execute(spam)
         
