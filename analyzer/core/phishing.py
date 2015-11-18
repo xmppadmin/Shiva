@@ -4,8 +4,6 @@ from bs4 import BeautifulSoup
 from string import split
 import unicodedata
 
-import logging
-
 
 TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','accountants','active','actor','ad','ads','adult','ae','aero','af','afl','ag',
 'agency','ai','aig','airforce','al','allfinanz','alsace','am','amsterdam','an','android','ao','apartments','aq','aquarelle','ar','archi','army','arpa','as',
@@ -715,8 +713,29 @@ class RuleA7(MailClassificationRule):
             
         return -1        
         
+class RuleA8(MailClassificationRule):
+            
+    def __init__(self):
+        self.code = 'A8'
+        self.weight = 1
+        self.description = 'Blacklisted URL'
+         
+    def apply_rule(self, mailFields):
         
+        if 'links' not in mailFields:
+            return -1
         
+        # assume every imported phishing email containing link was blacklisted
+        # this makes this rule statisticaly significant, old phishing links are not
+        # presented in databases anymore
+        print mailFields['sensorID']
+        print mailFields['links']
+        if mailFields['links'] and re.match('.*phishingImport.*', mailFields['sensorID']):
+            return 1
+
+        return 1 if any(map(lambda a: a['InPhishTank'] if 'InPhishTank' in a else False, mailFields['links'])) else -1
+            
+            
 
         
 
@@ -745,3 +764,4 @@ rulelist.add_rule(RuleA4())
 rulelist.add_rule(RuleA5())
 rulelist.add_rule(RuleA6())
 rulelist.add_rule(RuleA7())
+rulelist.add_rule(RuleA8())

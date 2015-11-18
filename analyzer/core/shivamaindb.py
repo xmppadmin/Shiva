@@ -611,6 +611,13 @@ def retrieve_by_ids(email_ids = []):
             mailFields['shivaScore'] = current_record[10]
             mailFields['spamassassinScore'] = current_record[11]
             
+            """fetch sensors information"""
+            sensorquery = 'select sensorID from sensor_spam ss inner join sensor s on s.id = ss.sensor_id where spam_id = %s limit 1'
+            mainDb.execute(sensorquery,(current_id,))
+            sensor = mainDb.fetchone()
+            if sensor:
+                mailFields['sensorID'] = sensor[0]
+            
             """fetch links for current spam"""            
             mailFields['links'] = get_permament_url_info_for_email(current_id)
 
