@@ -152,7 +152,7 @@ def samedomain(url1, url2):
     return True
 
 def extractalldomains(url):
-    """extract all domains from given url"""
+    """ extract all domains from given url """
     
     urls = list()
     if not url:
@@ -165,7 +165,7 @@ def extractalldomains(url):
     return urls
 
 def getfinalurls(url_info={}):
-    """return list of urls from url_tuple. Unshortened Url is alwas prefered"""
+    """return list of urls from url_tuple. Unshortened Url is alwas prefered """
     url_list = list()
     if not url_info:
         return url_list
@@ -177,6 +177,7 @@ def getfinalurls(url_info={}):
     return url_list
         
 def strip_accents(s):
+    """ normalize given string """
     if isinstance(s, unicode):
         return ''.join(c for c in unicodedata.normalize('NFD', s) 
                    if unicodedata.category(c) != 'Mn')
@@ -185,7 +186,12 @@ def strip_accents(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s.decode('utf8','replace')) 
                    if unicodedata.category(c) != 'Mn')
 
+def has_blacklisted_url(mailFields):
+    """ return True if email constains blacklisted URL """        
+    if 'links' not in mailFields:
+        return False
 
+    return any(map(lambda a: a['InPhishTank'] if 'InPhishTank' in a else False, mailFields['links']))
 
 """Class represents list of MailClassificationRules to be
    applied on mail
@@ -712,39 +718,12 @@ class RuleA7(MailClassificationRule):
             return 1
             
         return -1        
-        
-class RuleA8(MailClassificationRule):
-            
-    def __init__(self):
-        self.code = 'A8'
-        self.weight = 1
-        self.description = 'Blacklisted URL'
-         
-    def apply_rule(self, mailFields):
-        
-        if 'links' not in mailFields:
-            return -1
-        
-        # assume every imported phishing email containing link was blacklisted
-        # this makes this rule statisticaly significant, old phishing links are not
-        # presented in databases anymore
-        print mailFields['sensorID']
-        print mailFields['links']
-        if mailFields['links'] and re.match('.*phishingImport.*', mailFields['sensorID']):
-            return 1
-
-        return 1 if any(map(lambda a: a['InPhishTank'] if 'InPhishTank' in a else False, mailFields['links'])) else -1
             
             
 
         
 
 rulelist = MailClassificationRuleList()
-# rulelist.add_rule(PhischingHumanCheckRule())
-# rulelist.add_rule(ContainsUrlRule())
-# rulelist.add_rule(ContainsImageAttachmentRule())
-# rulelist.add_rule(ContainsExecutableAttachmentRule())
-# rulelist.add_rule(ContainsDocumentAttachmentRule())
 rulelist.add_rule(HasShortenedUrl())
 rulelist.add_rule(RuleC1())
 rulelist.add_rule(RuleC2())
@@ -764,4 +743,4 @@ rulelist.add_rule(RuleA4())
 rulelist.add_rule(RuleA5())
 rulelist.add_rule(RuleA6())
 rulelist.add_rule(RuleA7())
-rulelist.add_rule(RuleA8())
+2

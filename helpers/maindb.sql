@@ -240,6 +240,7 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
   `phishingHumanCheck` BOOL COMMENT 'messaged marked as phishing by human',
   `derivedPhishingStatus` BOOL DEFAULT NULL COMMENT 'status computed for message: NULL - not assigned, true - phishing, false - spam',
+  `blacklisted` BOOL DEFAULT FALSE COMENT 'indicator whether email contains at least one blacklisted URL',
   PRIMARY KEY (`id`),
   KEY `subject` (`subject`),
   KEY `totalCounter` (`totalCounter`),
@@ -274,6 +275,8 @@ CREATE TABLE IF NOT EXISTS `learningreport` (
   `learningMailCount` int(10) NOT NULL,
   `spamassassinStatus` char(10),
   `shivaStatus` char(10),
+  `shiva_threshold` float DEFAULT 0.5 NOT NULL,
+  `sa_threshold` float DEFAULT 0.5 NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1 ;
 
@@ -318,7 +321,7 @@ CREATE TABLE IF NOT EXISTS `learningresults` (
 -- Overview
 --
 CREATE OR REPLACE VIEW spam_overview_view AS
-SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore,sensor.sensorID,spam.derivedPhishingStatus,spam.phishingHumanCheck
+SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore,sensor.sensorID,spam.derivedPhishingStatus,spam.phishingHumanCheck,spam.blacklisted
 FROM spam
   INNER JOIN sdate_spam ON sdate_spam.spam_id = spam.id 
   INNER JOIN sdate ON sdate_spam.id = sdate.id 
@@ -358,3 +361,19 @@ UNION
   SELECT id FROM spam WHERE id NOT IN (SELECT spamId FROM learningresults) 
 UNION 
   SELECT spamId FROM learningresults WHERE spamId NOT IN (SELECT id FROM spam);
+  
+  
+  
+-- ---------------------------------------------------------
+--
+-- view used for detection thresholds calculation
+-- only email NOT mathing regex (spam|phishing)Import are considered
+-- since there is no point of of considering then in computing of
+-- detection effectivness
+--
+CREATE OR REPLACE VIEW email_classification_view AS
+SELECT s.shivaScore, s.spamassassinScore, s.derivedPhishingStatus, s.phishingHumanCheck 
+FROM sensor se 
+INNER JOIN sensor_spam ss ON ss.sensor_id = se.id
+INNER JOIN spam s ON s.id = ss.spam_id
+WHERE sensorID NOT regexp '.*(spam|phishing)Import.*'; 

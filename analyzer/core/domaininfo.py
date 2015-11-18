@@ -267,7 +267,7 @@ class InPhishTank(RankProvider):
             
             req_url = 'http://checkurl.phishtank.com/checkurl/'
             params = {'format':'json',
-                          'url': url,
+                          'url': url if url.startswith('http') else 'http://' + url,
                            }
             if api_key:
                 params['app_key'] = api_key

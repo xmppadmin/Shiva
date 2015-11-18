@@ -66,7 +66,7 @@ def insert(spam_id):
     
     mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'links':[],  'date': '' , 'phishingHumanCheck' : '', 'shivaScore' : -1.0, 'spamassassinScore' : -1.0 }
     
-    spam = "SELECT `id`, `ssdeep`, `to`, `from`, `textMessage`, `htmlMessage`, `subject`, `headers`, `sourceIP`, `sensorID`, `firstSeen`, `relayCounter`, `relayTime`, `totalCounter`, `length`, `shivaScore`, `spamassassinScore` , `derivedPhishingStatus`, `phishingHumanCheck` FROM `spam` WHERE `id` = '" + str(spam_id) + "'"
+    spam = "SELECT `id`, `ssdeep`, `to`, `from`, `textMessage`, `htmlMessage`, `subject`, `headers`, `sourceIP`, `sensorID`, `firstSeen`, `relayCounter`, `relayTime`, `totalCounter`, `length`, `shivaScore`, `spamassassinScore` , `derivedPhishingStatus`, `phishingHumanCheck`, `blacklisted` FROM `spam` WHERE `id` = '" + str(spam_id) + "'"
     
     attachments = "SELECT `id`, `spam_id`, `file_name`, `attach_type`, `attachmentFileMd5`, `date`, `attachment_file_path` FROM `attachments` WHERE `spam_id` = '" + str(spam_id) + "'"
     
@@ -81,7 +81,7 @@ def insert(spam_id):
         
         spamrecord = tempDb.fetchone()
         if spamrecord:
-            mailFields['s_id'], mailFields['ssdeep'], mailFields['to'], mailFields['from'], mailFields['text'], mailFields['html'], mailFields['subject'], mailFields['headers'], mailFields['sourceIP'], mailFields['sensorID'], mailFields['firstSeen'], mailFields['relayCounter'], mailFields['relayTime'], mailFields['count'], mailFields['len'], mailFields['shivaScore'], mailFields['spamassassinScore'], mailFields['derivedPhishingStatus'], mailFields['phishingHumanCheck'] = spamrecord
+            mailFields['s_id'], mailFields['ssdeep'], mailFields['to'], mailFields['from'], mailFields['text'], mailFields['html'], mailFields['subject'], mailFields['headers'], mailFields['sourceIP'], mailFields['sensorID'], mailFields['firstSeen'], mailFields['relayCounter'], mailFields['relayTime'], mailFields['count'], mailFields['len'], mailFields['shivaScore'], mailFields['spamassassinScore'], mailFields['derivedPhishingStatus'], mailFields['phishingHumanCheck'], mailFields['blacklisted'] = spamrecord
             
             mailFields['date'] = str(mailFields['firstSeen']).split(' ')[0]
             # Saving 'attachments' table's data
@@ -125,7 +125,7 @@ def insert(spam_id):
             elif mailFields['derivedPhishingStatus'] == 0:
                 derivedPhishingStatus = 'FALSE'
             
-            insert_spam = "INSERT INTO `spam`(`headers`, `to`, `from`, `subject`, `textMessage`, `htmlMessage`, `totalCounter`, `id`, `ssdeep`, `length`, `shivaScore`, `spamassassinScore`, `derivedPhishingStatus`, `phishingHumanCheck`) VALUES('" + mailFields['headers'] + "', '" + mailFields['to'] + "', '" + mailFields['from'] + "', '" + mailFields['subject'] + "', '" + mailFields['text'] + "', '" + mailFields['html'] + "', '" + str(mailFields['count']) + "', '" + mailFields['s_id'] + "', '" + mailFields['ssdeep'] + "', '" + str(mailFields['len']) + "', '" + str(mailFields['shivaScore']) + "', '" + str(mailFields['spamassassinScore']) + "', " + derivedPhishingStatus + ', ' + phishingHumanCheck + ")"
+            insert_spam = "INSERT INTO `spam`(`headers`, `to`, `from`, `subject`, `textMessage`, `htmlMessage`, `totalCounter`, `id`, `ssdeep`, `length`, `shivaScore`, `spamassassinScore`, `derivedPhishingStatus`, `phishingHumanCheck`, `blacklisted`) VALUES('" + mailFields['headers'] + "', '" + mailFields['to'] + "', '" + mailFields['from'] + "', '" + mailFields['subject'] + "', '" + mailFields['text'] + "', '" + mailFields['html'] + "', '" + str(mailFields['count']) + "', '" + mailFields['s_id'] + "', '" + mailFields['ssdeep'] + "', '" + str(mailFields['len']) + "', '" + str(mailFields['shivaScore']) + "', '" + str(mailFields['spamassassinScore']) + "', " + derivedPhishingStatus + ', ' + phishingHumanCheck + ', ' + str(mailFields['blacklisted']) + ")"
   
             try:
                 mainDb.execute(insert_spam)
@@ -588,7 +588,7 @@ def retrieve_by_ids(email_ids = []):
             mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'attachmentFileType':[], 'links':[],  'date': '' }
             
             """fetch basic spam information from database"""
-            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck`,`shivaScore`,`spamassassinScore` FROM `spam` WHERE `id` = %s "
+            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck`,`shivaScore`,`spamassassinScore`,`blacklisted` FROM `spam` WHERE `id` = %s "
             mailFields['s_id'] = current_id
             
             mainDb = shivadbconfig.dbconnectmain()
@@ -610,6 +610,7 @@ def retrieve_by_ids(email_ids = []):
             mailFields['phishingHumanCheck'] = current_record[9]
             mailFields['shivaScore'] = current_record[10]
             mailFields['spamassassinScore'] = current_record[11]
+            mailFields['blacklisted'] = current_record[12]
             
             """fetch sensors information"""
             sensorquery = 'select sensorID from sensor_spam ss inner join sensor s on s.id = ss.sensor_id where spam_id = %s limit 1'
@@ -643,14 +644,14 @@ def retrieve_by_ids(email_ids = []):
 def get_overview(start=0,limit=10):
     overview_list = []
     try:
-        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID`,`derivedPhishingStatus`,`phishingHumanCheck` from `spam_overview_view` LIMIT %s OFFSET %s "
+        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID`,`derivedPhishingStatus`,`phishingHumanCheck`, `blacklisted` from `spam_overview_view` LIMIT %s OFFSET %s "
         
         mainDb = shivadbconfig.dbconnectmain()
         mainDb.execute(overview_query,(int(limit),int(start),))
         result = mainDb.fetchall()
         
         for record in result:
-            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6], 'derivedPhishingStatus':record[7], 'phishingHumanCheck':record[8]})
+            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6], 'derivedPhishingStatus':record[7], 'phishingHumanCheck':record[8], 'blacklisted':record[9]})
         
         
     except mdb.Error, e:

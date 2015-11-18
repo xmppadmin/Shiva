@@ -8,6 +8,7 @@ from sklearn.neighbors import KNeighborsClassifier
 import shivamaindb
 import shivastatistics
 
+from phishing import has_blacklisted_url
 
 # files used by module
 CLASSIFIER_PKL = 'run/classifier.pkl'
@@ -227,6 +228,7 @@ def check_mail(mailFields):
     
     dict {
       verdict: True/False
+      blacklisted: True/False
       shiva_prob: float
       sa_prob: float
     }
@@ -245,8 +247,10 @@ def check_mail(mailFields):
     shiva_prob = classifier.predict_proba(mailVector)[0][1]
     sa_prob = get_spamassassin_bayes_score(mailFields)
     
+    is_blacklisted = has_blacklisted_url(mailFields)
     
-    result = {'verdict' : shiva_prob >= global_shiva_threshold or sa_prob >= global_sa_threshold,
+    result = {'verdict' : is_blacklisted or shiva_prob >= global_shiva_threshold or sa_prob >= global_sa_threshold,
+              'blacklisted' : is_blacklisted,
               'shiva_prob' : shiva_prob,
               'sa_prob' : sa_prob }
     logging.info('VERDICT: ' + str(result))
@@ -377,8 +381,11 @@ def __compute_classifier_decision_tresholds():
     from sklearn.metrics import f1_score
     classification_results = shivamaindb.get_detection_results_for_thresholds()
     
+    default_result = (.5,.5,)
+    
+    # return default if there are suitable emails
     if not classification_results:
-        return 
+        return (default_result)
     
     expected_results = []
     for line in classification_results:
@@ -411,15 +418,14 @@ def __compute_classifier_decision_tresholds():
             if best_score_sa <= sa_score:
                 best_score_sa = sa_score
                 best_thres_sa = current_thres
-                
-                
+
         return (best_thres_shiva, best_thres_sa,)
     
     except Exception, e:
         logging.error(e)
         
     # return default thresholds if error occurs
-    return (.5,.5,)
+    return default_result
         
 
     

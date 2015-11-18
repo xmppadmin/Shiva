@@ -28,6 +28,7 @@ def main(mailFields, key, msgMailRequest):
     filename = mailFields['s_id'] + "-" + key
     
     probability_tuple = (0,0)
+    blacklisted = False
     phish_flag = None
     phishing_human_check = None
     
@@ -49,6 +50,7 @@ def main(mailFields, key, msgMailRequest):
         # mail is not manually imported, compute score
         email_verdict = check_mail(mailFields)
         probability_tuple = (email_verdict['shiva_prob'],email_verdict['sa_prob'])
+        blacklisted = email_verdict['blacklisted']
         phish_flag = email_verdict['verdict']
     
     if phish_flag:
@@ -85,6 +87,7 @@ def main(mailFields, key, msgMailRequest):
                 'derivedPhishingStatus': phish_flag,
                 'shivaScore': probability_tuple[0],
                 'spamassassinScore': probability_tuple[1],
+                'blacklisted': blacklisted,
                 'counter':1, 
                 'relayed':0 }
 
