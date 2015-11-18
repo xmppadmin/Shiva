@@ -240,7 +240,7 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
   `phishingHumanCheck` BOOL COMMENT 'messaged marked as phishing by human',
   `derivedPhishingStatus` BOOL DEFAULT NULL COMMENT 'status computed for message: NULL - not assigned, true - phishing, false - spam',
-  `blacklisted` BOOL DEFAULT FALSE COMENT 'indicator whether email contains at least one blacklisted URL',
+  `blacklisted` BOOL DEFAULT FALSE COMMENT 'indicator whether email contains at least one blacklisted URL',
   PRIMARY KEY (`id`),
   KEY `subject` (`subject`),
   KEY `totalCounter` (`totalCounter`),
