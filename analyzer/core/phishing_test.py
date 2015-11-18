@@ -141,6 +141,28 @@ class TestRules(unittest.TestCase):
         
         mail_body_html = """
         <body>
+          <a href="http:/1.2.3.4/something/interesting.php">
+            something.boring.com
+          </a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        mail_body_html = """
+        <body>
+          <a href="http:/some.site.com/something/1.2.3.4/asdf.php">
+            something.boring.com
+          </a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        mail_body_html = """
+        <body>
           <a href="http://some.way.too.complicated.site.com/something/interesting.php">
             something.boring.com
           </a>
@@ -584,34 +606,6 @@ class TestRules(unittest.TestCase):
         mailFields['links'] = [link1,link2]
         self.rule_assert_not(rule.apply_rule(mailFields)) 
         
-    def test_rule_a8(self):
-        from phishing import RuleA8
-        rule = RuleA8()
-        
-        mailFields = {}
-        sensor = 'phishingImport'
-        link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 10, 'InPhishTank' : False}
-        link2 = {'raw_link' : 'http://wqer.ewr.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 1000, 'InPhishTank' : False}
-        mailFields['links'] = [link1,link2]
-        mailFields['sensorID'] = sensor
-        self.rule_assert(rule.apply_rule(mailFields))
-        
-        mailFields = {}
-        sensor = 'shiva'
-        link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 10,}
-        link2 = {'raw_link' : 'http://wqer.ewr.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 1000, 'InPhishTank' : False}
-        mailFields['links'] = [link1,link2]
-        mailFields['sensorID'] = sensor
-        self.rule_assert_not(rule.apply_rule(mailFields))  
-        
-        mailFields = {}
-        sensor = 'shiva'
-        link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 10000, 'InPhishTank' : True}
-        link2 = {'raw_link' : 'http://wqer.ewr.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 1000, 'InPhishTank' : False}
-        mailFields['links'] = [link1,link2]
-        mailFields['sensorID'] = sensor
-        self.rule_assert(rule.apply_rule(mailFields)) 
-    
     def rule_assert(self,result):
         assert result > 0
     

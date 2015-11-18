@@ -418,8 +418,9 @@ class RuleC4(MailClassificationRule):
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
             for link_info in mailFields['links']:
-                if 'raw_link' in link_info and str(link_info['raw_link']).count('.') > 4:
-                    return 1
+                if 'raw_link' in link_info and not extractip(link_info['raw_link']):
+                    if str(link_info['raw_link']).count('.') > 4:
+                        return 1
         
         if not 'html' in mailFields:
             return -1
