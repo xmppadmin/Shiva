@@ -235,6 +235,15 @@ def insert(spam_id):
         logging.error("[-] Error (Module shivamaindb.py) - executing insert_spamid %s" % e)
         if notify is True:
             shivanotifyerrors.notifydeveloper("[-] Error (Module shivamaindb.py) - executing insert_spamid %s" % e)
+            
+            
+    
+    detected_phishing = True if 'derivedPhishingStatus' in mailFields and mailFields['derivedPhishingStatus'] else False
+    human_checked = True if 'phishingHumanCheck' in mailFields and mailFields['phishingHumanCheck'] else False
+    
+    # send phishing notification if it is enabled, phishing was detected but not by human
+    if phishing_report is True and detected_phishing is True and not human_checked is True:
+        shivanotifyerrors.send_phishing_report(mailFields)
         
     
 def update(tempid, mainid):
@@ -1223,6 +1232,7 @@ if __name__ == '__main__':
     tempDb = shivadbconfig.dbconnect() 
     mainDb = shivadbconfig.dbconnectmain()
     notify = server.shivaconf.getboolean('notification', 'enabled')
+    phishing_report = server.shivaconf.getboolean('analyzer', 'send_phishing_report')
 #     time.sleep(200) # Giving time to hpfeeds module to complete the task.
     logging.basicConfig(filename='logs/maindb.log',level=logging.DEBUG,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     main()
