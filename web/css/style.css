@@ -34,3 +34,6 @@ span.id_link {
   font-family: "Courier New", Courier, monospace;
 }
 
+td.subject_td {
+  width: 50em;
+}
