@@ -28,7 +28,8 @@ from lamson.bounce import PRIMARY_STATUS_CODES, SECONDARY_STATUS_CODES, COMBINED
 import shivascheduler
 import shivamailparser
 import shivadbconfig
-import web
+import shiva_phishing.learning as learning
+import shiva_phishing.web as web
 import MySQLdb as mdb
 
 confpath = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../shiva.conf"
@@ -257,7 +258,6 @@ class QueueReceiver(object):
             web.main()
         
         """ remove possible lock file from previous learning """
-        import learning
         learning.free_learning_lock()
 
         logging.info("Queue receiver started on queue dir %s" %

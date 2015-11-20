@@ -7,10 +7,9 @@ the list.
 import logging
 import server
 import shutil
-import datetime
 import re
 
-from learning import check_mail
+from shiva_phishing.learning import check_mail
 
 def main(mailFields, key, msgMailRequest):
     """Main function. 
@@ -47,7 +46,7 @@ def main(mailFields, key, msgMailRequest):
         phish_flag = False
         phishing_human_check = False
     else:
-        # mail is not manually imported, compute score
+        # email is not manually imported, compute score
         email_verdict = check_mail(mailFields)
         probability_tuple = (email_verdict['shiva_prob'],email_verdict['sa_prob'])
         blacklisted = email_verdict['blacklisted']

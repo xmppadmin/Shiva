@@ -20,8 +20,9 @@ import string
 import shivaconclude
 import shivanotifyerrors
 import server
-import domaininfo
 import shivamaindb
+
+from shiva_phishing import domaininfo
 
 # Global dictionary to store parsed fields of spam
 mailFields = {'headers':'', 'to':'', 'from':'', 'subject':'', 'date':'', 'firstSeen':'', 'lastSeen':'', 'firstRelayed':'', 'lastRelayed':'', 'sourceIP':'', 'sensorID':'', 'text':'', 'html':'', 'inlineFileName':[], 'inlineFile':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFile':[], 'attachmentFileMd5':[], 'links':[], 'ssdeep':'', 's_id':'', 'len':''}

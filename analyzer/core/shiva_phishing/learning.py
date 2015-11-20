@@ -1,14 +1,14 @@
 import pickle
 import logging
-import server
 import os
 
 from sklearn.neighbors import KNeighborsClassifier
 
-import shivamaindb
+import lamson.server
+import backend_operations
 import shivastatistics
 
-from phishing import has_blacklisted_url
+from lamson.shiva_phishing.phishing import has_blacklisted_url
 
 # files used by module
 CLASSIFIER_PKL = 'run/classifier.pkl'
@@ -39,7 +39,7 @@ def __init_classifier():
         return
     
     
-    global_shiva_threshold, global_sa_threshold = shivamaindb.get_current_detection_thresholds()
+    global_shiva_threshold, global_sa_threshold = backend_operations.get_current_detection_thresholds()
     logging.info("Learning: Loaded thresholds: {0} {1}".format(global_shiva_threshold,global_sa_threshold))
     
     logging.info("Learning: Trying to load classifier from file.")
@@ -87,7 +87,7 @@ def learn():
     global_shiva_threshold = shiva_threshold
     global_sa_threshold = sa_threshold
     
-    shivamaindb.save_learning_report(classifier_status, spamassassin_status, shiva_threshold, sa_threshold)
+    backend_operations.save_learning_report(classifier_status, spamassassin_status, shiva_threshold, sa_threshold)
     
     free_learning_lock()
 
@@ -97,7 +97,7 @@ def __learn_classifier():
     deep relearning is needed
     """
     
-    if not shivamaindb.check_stored_rules_results_integrity():
+    if not backend_operations.check_stored_rules_results_integrity():
         logging.info('DEEP RELEARN')
         __deep_relearn()
         
@@ -166,7 +166,7 @@ def __learn_spamassassin():
         logging.error('Learning: error occered during communication with spamassassin daemon.')
         return
     
-    rawspampath = server.shivaconf.get('analyzer', 'rawspampath')
+    rawspampath = lamson.server.shivaconf.get('analyzer', 'rawspampath')
         
     phishing_mail_path = rawspampath + "phishing/"
     phishing_mail_count = len(fnmatch.filter(os.listdir(phishing_mail_path), '*'))
@@ -288,7 +288,7 @@ def process_single_record(mailFields):
         computed_results.append({'spamId': mailFields['s_id'], 'code': rule.code ,'result': db_result})
         
     # store result of email to database    
-    shivamaindb.store_computed_results(computed_results, used_rules)    
+    backend_operations.store_computed_results(computed_results, used_rules)    
     
     # return list of results sorted by rule code
     sorted_rules = sorted(result,key=lambda a: a['code'])
@@ -307,11 +307,11 @@ def __deep_relearn():
     
     essential in case of adding new detection rules to honeypot
     """
-    shivamaindb.init_deep_relearn()
+    backend_operations.init_deep_relearn()
     rercord_count = 0
     
     while True:
-        records = shivamaindb.retrieve(10, rercord_count)
+        records = backend_operations.retrieve(10, rercord_count)
         if len(records) == 0 :
             break
         for record in records:
@@ -379,7 +379,7 @@ def __compute_classifier_decision_tresholds():
     compute optimal thresholds for marking emails as phishing
     """
     from sklearn.metrics import f1_score
-    classification_results = shivamaindb.get_detection_results_for_thresholds()
+    classification_results = backend_operations.get_detection_results_for_thresholds()
     
     default_result = (.5,.5,)
     

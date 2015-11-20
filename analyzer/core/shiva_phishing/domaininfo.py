@@ -7,8 +7,8 @@ import xml.etree.ElementTree
 import urlparse
 import requests
 
-import server
-# from phishing import samedomain,extractdomain
+import lamson.server
+
 
 class RankProvider(object):
     """Abstract class for obtaining the page rank (popularity)
@@ -263,7 +263,7 @@ class InPhishTank(RankProvider):
     def get_rank(self, url):
         try:
             
-            api_key = server.shivaconf.get('analyzer','phishtankapikey')
+            api_key =lamson.server.shivaconf.get('analyzer','phishtankapikey')
             
             req_url = 'http://checkurl.phishtank.com/checkurl/'
             params = {'format':'json',
@@ -290,6 +290,4 @@ def get_domain_info(url):
         result[p.__class__.__name__] = p.get_rank(domain)
     return result
 
-p = InPhishTank()
-print p.get_rank('http://garthaziz.co.za/wp-admin/link-add.php/')
 

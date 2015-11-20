@@ -1,9 +1,8 @@
-import re
-
 from bs4 import BeautifulSoup
 from string import split
-import unicodedata
 
+import unicodedata
+import re
 
 TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','accountants','active','actor','ad','ads','adult','ae','aero','af','afl','ag',
 'agency','ai','aig','airforce','al','allfinanz','alsace','am','amsterdam','an','android','ao','apartments','aq','aquarelle','ar','archi','army','arpa','as',
@@ -722,9 +721,12 @@ class RuleA7(MailClassificationRule):
             
             
 
-        
+# contains list of rules that will be applied on emails        
 
 rulelist = MailClassificationRuleList()
+
+# register desired rules into rule list
+
 rulelist.add_rule(HasShortenedUrl())
 rulelist.add_rule(RuleC1())
 rulelist.add_rule(RuleC2())

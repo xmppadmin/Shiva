@@ -8,10 +8,12 @@ import os
 from mako.template import Template
 from mako.lookup import TemplateLookup
 
-import server
-import shivamaindb
+import lamson.server
+
+import backend_operations
 import learning
 import shivastatistics
+
 import logging
 
 
@@ -43,7 +45,7 @@ class WebServer():
 # learning page
     @cherrypy.expose
     def learning(self):
-        return self.learning_template(shivamaindb.get_learning_overview())
+        return self.learning_template(backend_operations.get_learning_overview())
         
 # logs accessibility
     @cherrypy.expose
@@ -58,15 +60,15 @@ class WebServer():
 
     @cherrypy.expose
     def delete_email(self,email_id = ''):
-        shivamaindb.delete_spam(email_id)
+        backend_operations.delete_spam(email_id)
 
     @cherrypy.expose
     def mark_as_phishing(self,email_id = ''):
-        shivamaindb.mark_as_phishing(email_id)     
+        backend_operations.mark_as_phishing(email_id)     
 
     @cherrypy.expose
     def mark_as_spam(self,email_id = ''):
-        shivamaindb.mark_as_spam(email_id)
+        backend_operations.mark_as_spam(email_id)
         
     @cherrypy.expose
     def relearn(self):
@@ -75,8 +77,8 @@ class WebServer():
     
     @cherrypy.expose
     def stats(self):
-        shivastatistics.generate_rules_graph(shivamaindb.get_rule_results_for_statistics())
-        shivastatistics.generate_roc_graph((shivamaindb.get_data_for_roc_curves())) 
+        shivastatistics.generate_rules_graph(backend_operations.get_rule_results_for_statistics())
+        shivastatistics.generate_roc_graph((backend_operations.get_data_for_roc_curves())) 
     
 
 
@@ -88,11 +90,11 @@ class WebServer():
         title='SHIVA honeypot: mainpage'
         start = 0
         count = 10
-        overview_list=shivamaindb.get_overview(start,count)
-        learning_overview_list=shivamaindb.get_learning_overview(5)
+        overview_list=backend_operations.get_overview(start,count)
+        learning_overview_list=backend_operations.get_learning_overview(5)
         
-        total_mails = shivamaindb.get_mail_count()
-        today_mails = shivamaindb.get_mail_count_for_date(datetime.date.today(), datetime.date.today() + datetime.timedelta(days=1))
+        total_mails = backend_operations.get_mail_count()
+        today_mails = backend_operations.get_mail_count_for_date(datetime.date.today(), datetime.date.today() + datetime.timedelta(days=1))
         
         uptime_str = 'uknown'
         uptime = time.time() - self.startup_time if self.startup_time else 0
@@ -114,7 +116,7 @@ class WebServer():
         
     
     def email_detail_template(self, email_id=''):
-        emails = shivamaindb.retrieve_by_ids([email_id])
+        emails = backend_operations.retrieve_by_ids([email_id])
         mailFields = []
         if emails:
             mailFields = emails[0]
@@ -131,7 +133,7 @@ class WebServer():
             else:
                 staticHtmlFile = ''
         
-        email_result = shivamaindb.get_results_of_email(mailFields['s_id'])
+        email_result = backend_operations.get_results_of_email(mailFields['s_id'])
         template = Template('<%include file="view_email.html"/>', lookup=self.template_lookup, output_encoding='utf-8', encoding_errors='replace')
         return template.render(title=title, email_result=email_result, mailFields=mailFields, attachmentsPath=self.attachmentsPath,staticHtmlFile=staticHtmlFile)
         
@@ -158,8 +160,8 @@ class WebServer():
         title='SHIVA honeypot: list emails'
         headline_title = 'SHIVA honeypot: list {0} emails starting from {1}'.format(start,count)
         
-        overview_list=shivamaindb.get_overview(start,count)
-        total = shivamaindb.get_mail_count()
+        overview_list=backend_operations.get_overview(start,count)
+        total = backend_operations.get_mail_count()
 
         template = Template('<%include file="list_emails.html"/>', lookup=self.template_lookup)
         return template.render(headline=headline_title, title=title, overview_list=overview_list, total=int(total), start=int(start), count=int(count))
@@ -174,16 +176,16 @@ class WebServer():
 # configuration ================================================================
 
 def prepare_http_server():
-    staticRoot = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../../"
+    staticRoot = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../../../"
     attachmentsPath = '/shiva/attachments'
     rawHtmlPath = '/shiva/raw_html'
     
     
     web_interface_address = '127.0.0.1'
     web_interface_port = '8080'
-    web_bind_config = server.shivaconf.get('web', 'address')
-    auth_login = server.shivaconf.get('web','username')
-    auth_pass = server.shivaconf.get('web','password')
+    web_bind_config = lamson.server.shivaconf.get('web', 'address')
+    auth_login = lamson.server.shivaconf.get('web','username')
+    auth_pass = lamson.server.shivaconf.get('web','password')
 
     if web_bind_config:
         web_interface_address, web_interface_port = web_bind_config.split(':')
@@ -225,7 +227,7 @@ def prepare_http_server():
         }
     }
     
-    log_dir = os.path.dirname(os.path.realpath(__file__)) + "/../../../../analyzer/logs/"
+    log_dir = os.path.dirname(os.path.realpath(__file__)) + "/../../../../../analyzer/logs/"
     if not os.path.isdir(log_dir):
         logging.warn("Logging directory doesn't exist, using /tmp/")
         log_dir = '/tmp/'

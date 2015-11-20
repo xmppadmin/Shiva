@@ -5,7 +5,7 @@ import matplotlib.pyplot as plot
 import numpy as np
 
 
-import shivamaindb
+import backend_operations
     
 def prepare_matrix():
     """     
@@ -40,9 +40,9 @@ def prepare_matrix():
     # indicator of walkthrough 
     first_loop = True;
     
-    for email_id in shivamaindb.get_email_ids():
+    for email_id in backend_operations.get_email_ids():
         
-        email_result = shivamaindb.get_results_of_email(email_id)
+        email_result = backend_operations.get_results_of_email(email_id)
         if 'rules' in email_result:
             
             #sort rules to ensure same order in all rows of matrix
