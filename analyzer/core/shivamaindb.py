@@ -5,9 +5,10 @@ import server
 import shivadbconfig
 import shivanotifyerrors
 import logging
-
 import ssdeep
 import MySQLdb as mdb
+
+from shiva_phishing.report import send_phishing_report
 
 def main():
     
@@ -243,7 +244,7 @@ def insert(spam_id):
     
     # send phishing notification if it is enabled and phishing was detected but not by human
     if phishing_report is True and detected_phishing is True and not human_checked is True:
-        shivanotifyerrors.send_phishing_report(mailFields)
+        send_phishing_report(mailFields)
         
     
 def update(tempid, mainid):

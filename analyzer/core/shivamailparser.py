@@ -20,8 +20,8 @@ import string
 import shivaconclude
 import shivanotifyerrors
 import server
-import shivamaindb
 
+from shiva_phishing import backend_operations
 from shiva_phishing import domaininfo
 
 # Global dictionary to store parsed fields of spam
@@ -54,13 +54,13 @@ def linkparser(input_body):
         # prevent rare error with unknown bytes in URL
         link = filter(lambda x: x in string.printable, link)
         
-        persistent_link_info = shivamaindb.get_permament_url_info(link);
+        persistent_link_info = backend_operations.get_permament_url_info(link);
         if persistent_link_info:
             result_list.append(persistent_link_info)
         else:
             url_data = domaininfo.get_domain_info(link)
             logging.critical(url_data)
-            shivamaindb.store_permament_url_info(url_data)
+            backend_operations.store_permament_url_info(url_data)
             result_list.append(url_data)
             
     return result_list
