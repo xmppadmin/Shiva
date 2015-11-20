@@ -2,6 +2,7 @@
 import smtplib
 import lamson.server
 
+from mako.template import Template
 
 def send_phishing_report(mailFields):
     
@@ -12,8 +13,10 @@ def send_phishing_report(mailFields):
     smtphost = lamson.server.shivaconf.get('analyzer', 'relayhost')
     smtpport = lamson.server.shivaconf.get('analyzer', 'relayport')
 
-    message = """From: SHIVA honeypot <{0}>
-To: {1}
+
+    template_str = """
+From: SHIVA honeypot <${honeypot_email}>
+To: ${recipient_email}
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Subject: SHIVA honeypot: possible phishing found
@@ -21,13 +24,25 @@ Subject: SHIVA honeypot: possible phishing found
 SHIVA honeypot: possible phishing found
 
 Details:
-  Subject: {2}
-  From: {3}
-  To: {4}
-  Link: http://{5}/view_email?email_id={6}
-""".format(report_from, report_to, mailFields['subject'], mailFields['from'],mailFields['to'],domain_root,mailFields['s_id'])
-
+  Subject: ${phishing_subject}
+  From: ${phishing_from}
+  To: ${phishing_to}
+  Link: http://${web_iterface_url}/view_email?email_id=${email_id}
     
+"""
+    
+    template = Template(template_str, output_encoding='utf-8', encoding_errors='replace')
+
+    message = template.render(honeypot_email=report_from,
+                                recipient_email=report_to,
+                                phishing_subject=mailFields['subject'],
+                                phishing_to=mailFields['to'],
+                                phishing_from=mailFields['from'],
+                                web_iterface_url=domain_root,
+                                email_id=mailFields['s_id'])
+     
+
+       
     try:
         smtpobj = smtplib.SMTP(smtphost, smtpport)
         smtpobj.sendmail(report_from, report_to, message)
