@@ -1,3 +1,6 @@
+"""
+Module send email notification about phishing emails
+"""
 
 import smtplib
 import lamson.server

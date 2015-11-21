@@ -1,3 +1,6 @@
+"""
+  This module is responsible for backend operations
+"""
 import os
 
 import lamson.server
@@ -8,26 +11,18 @@ import MySQLdb as mdb
 
 
 
-def retrieve(limit, offset, filterType="none"):
+def retrieve(limit, offset):
     """
     retrieve spam from database
     limit - integer, how many records should be retrieved
     offset - integer, offset to start from
-    filter = ('none','phish','spam')
     """
-        
-    whereclause = '1'   
-    if filterType == 'phish':
-        whereclause = 'phishingHumanCheck is true'
-    
-    if filterType == 'spam':
-        whereclause = 'phishingHumanCheck is not true'
 
-    fetchidsquery = "SELECT `id` FROM `spam` WHERE %s ORDER BY `id` LIMIT %s OFFSET %s"
+    fetchidsquery = "SELECT `id` FROM `spam` ORDER BY `id` LIMIT %s OFFSET %s"
     
     try:
         mainDb = lamson.shivadbconfig.dbconnectmain()
-        mainDb.execute(fetchidsquery,(whereclause,int(limit),int(offset),))
+        mainDb.execute(fetchidsquery,(int(limit),int(offset),))
         
         ids = mainDb.fetchall()
         return retrieve_by_ids(map(lambda a: a[0], ids if ids else []))
@@ -39,7 +34,15 @@ def retrieve(limit, offset, filterType="none"):
 
 def retrieve_by_ids(email_ids = []):
     """
-    return mailFields for email with given id
+    return sparse mailField dictionary suitable
+    for phishing detectkon with minor modifications {
+        'links': list of link_info dictionaries, SEE get_permament_url_info_for_email,store_permament_url_info_for_email,
+        'phishingHumanCheck': True/False/None
+        'derivedPhishingStatus': True/False/None
+        'shivaScore': float (0.0,1.0), -1 if email was imported,
+        'spamassassinScore': float (0.0,1.0), -1 if email was imported,
+        'blacklisted': True/False 
+        }
     """
     
     resultlist = []
@@ -102,6 +105,18 @@ def retrieve_by_ids(email_ids = []):
     
     
 def get_overview(start=0,limit=10):
+    """
+    retrieve sequention of emails from database
+    usable from overview purposes
+    
+    start : position to start on
+    limit : maximal count of emails to return
+    
+    return [
+      {'id':,'firstSeen':,'lastSeen':,'subject':,'shivaScore':,'spamassassinScore':,'sensorID':,'derivedPhishingStatus':,'phishingHumanCheck':, 'blacklisted':}
+    ]
+    """
+    
     overview_list = []
     try:
         overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID`,`derivedPhishingStatus`,`phishingHumanCheck`, `blacklisted` from `spam_overview_view` LIMIT %s OFFSET %s "
@@ -120,6 +135,9 @@ def get_overview(start=0,limit=10):
     return overview_list
     
 def get_mail_count():
+    """
+    return count of emails in database
+    """
     query = "SELECT COUNT(*) FROM spam"
     
     result = 0
@@ -132,7 +150,14 @@ def get_mail_count():
         
     return result
 
+
 def get_mail_count_for_date(from_datetime,to_datetime):
+    """
+    return count of emails betwwn given dates
+    
+    from_datetime : start date
+    to_datetime : end date
+    """
     query = "select count(*) from sdate where lastSeen between %s and %s";
     
     result = 0
@@ -147,7 +172,11 @@ def get_mail_count_for_date(from_datetime,to_datetime):
     
 
 def delete_spam(email_id=''):
-    """delete email from database and remove all related files"""
+    """
+    delete email from database and remove all related files
+    
+    email_id: identifier of email
+    """
     if not email_id:
         return
     
@@ -220,7 +249,13 @@ def delete_spam(email_id=''):
            
 
 def mark_as_phishing(email_id=''):
-    """mark email with given id as phishing"""
+    """
+    mark email with given id as phishing
+    
+    edits email details in database and physicaly moves email file from spam folder to phising folder
+     
+    email_id: identifier of email
+    """
     
     if get_derived_phishing_status(email_id):
         logging.info("Atempt to re-mark email with id '{}' as phishing, nothing to do".format(email_id))
@@ -242,7 +277,13 @@ def mark_as_phishing(email_id=''):
     
     
 def mark_as_spam(email_id=''):
-    """mark email with given id as spam"""
+    """
+    mark email with given id as spam
+    
+    edits email details in database and physicaly moves email file from phishing folder to spam folder
+     
+    email_id: identifier of email
+    """
     
     if get_derived_phishing_status(email_id) == False:
         logging.info("Atempt to re-mark email with id '{}' as spam, nothing to do".format(email_id))
@@ -284,9 +325,10 @@ def __move_mail_by_id(email_id='',spam_to_pshishing=True):
     
     
 def get_derived_phishing_status(email_id=''):
-    """ return True if email with given id was classified as phishing,
-        False if it was classified as spam
-        None if if information isn't available (imported emails).
+    """ 
+    return True if email with given id was classified as phishing,
+    False if it was classified as spam
+    None if if information isn't available (imported emails).
     """
     
     if not email_id:
@@ -648,6 +690,10 @@ def store_permament_url_info(url_data={}):
         
         
 def get_detection_results_for_thresholds():
+    """
+    prepare results for threasholds computations
+    returns tuple (sshivaScore, spamassassinScore, derivedPhishingStatus, phishingHumanCheck)
+    """
     
     result = []
     try:
@@ -664,6 +710,9 @@ def get_detection_results_for_thresholds():
     return result
 
 def get_current_detection_thresholds():
+    """
+    get threshlolds from learning
+    """
     
     try:
         query = 'select shiva_threshold, sa_threshold from learningreport order by learningDate desc limit 1'

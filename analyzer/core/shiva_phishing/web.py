@@ -12,7 +12,7 @@ import lamson.server
 
 import backend_operations
 import learning
-import shivastatistics
+import statistics
 
 import logging
 
@@ -253,6 +253,7 @@ def prepare_http_server():
     cherrypy.quickstart(WebServer(in_params),'/',conf)
     
 def main():
+    """ Start web server in new thread"""
     t = threading.Thread(target=prepare_http_server)
     t.start()
     

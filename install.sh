@@ -72,8 +72,11 @@ helpers () {
     sed "s/WORK_PATH/$WORK_PATH_ESC/g" $WORK_PATH/helpers/update_shiva_packages.sh > $INSTALL_PATH/update_shiva_packages.sh && chmod u+x $INSTALL_PATH/update_shiva_packages.sh
 
     printf "\n\n[*]  Generating init script.\n"
-    cp $WORK_PATH/helpers/honeypot.service $INSTALL_PATH/
+    SHIVA_USER=$(whoami)
+    sed "s/SHIVA_USER/$SHIVA_USER/g" $WORK_PATH/helpers/honeypot.service > $INSTALL_PATH/honeypot.service
     sed "s/INSTALL_PATH/$WORK_PATH_ESC/g" $WORK_PATH/helpers/honeypot.sh > $INSTALL_PATH/honeypot.sh
+    
+
 }
 
 dbcreate () {
@@ -161,13 +164,13 @@ analyzer () {
     pip install apscheduler==2.1.2
     pip install MySQL-python==1.2.5
     pip install ssdeep==3.1
-    pip install docutils
+    pip install docutils=0.12
     pip install pbr==0.9
     pip install python-daemon==2.0.2
     pip install beautifulsoup4==4.4.0
     pip install cherrypy==3.8.0
-    pip install requests
-    pip install mako
+    pip install requests==2.8.1
+    pip install mako==1.0.3
 
     printf "\n[*] Installing Lamson (analyzer) and creating project:\n"
     pip install lamson==1.3.4

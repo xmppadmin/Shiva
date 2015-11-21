@@ -1,7 +1,6 @@
 '''
-Created on Oct 22, 2015
 
-Unit tests for module analyzer.core.phishing
+Unit tests for module phishing
 '''
 
 

@@ -14,7 +14,7 @@ After=mysql.service
 
 [Service]
 Type=oneshot
-User=shiva
+User=SHIVA_USER
 ExecStart=/etc/init.d/honeypot.sh start
 ExecStop=/etc/init.d/honeypot.sh stop
 RemainAfterExit=yes

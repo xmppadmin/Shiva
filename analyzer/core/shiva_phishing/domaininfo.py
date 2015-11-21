@@ -1,3 +1,9 @@
+"""
+This module is responsible for communication with external
+services.
+
+"""
+
 import struct
 import urllib
 import urllib2
@@ -42,6 +48,8 @@ class RankProvider(object):
 
 class AlexaTrafficRank(RankProvider):
     """ Get the Alexa Traffic Rank for a URL
+    
+        TAKEN FROM https://github.com/aablack/websearchapp/blob/master/search/rank_provider.py
 
     """
     def __init__(self, host="xml.alexa.com", proxy=None, timeout=30):
@@ -61,6 +69,7 @@ class AlexaTrafficRank(RankProvider):
         url -- get page rank for url
 
         """
+        return -1
         try:
             query = "http://%s/data?%s" % (self._host, urllib.urlencode((
                 ("cli", 10),
@@ -88,6 +97,8 @@ class GooglePageRank(RankProvider):
     """ Get the google page rank figure using the toolbar API.
     Credits to the author of the WWW::Google::PageRank CPAN package
     as I ported that code to Python.
+    
+    TAKEN FROM https://github.com/aablack/websearchapp/blob/master/search/rank_provider.py
 
     """
     def __init__(self, host="toolbarqueries.google.com", proxy=None, timeout=30):
@@ -103,6 +114,10 @@ class GooglePageRank(RankProvider):
 GoogleToolbar 2.0.111-big; Windows XP 5.1)")]
 
     def get_rank(self, url):
+        """
+        return google page rank of url, -1 on unknown/error
+        """
+        
         # calculate the hash which is required as part of the get
         # request sent to the toolbarqueries url.
         try:
@@ -199,6 +214,8 @@ GoogleToolbar 2.0.111-big; Windows XP 5.1)")]
 class RedirectCount(RankProvider):
     """
     taken from http://www.zacwitte.com/resolving-http-redirects-in-python
+    
+    return count of redirection, -1 on error
     """
     
     def __init__(self, host="", proxy=None, timeout=30):
@@ -211,7 +228,7 @@ class RedirectCount(RankProvider):
         return self.resolve_http_redirect(real_url)
     
     def resolve_http_redirect(self, url, depth=0):
-       
+
         try:
             if depth > 10:
                 return depth
@@ -232,11 +249,18 @@ class RedirectCount(RankProvider):
             return -1
 
 class LongUrl(RankProvider):
+    """
+    get expanded version of URL using longurl.org
+    """
     
     def __init__(self, host="", proxy=None, timeout=30):
         super(LongUrl, self).__init__(host, proxy, timeout)
         
     def get_rank(self, url):
+        """
+        return 'extended version of url is it was shorten, '' otherwise'
+        """
+
         try:
 
             req_url = 'http://api.longurl.org/v2/expand'
@@ -256,11 +280,18 @@ class LongUrl(RankProvider):
         
     
 class InPhishTank(RankProvider):
+    """
+    Searches for URL in phishtank database
+    """
     
     def __init__(self, host="", proxy=None, timeout=30):
         super(InPhishTank, self).__init__(host, proxy, timeout)
         
     def get_rank(self, url):
+        """
+        return True if url is in phishtank database, False otherwise
+        """
+        
         try:
             
             api_key =lamson.server.shivaconf.get('analyzer','phishtankapikey')
@@ -282,6 +313,17 @@ class InPhishTank(RankProvider):
      
 
 def get_domain_info(url):
+    """
+    return dictionary containning information about given url
+    
+    {
+      AlexaTrafficRank:
+      RedirectCount:
+      GooglePageRank:
+      LongUrl:
+      InPhishTank:
+    }
+    """
     domain = re.sub('https?://', '', url)
     result = {}
     result['raw_link'] = url

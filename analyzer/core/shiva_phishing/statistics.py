@@ -1,4 +1,6 @@
-
+"""
+  Module generate simple statistics
+"""
 import logging
 
 import matplotlib.pyplot as plot
@@ -76,6 +78,10 @@ def prepare_matrix():
     return matrix
 
 def generate_rules_graph(data={}):
+    """
+    generate graph of rule matching percentage based on email sensors 
+    """
+    
     color_list = 'rgbcmyk'
     color_index = 0
     rule_codes = data['_rule_codes']   
@@ -112,6 +118,9 @@ def generate_rules_graph(data={}):
     plot.close()
     
 def generate_roc_graph(data=[]):
+    """
+    generate ROC curve of detection True positive/False negative rate
+    """
     from sklearn import metrics
     
     if not data:

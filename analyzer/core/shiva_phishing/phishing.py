@@ -1,9 +1,18 @@
+"""
+This module contains implementation of phishing detectiton rules
+
+
+"""
+
+
 from bs4 import BeautifulSoup
 from string import split
 
 import unicodedata
 import re
 
+
+# list of top level domains
 TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','accountants','active','actor','ad','ads','adult','ae','aero','af','afl','ag',
 'agency','ai','aig','airforce','al','allfinanz','alsace','am','amsterdam','an','android','ao','apartments','aq','aquarelle','ar','archi','army','arpa','as',
 'asia','associates','at','attorney','au','auction','audio','auto','autos','aw','ax','axa','az','ba','band','bank','bar','barclaycard','barclays','bargains',
@@ -46,13 +55,13 @@ TLD_LIST = ['abb','abbott','abogado','ac','academy','accenture','accountant','ac
 'voyage','vu','wales','wang','watch','webcam','website','wed','wedding','weir','wf','whoswho','wien','wiki','williamhill','win','wme','work','works','world',
 'ws','wtc','wtf','xerox','xin','xn','xxx','xyz','yachts','yandex','ye','yodobashi','yoga','yokohama','youtube','yt','za','zip','zm','zone','zuerich','zw'];
 
-
+# patterns used for working with urls
 URL_REGEX_PATTERN = re.compile(ur'(?i)(https?:\/\/)?([\da-z@\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?')
 URL_IP_PATTERN = re.compile(ur'(?:\d{1,3}\.){3}\d{1,3}')
 URL_DOMAIN_PATTERN = re.compile(ur'[a-z0-9.\-]+[.][a-z]{2,4}')
 
 
-#TODO load regexes from file
+# list of common phishing subject regexes
 SUSPICIOUS_SUBJECT_REGEX_LIST = []
 plain_regex = []
 plain_regex.append('(?i)account')
@@ -80,24 +89,35 @@ plain_regex.append('(?i)webmail')
 plain_regex.append('(?i)kone?c')
 
 
-
 for current in plain_regex:
     SUSPICIOUS_SUBJECT_REGEX_LIST.append(re.compile(current))
 
+
+# list of common spam regexes
 COMMON_SPAM_SUBJECT_REGEX_LIST = []
 plain_regex = []
-plain_regex.append('(?i)conf\.')
-plain_regex.append('(?i)conference')
+# returned mails
 plain_regex.append('(?i)transcript')
 plain_regex.append('(?i)return')
+# science, scientific, conference
 plain_regex.append('(?i)scien')
+plain_regex.append('(?i)conf\.')
+plain_regex.append('(?i)confe')
+
 plain_regex.append('(?i)nauc')
 plain_regex.append('(?i)pouz')
 plain_regex.append('(?i)posil')
+# inviations
+plain_regex.append('(?i)invit')
+# pcb is common spam 
+plain_regex.append('(?i)pcb')
+plain_regex.append('(?i)china')
 
 for current in plain_regex:
     COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile(current))
 
+
+# helper functions
 def extractdomain(url):
     """parse domain name from given url
 
@@ -131,10 +151,14 @@ def extractip(url):
     domain = extractdomain(url)
     if not domain:
         return ip
-    """check whether ip isn't part of query or params""" 
+    #check whether ip isn't part of query or params 
     return ip if url.find(ip) < url.find(domain) else '' 
 
 def samedomain(url1, url2):
+    """
+    check whether two urls point to same domain
+    (L1 domain and TLD mus be the same)
+    """
     if not url1 or not url2:
         return False
     
@@ -151,7 +175,9 @@ def samedomain(url1, url2):
     return True
 
 def extractalldomains(url):
-    """ extract all domains from given url """
+    """
+    extract all domains from given url
+    """
     
     urls = list()
     if not url:
@@ -164,7 +190,9 @@ def extractalldomains(url):
     return urls
 
 def getfinalurls(url_info={}):
-    """return list of urls from url_tuple. Unshortened Url is alwas prefered """
+    """
+    return list of urls from url_tuple. Unshortened Url is alwas prefered
+    """
     url_list = list()
     if not url_info:
         return url_list
@@ -176,7 +204,9 @@ def getfinalurls(url_info={}):
     return url_list
         
 def strip_accents(s):
-    """ normalize given string """
+    """ 
+    normalize given string
+    """
     if isinstance(s, unicode):
         return ''.join(c for c in unicodedata.normalize('NFD', s) 
                    if unicodedata.category(c) != 'Mn')
@@ -186,17 +216,22 @@ def strip_accents(s):
                    if unicodedata.category(c) != 'Mn')
 
 def has_blacklisted_url(mailFields):
-    """ return True if email constains blacklisted URL """        
+    """ 
+    return True if email constains blacklisted URL
+    """        
     if 'links' not in mailFields:
         return False
 
     return any(map(lambda a: a['InPhishTank'] if 'InPhishTank' in a else False, mailFields['links']))
 
-"""Class represents list of MailClassificationRules to be
-   applied on mail
-"""     
+
+
+     
 class MailClassificationRuleList(object):
-    
+    """
+    Class represents list of MailClassificationRules to be
+       applied on mail
+    """    
     weight = 1
     
     def __init__(self):
@@ -242,14 +277,24 @@ class MailClassificationRuleList(object):
     
     
 
-
-"""Generic classification rule"""
 class MailClassificationRule(object):
+    """
+    Generic classification rule
+    
+    all rules must implement etend this class
+    """
     def __init__(self):
+        # readable rule description
         self.description = "base_rule"
+        # int rule weight +1,-1
+        # +1 for standard phishing rule. Only phishing emails should match this rule
+        # -1 for spam rules, only spam should match this rule
         self.weight = 1
     
     def get_rule_description(self):
+        """
+        return human readable decription of rule 
+        """
         return self.description
     
     def get_rule_code(self):
@@ -259,34 +304,20 @@ class MailClassificationRule(object):
         return self.weight
     
     def apply_rule(self, mailFields):
+        """ 
+        return 1 if email mathes rule, -1 otherwise
+        """
         return -1
     
-    
-    
-    
-class Rule1(MailClassificationRule):
-    def __init__(self):
-        self.code = 'S1'
-        self.description = "sample_rule_1"
-        self.weight = 1
-            
-    def apply_rule(self, mailFields):
-        return 1
-    
-class Rule0(MailClassificationRule):
-    def __init__(self):
-        self.code = 'S0'
-        self.description = "sample_rule_0"
-        self.weight = 1
-        
-    def apply_rule(self, mailFields):
-        return -1
+
+
+# RULE DEFINITIONS
 
 class ContainsUrlRule(MailClassificationRule):
     def __init__(self):
         self.code = 'R1'
         self.description = "Email contains URL"
-        self.weight = 14
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         return 1 if len(mailFields['links']) > 0  else -1
@@ -311,7 +342,7 @@ class ContainsExecutableAttachmentRule(MailClassificationRule):
     def __init__(self):
         self.code = 'R3'
         self.description = "Email contains executable attachment"
-        self.weight = 2
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not mailFields.get('attachmentFileType'):
@@ -339,7 +370,7 @@ class HasShortenedUrl(MailClassificationRule):
     def __init__(self):
         self.code = 'R5'
         self.description = "At least one URL is shortened"
-        self.weight = 36
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         for url_info in mailFields['links']:
@@ -362,7 +393,7 @@ class RuleC1(MailClassificationRule):
     def __init__(self):
         self.code = 'C1'
         self.description = "Hyperlink with visible URL, pointing to different URL"
-        self.weight = 24
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -383,7 +414,7 @@ class RuleC2(MailClassificationRule):
     def __init__(self):
         self.code = 'C2'
         self.description = "Hyperlink with visible text pointing to IP based URL"
-        self.weight = 80
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -403,7 +434,7 @@ class RuleC3(MailClassificationRule):
     def __init__(self):
         self.code = 'C3'
         self.description = "Email body in HTML format"
-        self.weight = 11
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         return 1 if mailFields['html'] else -1
@@ -412,8 +443,8 @@ class RuleC4(MailClassificationRule):
     def __init__(self):
         self.code = 'C4'
         self.description = "Too complicated URL"
-        self.weight = 59
-        
+        self.weight = 1
+    
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
             for link_info in mailFields['links']:
@@ -442,7 +473,7 @@ class RuleC5(MailClassificationRule):
     def __init__(self):
         self.code = 'C5'
         self.description = "Sender domain different from some URL in message body"
-        self.weight = 15
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'from' in mailFields or not 'links' in mailFields:
@@ -467,7 +498,7 @@ class RuleC6(MailClassificationRule):
     def __init__(self):
         self.code = 'C6'
         self.description = "Image with external domain different from URLs in email body"
-        self.weight = 28
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields or not 'links' in mailFields:
@@ -487,7 +518,7 @@ class RuleC7(MailClassificationRule):
     def __init__(self):
         self.code = 'C7'
         self.description = "Image source is IP address"
-        self.weight = 2
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -503,7 +534,7 @@ class RuleC8(MailClassificationRule):
     def __init__(self):
         self.code = 'C8'
         self.description = "More than one domain in URL"
-        self.weight = 17
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if 'html' in mailFields:
@@ -560,7 +591,7 @@ class RuleC11(MailClassificationRule):
     def __init__(self):
         self.code = 'C11'
         self.description = "Visible text in hyperlink contains no information about destination"
-        self.weight = 13
+        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -653,7 +684,7 @@ class RuleA3(MailClassificationRule):
 class RuleA4(MailClassificationRule):
     def __init__(self):
         self.code = 'A4'
-        self.weight = 173
+        self.weight = 1
         self.description = 'Common phishing keywords in subject '
         
     def apply_rule(self, mailFields):
@@ -669,7 +700,7 @@ class RuleA4(MailClassificationRule):
 class RuleA5(MailClassificationRule):
     def __init__(self):
         self.code = 'A5'
-        self.weight = -48
+        self.weight = -1
         self.description = 'Common spam keywords in subject'
          
     def apply_rule(self, mailFields):
@@ -726,6 +757,8 @@ class RuleA7(MailClassificationRule):
 rulelist = MailClassificationRuleList()
 
 # register desired rules into rule list
+# rules will be applied on email in this order
+# rules not added to rule list will be ignored
 
 rulelist.add_rule(HasShortenedUrl())
 rulelist.add_rule(RuleC1())

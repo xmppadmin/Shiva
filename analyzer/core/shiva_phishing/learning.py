@@ -1,3 +1,9 @@
+"""
+This module is responsible honeypot learning and email classification
+
+"""
+
+
 import pickle
 import logging
 import os
@@ -6,7 +12,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 import lamson.server
 import backend_operations
-import shivastatistics
+import statistics
 
 from lamson.shiva_phishing.phishing import has_blacklisted_url
 
@@ -17,8 +23,8 @@ LEARNING_LOCK = 'run/learning.lock'
 
 
 #global variables
-boost_vector = None
-classifier = None
+global_classifier = None
+global_boost_vector = None
 global_shiva_threshold = 0.5
 global_sa_threshold = 0.5
 
@@ -26,16 +32,16 @@ def __init_classifier():
     """ 
     initialize classifier
     
-    loads stored classifier from pickle file if exists,
-    otherwise is performs learning
+    loads stored classifier and boost vector from pickle files if exist,
+    otherwise it performs learning
     """
     
-    global classifier
-    global boost_vector
+    global global_classifier
+    global global_boost_vector
     global global_shiva_threshold
     global global_sa_threshold
     
-    if classifier and boost_vector:
+    if global_classifier and global_boost_vector:
         return
     
     
@@ -46,20 +52,20 @@ def __init_classifier():
     if os.path.exists(CLASSIFIER_PKL):
         classifier_file = open(CLASSIFIER_PKL,'rb')
         if classifier_file:
-            classifier = pickle.load(classifier_file)
+            global_classifier = pickle.load(classifier_file)
             classifier_file.close()
             
     if os.path.exists(BOOST_VECTOR_PKL):
         boost_vector_file = open(BOOST_VECTOR_PKL,'rb')
         if boost_vector_file:
-            boost_vector = pickle.load(boost_vector_file)
+            global_boost_vector = pickle.load(boost_vector_file)
             boost_vector_file.close()
         
-    if boost_vector:
+    if global_boost_vector:
         logging.info("Learning: Boost vector successfully loaded.")
         
     
-    if classifier:
+    if global_classifier:
         logging.info("Learning: Classifier successfully loaded.")
     
     else:
@@ -82,7 +88,7 @@ def learn():
     
     shiva_threshold, sa_threshold = __compute_classifier_decision_tresholds()
     
-    global  global_shiva_threshold
+    global global_shiva_threshold
     global global_sa_threshold
     global_shiva_threshold = shiva_threshold
     global_sa_threshold = sa_threshold
@@ -103,9 +109,9 @@ def __learn_classifier():
         
     
     
-    learning_matrix = shivastatistics.prepare_matrix()
+    learning_matrix = statistics.prepare_matrix()
     
-    # see shivastatistics.prepare_matrix()
+    # see statistics.prepare_matrix()
     keys_vector = learning_matrix[0][1:]
     local_boost_vector = learning_matrix[1][1:]
     sample_vectors = map(lambda a: a[1:], learning_matrix[2:])
@@ -125,26 +131,29 @@ def __learn_classifier():
             if sample_vectors[i][j] > 0:
                 sample_vectors[i][j] =  sample_vectors[i][j]  * local_boost_vector[j]
       
-#     logging.critical(str(sample_vectors))
     
+    # create classifier and fit it with sampels
     classifier = KNeighborsClassifier(weights='distance',n_neighbors=15)
- 
     classifier.fit(sample_vectors, result_vector)
 
+    
+    global global_classifier
+    global_classifier = classifier
+    
+    # store classifier to picke file
     f = open(CLASSIFIER_PKL, 'wb')
     pickle.dump(classifier, f, pickle.HIGHEST_PROTOCOL)
     f.close()
     
+    # store boost vector pickle file
     f = open(BOOST_VECTOR_PKL, 'wb')
-    global boost_vector
-    boost_vector = dict(zip(keys_vector, local_boost_vector)) 
-    pickle.dump(boost_vector, f, pickle.HIGHEST_PROTOCOL)
-    
+    global global_boost_vector
+    global_boost_vector = dict(zip(keys_vector, local_boost_vector)) 
+    pickle.dump(global_boost_vector, f, pickle.HIGHEST_PROTOCOL)
     f.close()
     
     
     logging.info("Learning: Learning of classifier successfully finished.")
-    logging.info(classifier)
     return True
 
     
@@ -153,6 +162,8 @@ def __learn_spamassassin():
     """
     learn spamassassin Bayes filter on captured emails
     return False if error occurs, True otherwise
+    
+    NOTE: in this context, spamassassin term 'spam' is equal to phishing and 'ham' to regular spam
     """
     import subprocess,fnmatch,shlex
     
@@ -193,13 +204,15 @@ def __learn_spamassassin():
         
     except subprocess.CalledProcessError as ex:
         logging.error('Learning: error occurred during communication with spamassassin daemon.')
+        logging.error(ex)
         return False
     return True
     
     
 def get_spamassassin_bayes_score(mailFields):
     """
-    return score [0.00, 1.00] of given mail from spamassassin Bayes filter
+    return score [0.00, 1.00] of given mail from spamassassin Bayes filter, 
+    if error occurs, 0 is returned
     """ 
     import subprocess,shlex,re
     
@@ -210,7 +223,6 @@ def get_spamassassin_bayes_score(mailFields):
         if not mailFields[currentKey]:
             continue
         
-        """ TODO check communication with spamassassin daemon"""
         p = subprocess.Popen(shlex.split('spamc --full'),stdin=subprocess.PIPE,stdout=subprocess.PIPE)
         spamassassin_output = p.communicate(input=mailFields[currentKey])[0] 
          
@@ -235,7 +247,7 @@ def check_mail(mailFields):
     
     """
     __init_classifier()
-    global classifier
+    global global_classifier
     global global_shiva_threshold
     global global_sa_threshold
     
@@ -244,7 +256,7 @@ def check_mail(mailFields):
     logging.critical(mailVector)
     
     
-    shiva_prob = classifier.predict_proba(mailVector)[0][1]
+    shiva_prob = global_classifier.predict_proba(mailVector)[0][1]
     sa_prob = get_spamassassin_bayes_score(mailFields)
     
     is_blacklisted = has_blacklisted_url(mailFields)
@@ -267,12 +279,12 @@ def process_single_record(mailFields):
     computed_results = []
     result = []
     
-    global boost_vector 
+    global global_boost_vector 
     
     for rule in rulelist.get_rules():
         rule_result = rule.apply_rule(mailFields)
         rule_code = rule.get_rule_code()
-        rule_boost = rule.get_rule_boost_factor() if (not boost_vector or rule_code not in boost_vector) else boost_vector[rule_code]
+        rule_boost = rule.get_rule_boost_factor() if (not global_boost_vector or rule_code not in global_boost_vector) else global_boost_vector[rule_code]
         
         result.append({'code': rule_code, 'result': rule_result, 'boost':rule_boost})
         used_rules.append({'code': rule_code, 'boost': rule_boost, 'description': rule.get_rule_description()})
@@ -290,14 +302,15 @@ def process_single_record(mailFields):
     # store result of email to database    
     backend_operations.store_computed_results(computed_results, used_rules)    
     
-    # return list of results sorted by rule code
+    # sort result by rule code in order to ensure order
     sorted_rules = sorted(result,key=lambda a: a['code'])
     
-    # apply boost vector on computed results,
-    # but only on positive ones
+    # extract numerical values for sorted_result_vector and sorted_boost_vector
     sorted_result_vector = map(lambda a: a['result'],sorted_rules)
     sorted_boost_vector = map(lambda a: a['boost'],sorted_rules)
 
+    # apply boost vector on computed results,
+    # but only on positive ones
     return [x * y if x > 0 else x for x, y in zip(sorted_result_vector,sorted_boost_vector)]
 
 
@@ -321,7 +334,7 @@ def __deep_relearn():
 def __check_learning_and_lock():
     """ 
     check whether learning can be performed - existence of file LEARNING_LOCK
-    if file doesn't exist it's craeted ant True is returned. If file already exists,
+    if file doesn't exist it's created ant True is returned. If file already exists,
     it remains untouched and False is returned.
     """
     
@@ -344,7 +357,7 @@ def __compute_new_chi2_boost_vector(sample_vectors=[],result_vector=[],former_bo
     len(sample_vectors[i]) == len(former_boost_vector)
     len(sample_vectors == len(results)
     
-    if condition doesn't hold or other problem occurs, formem_boost_vector is returned
+    if condition doesn't hold or other problem occurs, former_boost_vector is returned
     """
     
     from sklearn.feature_selection import chi2
@@ -377,11 +390,19 @@ def __compute_new_chi2_boost_vector(sample_vectors=[],result_vector=[],former_bo
 def __compute_classifier_decision_tresholds():
     """
     compute optimal thresholds for marking emails as phishing
+    using F1 function
+    
+    threashold is value between 0.4 and 0.6
+    
+    return tuple (shiva_threshold,spamassasin_threshold)
     """
     from sklearn.metrics import f1_score
     classification_results = backend_operations.get_detection_results_for_thresholds()
     
-    default_result = (.5,.5,)
+    # no reason to shift shiva score when KNN classifier is used
+    shiva_thres = .5
+    
+    default_result = (shiva_thres,.5,)
     
     # return default if there are suitable emails
     if not classification_results:
@@ -393,33 +414,24 @@ def __compute_classifier_decision_tresholds():
             expected_results.append(line[3])
         else:
             expected_results.append(1 if line[2] == 1 else 0)
-
-    best_thres_shiva = 0.
-    best_score_shiva = 0.
     
     best_thres_sa = 0. 
     best_score_sa = 0.
     
     try:
-        # go through possible thresholds and find best suitable threshold for each classifier
-        for i in range(5, 100, 5):
+        # go through possible thresholds and find best suitable threshold for ispamassassin classifier
+        for i in range(40, 60, 1):
             current_thres =  i / 100.0
             
-            shiva_result = map(lambda a: 1 if a[0] > current_thres else 0, classification_results)
             sa_result = map(lambda a: 1 if a[1] > current_thres else 0, classification_results)
            
-            shiva_score = f1_score(expected_results, shiva_result, average='binary')
             sa_score = f1_score(expected_results, sa_result, average='binary')
     
-            
-            if best_score_shiva <= shiva_score:
-                best_score_shiva = shiva_score
-                best_thres_shiva = current_thres
             if best_score_sa <= sa_score:
                 best_score_sa = sa_score
                 best_thres_sa = current_thres
 
-        return (best_thres_shiva, best_thres_sa,)
+        return (shiva_thres, best_thres_sa,)
     
     except Exception, e:
         logging.error(e)

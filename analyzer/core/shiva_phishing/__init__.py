@@ -1,1 +1,2 @@
 from learning import check_mail
+from report import send_phishing_report

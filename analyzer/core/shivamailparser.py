@@ -54,10 +54,13 @@ def linkparser(input_body):
         # prevent rare error with unknown bytes in URL
         link = filter(lambda x: x in string.printable, link)
         
+        # check whether whether is link already in database
         persistent_link_info = backend_operations.get_permament_url_info(link);
         if persistent_link_info:
             result_list.append(persistent_link_info)
         else:
+            # get fresh link infomation
+            # link information is stored directly to main database
             url_data = domaininfo.get_domain_info(link)
             logging.critical(url_data)
             backend_operations.store_permament_url_info(url_data)
