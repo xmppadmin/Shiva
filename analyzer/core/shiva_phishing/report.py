@@ -17,8 +17,7 @@ def send_phishing_report(mailFields):
     smtpport = lamson.server.shivaconf.get('analyzer', 'relayport')
 
 
-    template_str = """
-From: SHIVA honeypot <${honeypot_email}>
+    template_str = """From: SHIVA honeypot <${honeypot_email}>
 To: ${recipient_email}
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -52,3 +51,4 @@ Details:
         print "\n\t[+] Phishing notification sent successfully"
     except smtplib.SMTPException:
         print "\n\t[!] Error: unable to send error phishing notification mail via Exim4"   
+        

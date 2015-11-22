@@ -77,8 +77,8 @@ class WebServer():
     
     @cherrypy.expose
     def stats(self):
-        shivastatistics.generate_rules_graph(backend_operations.get_rule_results_for_statistics())
-        shivastatistics.generate_roc_graph((backend_operations.get_data_for_roc_curves())) 
+        statistics.generate_rules_graph(backend_operations.get_rule_results_for_statistics())
+        statistics.generate_roc_graph((backend_operations.get_data_for_roc_curves())) 
     
 
 
@@ -116,22 +116,30 @@ class WebServer():
         
     
     def email_detail_template(self, email_id=''):
-        emails = backend_operations.retrieve_by_ids([email_id])
-        mailFields = []
-        if emails:
-            mailFields = emails[0]
         title='SHIVA honeypot: view email'
         
-        # store html content to static file if it doesn't exist
-        staticHtmlFile = self.rawHtmlPath + '/' + email_id 
-
-        if not os.path.exists(staticHtmlFile):
-            f = open(staticHtmlFile, 'w')
-            if f:
-                f.write(mailFields['html'].encode('utf8'))
-                f.close()
-            else:
-                staticHtmlFile = ''
+        emails = backend_operations.retrieve_by_ids([email_id])
+        
+        # display error message and terminate
+        if not emails:
+            template = Template('<%include file="view_email.html"/>', lookup=self.template_lookup, output_encoding='utf-8', encoding_errors='replace')
+            return template.render(title=title)
+        
+        mailFields = emails[0]
+        
+        
+        
+        if mailFields:        
+            # store html content to static file if it doesn't exist
+            staticHtmlFile = self.rawHtmlPath + '/' + email_id 
+    
+            if not os.path.exists(staticHtmlFile):
+                f = open(staticHtmlFile, 'w')
+                if f:
+                    f.write(mailFields['html'].encode('utf8'))
+                    f.close()
+                else:
+                    staticHtmlFile = ''
         
         email_result = backend_operations.get_results_of_email(mailFields['s_id'])
         template = Template('<%include file="view_email.html"/>', lookup=self.template_lookup, output_encoding='utf-8', encoding_errors='replace')

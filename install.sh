@@ -39,7 +39,7 @@ INSTALL_PATH=$WORK_PATH/shiva
 
 prerequisites () {
     printf "\n\n[*] Checking for the prerequisites in system.\n"
-    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf" "libpng12-dev" "libfreetype6-dev" "libxft-dev" "libblas-dev" "liblapack-dev" "gfortran" "spamassassin")
+    pkgs=("python" "g++" "python-dev" "python-virtualenv" "exim4-daemon-light" "libmysqlclient-dev" "make" "libffi-dev" "libfuzzy-dev" "automake" "autoconf" "libpng12-dev" "libfreetype6-dev" "libxft-dev" "libblas-dev" "liblapack-dev" "gfortran" "spamassassin" "mysql-server" "mysql-client")
     
     missing_counter=0
     for needed_pkg in "${pkgs[@]}"
@@ -73,7 +73,7 @@ helpers () {
 
     printf "\n\n[*]  Generating init script.\n"
     SHIVA_USER=$(whoami)
-    sed "s/SHIVA_USER/$SHIVA_USER/g" $WORK_PATH/helpers/honeypot.service > $INSTALL_PATH/honeypot.service
+    sed "s/SHIVA_USER/$SHIVA_USER/g" $WORK_PATH/helpers/honeypot.service  | sed "s/INSTALL_PATH/$WORK_PATH_ESC/g"> $INSTALL_PATH/honeypot.service
     sed "s/INSTALL_PATH/$WORK_PATH_ESC/g" $WORK_PATH/helpers/honeypot.sh > $INSTALL_PATH/honeypot.sh
     
 
@@ -164,7 +164,7 @@ analyzer () {
     pip install apscheduler==2.1.2
     pip install MySQL-python==1.2.5
     pip install ssdeep==3.1
-    pip install docutils=0.12
+    pip install docutils==0.12
     pip install pbr==0.9
     pip install python-daemon==2.0.2
     pip install beautifulsoup4==4.4.0
@@ -179,7 +179,11 @@ analyzer () {
     printf "\n[*] Copying neccesary files:\n"
     cp -v $WORK_PATH/analyzer/core/server.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/
     cp -v $WORK_PATH/analyzer/core/*.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/
+
     
+    mkdir -p $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/shiva_phishing/     
+    cp -v $WORK_PATH/analyzer/core/shiva_phishing/*.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/shiva_phishing/
+
     mkdir -p $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/hpfeeds/
     cp -rv $WORK_PATH/hpfeeds/sendfiles.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/hpfeeds/
     cp -rv $WORK_PATH/hpfeeds/hpfeeds.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/hpfeeds/

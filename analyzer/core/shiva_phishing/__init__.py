@@ -1,2 +1,4 @@
-from learning import check_mail
-from report import send_phishing_report
+"""
+ package provides extensions of shiva honeypot. 
+ Contains phishing analyzer and web interface.
+"""

@@ -5,13 +5,18 @@
 # if listen_interface and web_interface are given, ip on inerfaces is detected and stored into 'shiva.conf'
 #
 
+if [ "$UID" == "0" ] || [ "$EUID" == "0" ]
+then
+    printf "\n[!] Do not run shiva as root.\n\n"
+    exit 1
+fi
 
 base_dir=INSTALL_PATH/shiva
 reciever_dir=$base_dir/shivaReceiver/receiver
 analyzer_dir=$base_dir/shivaAnalyzer/analyzer
 
-listen_interface="eth0"
-web_interface="eth0"
+listen_interface=""
+web_interface=""
 
 listen_address=""
 web_address=""
@@ -86,7 +91,7 @@ case "$1" in
     restart)
       stop
       start
-    ::
+    ;;
 
 esac
 
