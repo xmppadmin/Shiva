@@ -36,7 +36,7 @@ def retrieve_by_ids(email_ids = []):
     """
     return sparse mailField dictionary suitable
     for phishing detectkon with minor modifications {
-        'links': list of link_info dictionaries, SEE get_permament_url_info_for_email,store_permament_url_info_for_email,
+        'links': list of link_info dictionaries, SEE get_permament_url_info_for_email(),store_permament_url_info_for_email(),
         'phishingHumanCheck': True/False/None
         'derivedPhishingStatus': True/False/None
         'shivaScore': float (0.0,1.0), -1 if email was imported,

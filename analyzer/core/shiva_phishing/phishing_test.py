@@ -480,6 +480,68 @@ class TestRules(unittest.TestCase):
         mailFields['headers'] = headers
         self.rule_assert(rule.apply_rule(mailFields))
         
+        headers = """
+        (Content-Type, multipart/alternative; charset="UTF-8";)
+        (MIME-Version, 1.0)
+        (Date, Thu, 15 Oct 2015 14:41:48 +0300)
+        (From, "International Scientific Events" <marketing@scientificevents.info>)
+        (Message-Id, <0000000000000000000000000@mail.rrrrrrrrrrrrrr.oooo>)
+        (Received, from rrrrrrrrrrrrrr.oooo (rrrrrrrrrrrrrr.oooo [1.2.3.4])
+         by zzzz.xxx.yyyy.cz (8.14.4/8.14.4/Debian-4) with ESMTP id t9FDw1Rm047553
+         for <xxx@xxx.yyyy.cz>; Thu, 15 Oct 2015 15:59:05 +0200)
+        (Reply-To, xxx@gmail.com)
+        (Subject, Conference Invitation 2016)
+        (To, xxx@xxx.yyy.cz)
+        (X-Filter-Version, 1.15 (minas))
+        (X-Greylist, IP, sender and recipient auto-whitelisted, not delayed by
+         milter-greylist-4.3.9 (minas.ics.muni.cz [1.2.3.4]);
+         Thu, 15 Oct 2015 15:59:06 +0200 (CEST))
+        (X-Mailer-Lid, 63, 64, 65, 67, 68, 17, 69, 18, 70, 71, 72, 16, 73, 15, 19, 74, 
+         75, 76, 77, 78, 12, 79)
+        (X-Mailer-Recptid, 774174)
+        (X-Mailer-Sent-By, 1)
+        (X-Mailer-Sid, 14)
+        (X-Muni-Envelope-From,qqqqqq@ooooo.cc)
+        (X-Muni-Spam-Testip, 1.2.3.4)
+        (X-Virus-Scanned, clamav-milter 0.98.7 at xxxx)
+        (X-Virus-Status, yes)
+        """
+        mailFields = {}
+        mailFields['headers'] = headers
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        headers = """
+        (Content-Type, multipart/alternative; charset="UTF-8";)
+        (MIME-Version, 1.0)
+        (Date, Thu, 15 Oct 2015 14:41:48 +0300)
+        (From, "International Scientific Events" <marketing@scientificevents.info>)
+        (Message-Id, <0000000000000000000000000@mail.rrrrrrrrrrrrrr.oooo>)
+        (Received, from rrrrrrrrrrrrrr.oooo (rrrrrrrrrrrrrr.oooo [1.2.3.4])
+         by zzzz.xxx.yyyy.cz (8.14.4/8.14.4/Debian-4) with ESMTP id t9FDw1Rm047553
+         for <xxx@xxx.yyyy.cz>; Thu, 15 Oct 2015 15:59:05 +0200)
+        (Reply-To, xxx@gmail.com)
+        (Subject, Conference Invitation 2016)
+        (To, xxx@xxx.yyy.cz)
+        (X-Filter-Version, 1.15 (minas))
+        (X-Greylist, IP, sender and recipient auto-whitelisted, not delayed by
+         milter-greylist-4.3.9 (minas.ics.muni.cz [1.2.3.4]);
+         Thu, 15 Oct 2015 15:59:06 +0200 (CEST))
+        (X-Mailer-Lid, 63, 64, 65, 67, 68, 17, 69, 18, 70, 71, 72, 16, 73, 15, 19, 74, 
+         75, 76, 77, 78, 12, 79)
+        (X-Mailer-Recptid, 774174)
+        (X-Mailer-Sent-By, 1)
+        (X-Mailer-Sid, 14)
+        (X-Muni-Envelope-From,qqqqqq@ooooo.cc)
+        (X-Muni-Spam-Testip, 1.2.3.4)
+        (X-Virus-Scanned, clamav-milter 0.98.7 at xxxx)
+        (X-Virus-Status, clean)
+        """
+        mailFields = {}
+        mailFields['headers'] = headers
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        
+        
     def test_rule_a4(self):
         from phishing import RuleA4
         rule = RuleA4()

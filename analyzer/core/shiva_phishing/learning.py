@@ -24,7 +24,6 @@ LEARNING_LOCK = 'run/learning.lock'
 
 #global variables
 global_classifier = None
-global_boost_vector = None
 global_shiva_threshold = 0.5
 global_sa_threshold = 0.5
 
@@ -32,16 +31,15 @@ def __init_classifier():
     """ 
     initialize classifier
     
-    loads stored classifier and boost vector from pickle files if exist,
+    loads stored classifier  from pickle files if exist,
     otherwise it performs learning
     """
     
     global global_classifier
-    global global_boost_vector
     global global_shiva_threshold
     global global_sa_threshold
     
-    if global_classifier and global_boost_vector:
+    if global_classifier:
         return
     
     
@@ -54,16 +52,6 @@ def __init_classifier():
         if classifier_file:
             global_classifier = pickle.load(classifier_file)
             classifier_file.close()
-            
-    if os.path.exists(BOOST_VECTOR_PKL):
-        boost_vector_file = open(BOOST_VECTOR_PKL,'rb')
-        if boost_vector_file:
-            global_boost_vector = pickle.load(boost_vector_file)
-            boost_vector_file.close()
-        
-    if global_boost_vector:
-        logging.info("Learning: Boost vector successfully loaded.")
-        
     
     if global_classifier:
         logging.info("Learning: Classifier successfully loaded.")
@@ -112,28 +100,17 @@ def __learn_classifier():
     learning_matrix = statistics.prepare_matrix()
     
     # see statistics.prepare_matrix()
-    keys_vector = learning_matrix[0][1:]
-    local_boost_vector = learning_matrix[1][1:]
     sample_vectors = map(lambda a: a[1:], learning_matrix[2:])
     result_vector = map(lambda a: a[0], learning_matrix[2:])
-    
-    # compute new boost vector from current state of honeypot
-    local_boost_vector = __compute_new_chi2_boost_vector(sample_vectors,result_vector, local_boost_vector)
-    logging.critical('BOOST:' + str(local_boost_vector))
 
     if not sample_vectors or not result_vector:
         #nothing to - no mails database?
         return True
-    
-    # boost samples with boost vector
-    for i in range(0,len(sample_vectors)):
-        for j in range(0,len(sample_vectors[i])):
-            if sample_vectors[i][j] > 0:
-                sample_vectors[i][j] =  sample_vectors[i][j]  * local_boost_vector[j]
       
     
     # create classifier and fit it with sampels
-    classifier = KNeighborsClassifier(weights='distance',n_neighbors=15)
+    from sklearn import tree
+    classifier = tree.DecisionTreeClassifier(max_features=10)
     classifier.fit(sample_vectors, result_vector)
 
     
@@ -144,14 +121,6 @@ def __learn_classifier():
     f = open(CLASSIFIER_PKL, 'wb')
     pickle.dump(classifier, f, pickle.HIGHEST_PROTOCOL)
     f.close()
-    
-    # store boost vector pickle file
-    f = open(BOOST_VECTOR_PKL, 'wb')
-    global global_boost_vector
-    global_boost_vector = dict(zip(keys_vector, local_boost_vector)) 
-    pickle.dump(global_boost_vector, f, pickle.HIGHEST_PROTOCOL)
-    f.close()
-    
     
     logging.info("Learning: Learning of classifier successfully finished.")
     return True
@@ -279,22 +248,18 @@ def process_single_record(mailFields):
     computed_results = []
     result = []
     
-    global global_boost_vector 
-    
     for rule in rulelist.get_rules():
         rule_result = rule.apply_rule(mailFields)
         rule_code = rule.get_rule_code()
-        rule_boost = rule.get_rule_boost_factor() if (not global_boost_vector or rule_code not in global_boost_vector) else global_boost_vector[rule_code]
-        
-        result.append({'code': rule_code, 'result': rule_result, 'boost':rule_boost})
-        used_rules.append({'code': rule_code, 'boost': rule_boost, 'description': rule.get_rule_description()})
+        result.append({'code': rule_code, 'result': rule_result, 'boost':1})
+        used_rules.append({'code': rule_code, 'boost': 1, 'description': rule.get_rule_description()})
         
         db_result = rule_result
-        if rule_result > 1 or rule_result < -1:
-            # if score does't belong to interval (-1,1)
-            # it was boosted for sure and therefore rule passed
-            # this solves problems with negative boosting  
-            db_result = 1
+#         if rule_result > 1 or rule_result < -1:
+#             # if score does't belong to interval (-1,1)
+#             # it was boosted for sure and therefore rule passed
+#             # this solves problems with negative boosting  
+#             db_result = 1
         
         
         computed_results.append({'spamId': mailFields['s_id'], 'code': rule.code ,'result': db_result})
@@ -305,13 +270,10 @@ def process_single_record(mailFields):
     # sort result by rule code in order to ensure order
     sorted_rules = sorted(result,key=lambda a: a['code'])
     
-    # extract numerical values for sorted_result_vector and sorted_boost_vector
+    # extract numerical values for sorted_result_vector
     sorted_result_vector = map(lambda a: a['result'],sorted_rules)
-    sorted_boost_vector = map(lambda a: a['boost'],sorted_rules)
 
-    # apply boost vector on computed results,
-    # but only on positive ones
-    return [x * y if x > 0 else x for x, y in zip(sorted_result_vector,sorted_boost_vector)]
+    return sorted_result_vector
 
 
 def __deep_relearn():

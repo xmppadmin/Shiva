@@ -286,9 +286,7 @@ class MailClassificationRule(object):
     def __init__(self):
         # readable rule description
         self.description = "base_rule"
-        # int rule weight +1,-1
-        # +1 for standard phishing rule. Only phishing emails should match this rule
-        # -1 for spam rules, only spam should match this rule
+        # int rule weight for legacy reasons, has no meaning now
         self.weight = 1
     
     def get_rule_description(self):
@@ -674,11 +672,17 @@ class RuleA3(MailClassificationRule):
         
         content_type_regex = re.compile(ur'(?is)content.type.*?\)')
         boundary_regex  = re.compile('(?i)boundary.{1,40}qzsoft_directmail_seperator')
-
+        
+        
+        
         for content in content_type_regex.findall(mailFields['headers']): 
             if boundary_regex.search(content):
                 return 1
-            
+        
+        clamav_virus_regex = re.compile('(?i)X-Virus-Status.{0,10}Yes')
+        if clamav_virus_regex.search(mailFields['headers']):
+            return 1
+        
         return -1
     
 class RuleA4(MailClassificationRule):
@@ -700,7 +704,7 @@ class RuleA4(MailClassificationRule):
 class RuleA5(MailClassificationRule):
     def __init__(self):
         self.code = 'A5'
-        self.weight = -1
+        self.weight = 1
         self.description = 'Common spam keywords in subject'
          
     def apply_rule(self, mailFields):
