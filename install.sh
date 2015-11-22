@@ -182,7 +182,7 @@ analyzer () {
 
     
     mkdir -p $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/shiva_phishing/     
-    cp -v $WORK_PATH/analyzer/core/shiva_phishing/*.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/shiva_phishing/
+    cp -v $WORK_PATH/analyzer/core/shiva_phishing/*.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/shiva_phishing/
 
     mkdir -p $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/hpfeeds/
     cp -rv $WORK_PATH/hpfeeds/sendfiles.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/hpfeeds/

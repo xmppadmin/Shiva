@@ -1,7 +1,14 @@
 <%include file="parts/header.html" />
 
 <h1>SHIVA honeypot: HELP</h1>
-   
+
+ <h2>How to work with honeypot</h2>
+ <p> On the main page is presented overview of last emails caught by honeypot. It's score and classification result is also presented.<p>
+ <p> You can view details of email by clicking on it's id, delete it from honeypot 
+    by clicking on the <img src="/static/images/icons/delete.png" title="Delete email from honeypot."/>
+    or mark is as spam/phishing by clicking on <img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."/> or <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing."/>
+ <p>
+<br/>
  <h2>Sensor</h2>
  <p>Sensor represents source of email.</p>
 
@@ -33,5 +40,182 @@
    <p></p><i>Shiva score</i> is result of phishing detection technique implemented in honeypot.<br/>
    <i>Spamassassin score</i> is result of Bayes classifier in Spamassassin.</p>
    <p><b>IMPORTANT</b> imported emails (sensors .*spamImport.*,.*phishingImport.*) have always default score -1, they are used as learning data only</p>
+
+<br/>
+
+<h2>Learning honeypot</h2>
+<p> After instalation, hoenypot is learnt on the provided data samples. This process is described in package readme.txt file<p>
+<p> When honeypot catches emails, it's possible to relearn it. It will take into considerations cought emails as well. <p>
+<p> By default, spammassassin boundary for for marking email is 0.5. This boundary can be shifted by re-learning to number ininterval <0.4,0.6> <p>
+<p> Classifier implemented in Shiva doesn't change the boundary, bacause it doens't make sense in KNN classification (vote by majority of nearest neighbours) <p>
+
+<br/>
+<h2> Examples </h2>
+<h3> Examples of email caught by honeypot</h3>
+
+<table class="hoverTable">
+  <thead>
+    <tr>
+      <td>Id</td>
+      <td>Last seen</td>
+      <td class="subject_td">Subject</td>
+      <td>Shiva score</td>
+      <td>Spamassassin score</td>
+      <td>Blacklisted</td>
+      <td>SensorID</td>
+      <td>Status</td>
+      <td>Actions</td>
+      <td>Maked by human</td>
+    </tr>
+  </thead>
+  <tbody>                  
+  <tr class="regularRow">
+ 
+      <td><span class="id_link">c541e48ea5f2fae9d3cbc67b8589874e</span></td>
+      <td>2015-11-21 19:55:41</td>
+      <td>Hello Mate,</td>
+      
+      
+      <td>0.200</td>
+      <td>0.540</td>
+      <td><font color="black">NO</font></td>
+      <td>shiva</td>
+      <td><font color="red">PHISHING</font></td>
+      <td>
+        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('c541e48ea5f2fae9d3cbc67b8589874e')"/>
+            <img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam('c541e48ea5f2fae9d3cbc67b8589874e')" />
+      </td>
+      <td>
+      </td>
+    </tr>  
+</table>
+<p> This email was caught by honeypot (it has sensor 'shiva'). Computed scores were 0.2 and 0.54. Email was classified as 'phishing'.</p>
+<br/>
+<br/>
+<table class="hoverTable">
+  <thead>
+    <tr>
+      <td>Id</td>
+      <td>Last seen</td>
+      <td class="subject_td">Subject</td>
+      <td>Shiva score</td>
+      <td>Spamassassin score</td>
+      <td>Blacklisted</td>
+      <td>SensorID</td>
+      <td>Status</td>
+      <td>Actions</td>
+      <td>Maked by human</td>
+    </tr>
+  </thead>
+  <tbody>
+  
+  <tr class="regularRow">
+ 
+      <td><span class="id_link">3d4d6fb1e8488f56b5ddd09ab41d20bc</span></td>
+      <td>2015-11-22 09:07:20</td>
+      <td>invitation EXCELLENCE IN HORIZON 2020 PROJECT DESIGN AND PROPOSAL
+ WRITNING</td>
+      
+      
+      <td>0.600</td>
+      <td>0.500</td>
+      <td><font color="black">NO</font></td>
+      <td>shiva</td>
+      <td><font color="green">SPAM</font></td>
+      <td>
+        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('3d4d6fb1e8488f56b5ddd09ab41d20bc')"/>
+            <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing('3d4d6fb1e8488f56b5ddd09ab41d20bc')" />
+      </td>
+      <td>
+          <img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>
+      </td>
+    </tr>                    
+</table>
+
+<p> This email was caught by honeypot (it has sensor 'shiva'). Computed scores were 0.6 and 0.5. Email was classified as 'phishing', but operator changed verdict to 'spam' </p> 
    
+<br/>
+<br/>
+<h3> Exmaples of emails imported to honeypot </h3>
+<table class="hoverTable">
+  <thead>
+    <tr>
+      <td>Id</td>
+      <td>Last seen</td>
+      <td class="subject_td">Subject</td>
+      <td>Shiva score</td>
+      <td>Spamassassin score</td>
+      <td>Blacklisted</td>
+      <td>SensorID</td>
+      <td>Status</td>
+      <td>Actions</td>
+      <td>Maked by human</td>
+    </tr>
+  </thead>
+  <tbody>
+  <tr class="regularRow"> 
+      <td><span class="id_link">4e66d13f1f4dfa9ec6e349687e83c4ba</span></td>
+      <td>2015-11-22 10:07:52</td>
+      <td>SunTrust Bank: IMPORTANT FRAUD ALERT</td>
+      
+      
+      <td>-1.000</td>
+      <td>-1.000</td>
+      <td><font color="black">NO</font></td>
+      <td>phishingImport_corpus</td>
+      <td><font color="red">PHISHING</font></td>
+      <td>
+        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('4e66d13f1f4dfa9ec6e349687e83c4ba')"/>
+            <img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam('4e66d13f1f4dfa9ec6e349687e83c4ba')" />
+      </td>
+      <td>
+          <img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>
+      </td>
+    </tr>                    
+  
+</table>
+<p> This email was imported honeypot (it has sensor 'phishingImport_corpus'). Email was automatickly marked as phishing. Since it was imported, 'Marked by human' mark is shown.</p>
+
+<br/>
+<br/>
+<table class="hoverTable">
+  <thead>
+    <tr>
+      <td>Id</td>
+      <td>Last seen</td>
+      <td class="subject_td">Subject</td>
+      <td>Shiva score</td>
+      <td>Spamassassin score</td>
+      <td>Blacklisted</td>
+      <td>SensorID</td>
+      <td>Status</td>
+      <td>Actions</td>
+      <td>Maked by human</td>
+    </tr>
+  </thead>
+  <tbody>
+  <tr class="regularRow">
+ 
+      <td><span class="id_link">b976320a9d3f34a9c543475237f83ba8</span></td>
+      <td>2015-11-22 10:07:36</td>
+      <td>First Minute 2015 v Chorvatsku</td>
+      
+      
+      <td>-1.000</td>
+      <td>-1.000</td>
+      <td><font color="black">NO</font></td>
+      <td>spamImport_muni_handfilter</td>
+      <td><font color="green">SPAM</font></td>
+      <td>
+        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('b976320a9d3f34a9c543475237f83ba8')"/>
+            <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing('b976320a9d3f34a9c543475237f83ba8')" />
+      </td>
+      <td>
+          <img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>
+      </td>
+    </tr>                    
+  
+</table>  
+  
+<p> This email was imported to honeypot (it has sensor 'spamImport_muni_handfilter'). Email was automatickly marked as spam. Since it was imported, 'Marked by human' mark is shown.</p>
 <%include file="parts/footer.html" />
