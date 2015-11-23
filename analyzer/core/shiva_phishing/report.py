@@ -21,16 +21,15 @@ def send_phishing_report(mailFields):
 To: ${recipient_email}
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Subject: SHIVA honeypot: possible phishing found
+Subject: Test automaticke detekce phishingu
 
-SHIVA honeypot: possible phishing found
+SHIVA honeypot: Byl zachycen podezrely email
 
-Details:
-  Subject: ${phishing_subject}
-  From: ${phishing_from}
-  To: ${phishing_to}
-  Link: http://${web_iterface_url}/view_email?email_id=${email_id}
-    
+Detaily:
+  Predmet: ${phishing_subject}
+  Odesilatel: ${phishing_from}
+  Prijemce: ${phishing_to}
+  Odkaz: http://${web_iterface_url}/view_email?email_id=${email_id}
 """
     
     template = Template(template_str, output_encoding='utf-8', encoding_errors='replace')
