@@ -218,4 +218,79 @@
 </table>  
   
 <p> This email was imported to honeypot (it has sensor 'spamImport_muni_handfilter'). Email was automatickly marked as spam. Since it was imported, 'Marked by human' mark is shown.</p>
+
+<br/>
+<br/>
+<h3>Rare example of multiple sensors</h3>
+
+<table class="hoverTable">
+  <thead>
+    <tr>
+      <td>Id</td>
+      <td>Last seen</td>
+      <td class="subject_td">Subject</td>
+      <td>Shiva score</td>
+      <td>Spamassassin score</td>
+      <td>Blacklisted</td>
+      <td>SensorID</td>
+      <td>Status</td>
+      <td>Actions</td>
+      <td>Maked by human</td>
+    </tr>
+  </thead>
+  <tbody>
+              
+
+  <tr class="regularRow">
+ 
+      <td><a href="/view_email?email_id=3d4d6fb1e8488f56b5ddd09ab41d20bc"><span class="id_link">3d4d6fb1e8488f56b5ddd09ab41d20bc</span></a></td>
+      <td>2015-11-23 06:27:09</td>
+      <td>invitation EXCELLENCE IN HORIZON 2020 PROJECT DESIGN AND PROPOSAL
+ WRITNING</td>
+      
+      
+      <td>-1.000</td>
+      <td>-1.000</td>
+      <td><font color="black">NO</font></td>
+      <td>spamImport_shiva_handfilter</td>
+      <td><font color="green">SPAM</font></td>
+      <td>
+        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('3d4d6fb1e8488f56b5ddd09ab41d20bc')"/>
+            <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing('3d4d6fb1e8488f56b5ddd09ab41d20bc')" />
+      </td>
+      <td>
+          <img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>
+      </td>
+    </tr>                    
+   
+
+
+  <tr class="regularRow">
+ 
+      <td><a href="/view_email?email_id=3d4d6fb1e8488f56b5ddd09ab41d20bc"><span class="id_link">3d4d6fb1e8488f56b5ddd09ab41d20bc</span></a></td>
+      <td>2015-11-23 06:27:09</td>
+      <td>invitation EXCELLENCE IN HORIZON 2020 PROJECT DESIGN AND PROPOSAL
+ WRITNING</td>
+      
+      
+      <td>-1.000</td>
+      <td>-1.000</td>
+      <td><font color="black">NO</font></td>
+      <td>shiva</td>
+      <td><font color="green">SPAM</font></td>
+      <td>
+        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('3d4d6fb1e8488f56b5ddd09ab41d20bc')"/>
+            <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing('3d4d6fb1e8488f56b5ddd09ab41d20bc')" />
+      </td>
+      <td>
+          <img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>
+      </td>
+    </tr>  
+<table>
+<p>This is example of very rare situation: honeypot caught the same email that is already presented 
+    in learning data. In this case new email has still score -1,-1 and both are displayed. In case of phishing,
+    no report is sent. This is very rare situation whith minimal probability of  </p>
+
+
 <%include file="parts/footer.html" />
+
