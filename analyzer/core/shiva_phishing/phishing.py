@@ -6,7 +6,9 @@ This module contains implementation of phishing detectiton rules
 
 
 from bs4 import BeautifulSoup
+from Levenshtein import distance
 from string import split
+
 
 import unicodedata
 import re
@@ -215,6 +217,42 @@ def strip_accents(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s.decode('utf8','replace')) 
                    if unicodedata.category(c) != 'Mn')
 
+
+
+
+def longest_common_substring(s,t):
+    """
+    longest comon substing implementation, taken from
+    http://www.bogotobogo.com/python/python_longest_common_substring_lcs_algorithm_generalized_suffix_tree.php
+    """
+    m = len(s)
+    n = len(t)
+    counter = [[0]*(n+1) for _ in range(m+1)]
+    longest = 0
+    lcs_set = set()
+    for i in range(m):
+        for j in range(n):
+            if s[i] == t[j]:
+                c = counter[i][j] + 1
+                counter[i+1][j+1] = c
+                if c > longest:
+                    lcs_set = set()
+                    longest = c
+                    lcs_set.add(s[i-c+1:i+1])
+                elif c == longest:
+                    lcs_set.add(s[i-c+1:i+1])
+
+    return lcs_set
+
+def without_tld(s):
+    """
+    remove everything after last '.' of string
+    """
+    c = s.rfind('.') 
+    return s if c < 0 else s[:c]
+
+
+
 def has_blacklisted_url(mailFields):
     """ 
     return True if email constains blacklisted URL
@@ -223,6 +261,16 @@ def has_blacklisted_url(mailFields):
         return False
 
     return any(map(lambda a: a['InPhishTank'] if 'InPhishTank' in a else False, mailFields['links']))
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -625,7 +673,7 @@ class RuleA1(MailClassificationRule):
             if not href or not text_link:
                 continue
 
-            if re.search('https:\/\/', href) and re.search('http:\/\/',text_link):
+            if re.search('http:\/\/', href) and re.search('https:\/\/',text_link):
                 return 1
         
         return -1
@@ -752,17 +800,218 @@ class RuleA7(MailClassificationRule):
         if rank_sum and rank_count > 0 and rank_sum / rank_count < 1000:
             return 1
             
-        return -1        
+        return -1
+          
+class RuleA8(MailClassificationRule):  
+    def __init__(self):
+        self.code = 'A8'
+        self.weight = 1
+        self.description = 'Reply to header leads to different domain than sender'
+            
+    def apply_rule(self, mailFields):
+        if 'headers' not in mailFields or not mailFields['headers']:
+            return -1
+        
+        if 'from' not in mailFields or not mailFields['from']:
+            return -1
+        
+        from_domain = mailFields['from'].partition('@')[2]
+        if not from_domain:
+            return -1 
+
+        # get reply-to header
+        reply_to_header_regex = re.compile('(?i)\(reply-to[^)]+')
+        reply_to_headers = reply_to_header_regex.findall(mailFields['headers'])
+        for current_reply_to in reply_to_headers:
+            reply_to_domain = current_reply_to.partition('@')[2] 
+            if not reply_to_domain:
+                continue
+            if not samedomain(from_domain,reply_to_domain):
+                return 1
+        return -1
+
+    
+    
+    
+# =============================================================
+# rules using common phishing targets whitelist
+# =============================================================
+
+# This is the list of comon sites, that could be possibly phished
+# Intended use of for second level domains
+# Be carefull, adding something like 'php.cz' can really mess things up
+# since 'php' is common string presented in URLs
+COMMON_PHISH_SITES = ['paypal.com', 'visa.com', 'muni.cz']
+
+
+def one_char_typosquatting(s_a='', s_b=''):
+    """
+    function searches for one character typosquatting for strings of length at least 4
+    
+    types of one char typosquatting:
+        inplace one char:  
+            paypal -> paypel
+            paypal -> paypai
+            paypal -> qaypal
+        
+        inflate one char: 
+            paypal -> paypal2
+            paypal -> payypal
+            paypal -> ppaypal
+        
+        deflate one char:
+            paypal -> payal
+            paypal -> papal    
+            
+        switched neighbour chars:
+            paypal -> papyal
+            paypal -> payapl
+    """
+    if not s_a or not s_b or s_a == s_b:
+        # nothing to compute
+        return False
+    
+    if len(s_a) < 4 and len(s_b) < 4:
+        return False
+    
+    # Levenshtein distance handle inplace, inflate and deflate one char
+    import logging
+    
+    if distance(strip_accents(s_a),strip_accents(s_b)) == 1:
+        return True
+    
+    # try for find switched neighbours
+    if not len(s_a) == len(s_b):
+        return False
+    
+    
+    for i in range(0,len(s_a) -1):
+        t = s_a[i:i+2][::-1]
+        switched_neighbours = ''.join((s_a[:i] if i > 0 else '' , t,s_a[i+2:],))
+        
+        if switched_neighbours == s_b:
+            return True
+
+    return False
+
+            
+class RuleA9(MailClassificationRule):
+    def __init__(self):
+        self.code = 'A9'
+        self.weight = 1
+        self.description = 'Common phishing targets one character typosqutting'
+    
+    
+    def apply_rule(self, mailFields):
+        if 'links' not in mailFields:
+            return -1
+    
+        for link_info in mailFields['links']:
+            raw_link = link_info['raw_link']
+        
+            domain = extractdomain(raw_link)
+            if not domain:
+                continue
+            
+            domain = domain.lower()
+            domain_no_tld = without_tld(domain)
             
             
+            # check whether domain is on COMMON_PHISH_SITES list to prevent false possive match
+            false_positive = False
+            for common_phish_site in COMMON_PHISH_SITES:            
+                if samedomain(domain, common_phish_site):
+                    false_positive = True
+                    
+            if false_positive:
+                continue
+            
+            # now we know domain is not on the COMMON_PHISH_SITES list
+            # we try to find typosquating 
+            # remove all nonalfanumerical characters
+            bare_domain_no_tld = re.sub(r'[^a-z0-9]', '', domain_no_tld)
+            
+            for common_phish_site in COMMON_PHISH_SITES:
+                
+                # check for the  for common phishing site name in somewhere in domain
+                # this matches things like paypal.biz paypal-secure,com paypal.somewhere.com
+                
+                bare_common_phish_site_no_tld = without_tld(common_phish_site)
+                if one_char_typosquatting(bare_domain_no_tld, bare_common_phish_site_no_tld):
+                    return 1
+            
+        return -1
+        
+        
+class RuleA10(MailClassificationRule):
+        
+    def __init__(self):
+        self.code = 'A10'
+        self.weight = 1
+        self.description = 'common phishing site reference in URL'
+    
+    
+    def apply_rule(self, mailFields):
+        if 'links' not in mailFields:
+            return -1
+    
+        for link_info in mailFields['links']:
+            raw_link = link_info['raw_link']
+        
+            domain = extractdomain(raw_link)
+            if not domain:
+                continue
+            
+            # should be safe, domain is part of raw_link
+            rest_of_url = raw_link.split(domain,1)[1]
+            
+            domain = domain.lower()
+            domain_no_tld = without_tld(domain)
+            
+            
+            # check whether domain is on COMMON_PHISH_SITES list to prevent false possive match
+            false_positive = False
+            for common_phish_site in COMMON_PHISH_SITES:            
+                if samedomain(domain, common_phish_site):
+                    false_positive = True
+                    
+            if false_positive:
+                continue
+            
+            # now we know domain is not on the COMMON_PHISH_SITES list
+            # we try to find typosquating 
+            # remove all nonalfanumerical characters
+            bare_domain_no_tld = re.sub(r'[^a-z0-9]', '', domain_no_tld)
+            
+            for common_phish_site in COMMON_PHISH_SITES:
+                
+                # check for the substring of common phish site in domain
+                bare_common_phish_site_no_tld = re.sub(r'[^a-z0-9]', '', without_tld(common_phish_site))
+                
+                if bare_common_phish_site_no_tld in bare_domain_no_tld:
+                    return 1
+                
+                if bare_common_phish_site_no_tld in rest_of_url:
+                    return 1
+            
+        return -1
 
-# contains list of rules that will be applied on emails        
 
-rulelist = MailClassificationRuleList()
 
+
+
+     
+
+
+# =============================================================
+# Rules registrations
+# =============================================================
 # register desired rules into rule list
 # rules will be applied on email in this order
 # rules not added to rule list will be ignored
+
+# contains list of rules that will be applied on emails   
+rulelist = MailClassificationRuleList()
 
 rulelist.add_rule(HasShortenedUrl())
 rulelist.add_rule(RuleC1())
@@ -783,4 +1032,6 @@ rulelist.add_rule(RuleA4())
 rulelist.add_rule(RuleA5())
 rulelist.add_rule(RuleA6())
 rulelist.add_rule(RuleA7())
-2
+rulelist.add_rule(RuleA8())
+rulelist.add_rule(RuleA9())
+rulelist.add_rule(RuleA10())
