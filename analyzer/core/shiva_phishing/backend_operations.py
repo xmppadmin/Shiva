@@ -487,7 +487,52 @@ def get_rule_results_for_statistics():
         logging.error(e)
     
     return result
+
+def get_global_results_for_statistics():
+    """
+     get aggreagated results of rules by application sensor
+         _rule_codes:
+            _total_phishing = 10,
+            _total_spam = 4,
+            phishing : [1, 0, 1],
+            spam:      [0, 0, 1],
+    """
+    result = {}
+    try:
+        mainDb = lamson.shivadbconfig.dbconnectmain()
         
+        query = 'select count(*) from spam where derivedPhishingStatus = 1;'
+        mainDb.execute(query)
+        result['_total_phishing'] = int(mainDb.fetchone()[0])
+ 
+        query = 'select count(*) from spam where derivedPhishingStatus = 0;'
+        mainDb.execute(query)
+        result['_total_spam'] = int(mainDb.fetchone()[0])
+        
+        query = "select code,type,result from global_overview_view"
+        mainDb.execute(query)
+        raw_result = mainDb.fetchall()
+        
+        all_rules = sorted(set(map(lambda a: a[0], raw_result)))
+        result['_rule_codes'] = all_rules
+        
+        all_types = sorted(set(map(lambda a: a[1], raw_result)))
+        for current_type in all_types:
+            result[current_type] = [0] * len(all_rules)
+        
+        
+        for current_result in raw_result:
+            
+            current_sensor = current_result[1]
+            current_rule = current_result[0]
+            result[current_sensor][all_rules.index(current_rule)] = int(current_result[2])
+            
+        
+    except mdb.Error, e:
+        logging.error(e)
+    
+    return result
+
 def get_data_for_roc_curves():
     """
     returns tuples (shivaScore, spamassassinScore, derivedStatus)

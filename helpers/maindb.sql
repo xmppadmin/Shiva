@@ -336,14 +336,21 @@ FROM spam
 -- view used for statistics computations
 --
 CREATE OR REPLACE VIEW rules_overview_view AS
-SELECT r.code,se.sensorID,sum(if(lr.result < 0,0,1)) as result 
+SELECT r.code,SUBSTRING_INDEX(se.sensorID,',',1) as `SensorID`,sum(if(lr.result <= 0,0,1)) as result 
 FROM spam s 
  INNER JOIN learningresults lr on s.id = lr.spamId 
  INNER JOIN rules r on r.id = lr.ruleId 
  INNER JOIN sensor_spam sse on s.id = sse.spam_id 
  INNER JOIN sensor se on sse.sensor_id = se.id 
-GROUP BY se.sensorID,r.code,r.description;
+GROUP BY SUBSTRING_INDEX(se.sensorID,',',1),r.code,r.description;
 
+
+CREATE OR REPLACE VIEW global_overview_view AS
+SELECT r.code, if(s.derivedPhishingStatus = 1, 'phishing', 'spam') as `type`,sum(if(lr.result <= 0,0,1)) as result 
+FROM spam s 
+ INNER JOIN learningresults lr on s.id = lr.spamId 
+ INNER JOIN rules r on r.id = lr.ruleId 
+GROUP BY s.derivedPhishingStatus,r.code,r.description;
 -- ---------------------------------------------------------
 --
 -- view used for rule integrity checking

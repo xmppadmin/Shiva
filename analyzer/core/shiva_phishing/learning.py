@@ -106,13 +106,11 @@ def __learn_classifier():
     if not sample_vectors or not result_vector:
         #nothing to - no mails database?
         return True
-      
     
     # create classifier and fit it with sampels
     from sklearn import tree
     classifier = tree.DecisionTreeClassifier(max_features=10)
     classifier.fit(sample_vectors, result_vector)
-
     
     global global_classifier
     global_classifier = classifier

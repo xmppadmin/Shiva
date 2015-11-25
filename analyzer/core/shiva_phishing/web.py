@@ -77,6 +77,7 @@ class WebServer():
     
     @cherrypy.expose
     def stats(self):
+        statistics.generate_rules_graph(backend_operations.get_global_results_for_statistics())
         statistics.generate_rules_graph(backend_operations.get_rule_results_for_statistics())
         statistics.generate_roc_graph((backend_operations.get_data_for_roc_curves())) 
     

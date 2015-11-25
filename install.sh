@@ -171,6 +171,7 @@ analyzer () {
     pip install cherrypy==3.8.0
     pip install requests==2.8.1
     pip install mako==1.0.3
+    pip install python-Levenshtein==0.12.0
 
     printf "\n[*] Installing Lamson (analyzer) and creating project:\n"
     pip install lamson==1.3.4
