@@ -6,7 +6,7 @@
       <td class="subject_td">Subject</td>
       <td>Shiva score</td>
       <td>Spamassassin score</td>
-      <td>Blacklisted</td>
+      <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
       <td>Actions</td>
@@ -37,8 +37,8 @@
           status_str = 'SPAM'
       
       
-      blacklisted_str = 'YES' if current['blacklisted'] else 'NO'
-      blacklisted_color = 'red' if current['blacklisted'] else 'black'
+      url_phishing_str = 'YES' if current['urlPhishing'] else 'NO'
+      url_phishing_color = 'red' if current['urlPhishing'] else 'black'
       import textwrap
       subject = current['subject']
       subject_wrap = textwrap.wrap(subject, 150)
@@ -62,7 +62,7 @@
       %>
       <td>${shvia_score_str|h}</td>
       <td>${spamassassin_score_str|h}</td>
-      <td><font color="${blacklisted_color|h}">${blacklisted_str|h}</font></td>
+      <td><font color="${url_phishing_color|h}">${url_phishing_str|h}</font></td>
       <td>${current['sensorID']|h}</td>
       <td><font color="${status_color|h}">${status_str|h}</font></td>
       <td>

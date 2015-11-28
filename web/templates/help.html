@@ -36,7 +36,7 @@
  </table>
 
  <h2>Scores</h2>
-   <p>Honeypot computes two scores. Each score represents probability that email is phishing.<br/><p></p>
+   <p>Honeypot computes two scores. Each score represents probability that email is phishing.<br/></p>
    <p></p><i>Shiva score</i> is result of phishing detection technique implemented in honeypot.<br/>
    <i>Spamassassin score</i> is result of Bayes classifier in Spamassassin.</p>
    <p><b>IMPORTANT</b> imported emails (sensors .*spamImport.*,.*phishingImport.*) have always default score -1, they are used as learning data only</p>
@@ -45,9 +45,15 @@
 
 <h2>Learning honeypot</h2>
 <p> After instalation, hoenypot is learnt on the provided data samples. This process is described in package readme.txt file<p>
-<p> When honeypot catches emails, it's possible to relearn it. It will take into considerations cought emails as well. <p>
+<p> When honeypot catches emails, it's possible to manually relearn it. It will take into considerations cought emails as well. <p>
 <p> By default, spammassassin boundary for for marking email is 0.5. This boundary can be shifted by re-learning to number ininterval <0.4,0.6> <p>
 
+ <h2>URL phishing</h2>
+   <p>Several techniques for detecting phishing by URL is implemented (blacklists,typosquatting,HTTPS->HTTP,kknown domain name in other part of URL).<br/>
+      If at least one if found in email, it's automaticaly marked as phishing.
+  </p>
+
+<br/>
 
 <br/>
 <h2> Examples </h2>
@@ -61,7 +67,7 @@
       <td class="subject_td">Subject</td>
       <td>Shiva score</td>
       <td>Spamassassin score</td>
-      <td>Blacklisted</td>
+      <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
       <td>Actions</td>
@@ -100,7 +106,7 @@
       <td class="subject_td">Subject</td>
       <td>Shiva score</td>
       <td>Spamassassin score</td>
-      <td>Blacklisted</td>
+      <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
       <td>Actions</td>
@@ -145,7 +151,7 @@
       <td class="subject_td">Subject</td>
       <td>Shiva score</td>
       <td>Spamassassin score</td>
-      <td>Blacklisted</td>
+      <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
       <td>Actions</td>
@@ -186,7 +192,7 @@
       <td class="subject_td">Subject</td>
       <td>Shiva score</td>
       <td>Spamassassin score</td>
-      <td>Blacklisted</td>
+      <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
       <td>Actions</td>
@@ -231,7 +237,7 @@
       <td class="subject_td">Subject</td>
       <td>Shiva score</td>
       <td>Spamassassin score</td>
-      <td>Blacklisted</td>
+      <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
       <td>Actions</td>
@@ -243,7 +249,7 @@
 
   <tr class="regularRow">
  
-      <td><a href="/view_email?email_id=3d4d6fb1e8488f56b5ddd09ab41d20bc"><span class="id_link">3d4d6fb1e8488f56b5ddd09ab41d20bc</span></a></td>
+      <td><span class="id_link">3d4d6fb1e8488f56b5ddd09ab41d20bc</span></td>
       <td>2015-11-23 06:27:09</td>
       <td>invitation EXCELLENCE IN HORIZON 2020 PROJECT DESIGN AND PROPOSAL
  WRITNING</td>
@@ -267,7 +273,7 @@
 
   <tr class="regularRow">
  
-      <td><a href="/view_email?email_id=3d4d6fb1e8488f56b5ddd09ab41d20bc"><span class="id_link">3d4d6fb1e8488f56b5ddd09ab41d20bc</span></a></td>
+      <td><span class="id_link">3d4d6fb1e8488f56b5ddd09ab41d20bc</span></td>
       <td>2015-11-23 06:27:09</td>
       <td>invitation EXCELLENCE IN HORIZON 2020 PROJECT DESIGN AND PROPOSAL
  WRITNING</td>

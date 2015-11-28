@@ -41,7 +41,7 @@ def retrieve_by_ids(email_ids = []):
         'derivedPhishingStatus': True/False/None
         'shivaScore': float (0.0,1.0), -1 if email was imported,
         'spamassassinScore': float (0.0,1.0), -1 if email was imported,
-        'blacklisted': True/False 
+        'urlPhishing': True/False 
         }
     """
     
@@ -51,7 +51,7 @@ def retrieve_by_ids(email_ids = []):
             mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'attachmentFileType':[], 'links':[],  'date': '' }
             
             """fetch basic spam information from database"""
-            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck`,`shivaScore`,`spamassassinScore`,`blacklisted` FROM `spam` WHERE `id` = %s "
+            spamquery = "SELECT `from`,`subject`,`to`,`textMessage`,`htmlMessage`,`totalCounter`,`ssdeep`,`headers`,`length`,`phishingHumanCheck`,`shivaScore`,`spamassassinScore`,`urlPhishing` FROM `spam` WHERE `id` = %s "
             mailFields['s_id'] = current_id
             
             mainDb = lamson.shivadbconfig.dbconnectmain()
@@ -73,7 +73,7 @@ def retrieve_by_ids(email_ids = []):
             mailFields['phishingHumanCheck'] = current_record[9]
             mailFields['shivaScore'] = current_record[10]
             mailFields['spamassassinScore'] = current_record[11]
-            mailFields['blacklisted'] = current_record[12]
+            mailFields['urlPhishing'] = current_record[12]
             
             """fetch sensors information"""
             sensorquery = 'select sensorID from sensor_spam ss inner join sensor s on s.id = ss.sensor_id where spam_id = %s limit 1'
@@ -113,20 +113,20 @@ def get_overview(start=0,limit=10):
     limit : maximal count of emails to return
     
     return [
-      {'id':,'firstSeen':,'lastSeen':,'subject':,'shivaScore':,'spamassassinScore':,'sensorID':,'derivedPhishingStatus':,'phishingHumanCheck':, 'blacklisted':}
+      {'id':,'firstSeen':,'lastSeen':,'subject':,'shivaScore':,'spamassassinScore':,'sensorID':,'derivedPhishingStatus':,'phishingHumanCheck':, 'urlPhishing':}
     ]
     """
     
     overview_list = []
     try:
-        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID`,`derivedPhishingStatus`,`phishingHumanCheck`, `blacklisted` from `spam_overview_view` LIMIT %s OFFSET %s "
+        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID`,`derivedPhishingStatus`,`phishingHumanCheck`, `urlPhishing` from `spam_overview_view` LIMIT %s OFFSET %s "
         
         mainDb = lamson.shivadbconfig.dbconnectmain()
         mainDb.execute(overview_query,(int(limit),int(start),))
         result = mainDb.fetchall()
         
         for record in result:
-            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6], 'derivedPhishingStatus':record[7], 'phishingHumanCheck':record[8], 'blacklisted':record[9]})
+            overview_list.append({'id':record[0], 'firstSeen':record[1], 'lastSeen':record[2], 'subject':record[3], 'shivaScore':record[4], 'spamassassinScore':record[5], 'sensorID':record[6], 'derivedPhishingStatus':record[7], 'phishingHumanCheck':record[8], 'urlPhishing':record[9]})
         
         
     except mdb.Error, e:
@@ -445,6 +445,12 @@ def store_computed_results(computed_results=[],used_rules=[]):
     
     return
 
+
+def natural_key(string_):
+    """See http://www.codinghorror.com/blog/archives/001018.html"""
+    import re
+    return [int(s) if s.isdigit() else s for s in re.split(r'(\d+)', string_)]
+
 def get_rule_results_for_statistics(): 
     """ 
     get aggreagated results of rules application by sensor
@@ -463,8 +469,8 @@ def get_rule_results_for_statistics():
         mainDb.execute(query)
         raw_result = mainDb.fetchall()
         
-        all_rules = sorted(set(map(lambda a: a[0], raw_result)))
-        all_sensors = sorted(set(map(lambda a: a[1], raw_result)))
+        all_rules = sorted(set(map(lambda a: a[0], raw_result)),key=natural_key)
+        all_sensors = sorted(set(map(lambda a: a[1], raw_result)),key=natural_key)
           
         for sensor in all_sensors:
             result[sensor] = [0] * len(all_rules)
@@ -513,16 +519,15 @@ def get_global_results_for_statistics():
         mainDb.execute(query)
         raw_result = mainDb.fetchall()
         
-        all_rules = sorted(set(map(lambda a: a[0], raw_result)))
+        all_rules = sorted(set(map(lambda a: a[0], raw_result)),key=natural_key)
         result['_rule_codes'] = all_rules
         
-        all_types = sorted(set(map(lambda a: a[1], raw_result)))
+        all_types = sorted(set(map(lambda a: a[1], raw_result)),key=natural_key)
         for current_type in all_types:
             result[current_type] = [0] * len(all_rules)
         
         
         for current_result in raw_result:
-            
             current_sensor = current_result[1]
             current_rule = current_result[0]
             result[current_sensor][all_rules.index(current_rule)] = int(current_result[2])

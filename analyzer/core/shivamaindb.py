@@ -67,7 +67,7 @@ def insert(spam_id):
     
     mailFields = {'s_id':'', 'ssdeep':'', 'to':'', 'from':'', 'text':'', 'html':'', 'subject':'', 'headers':'', 'sourceIP':'', 'sensorID':'', 'firstSeen':'', 'relayCounter':'', 'relayTime':'', 'count':0, 'len':'', 'inlineFileName':[], 'inlineFilePath':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFilePath':[], 'attachmentFileMd5':[], 'links':[],  'date': '' , 'phishingHumanCheck' : '', 'shivaScore' : -1.0, 'spamassassinScore' : -1.0 }
     
-    spam = "SELECT `id`, `ssdeep`, `to`, `from`, `textMessage`, `htmlMessage`, `subject`, `headers`, `sourceIP`, `sensorID`, `firstSeen`, `relayCounter`, `relayTime`, `totalCounter`, `length`, `shivaScore`, `spamassassinScore` , `derivedPhishingStatus`, `phishingHumanCheck`, `blacklisted` FROM `spam` WHERE `id` = '" + str(spam_id) + "'"
+    spam = "SELECT `id`, `ssdeep`, `to`, `from`, `textMessage`, `htmlMessage`, `subject`, `headers`, `sourceIP`, `sensorID`, `firstSeen`, `relayCounter`, `relayTime`, `totalCounter`, `length`, `shivaScore`, `spamassassinScore` , `derivedPhishingStatus`, `phishingHumanCheck`, `urlPhishing` FROM `spam` WHERE `id` = '" + str(spam_id) + "'"
     
     attachments = "SELECT `id`, `spam_id`, `file_name`, `attach_type`, `attachmentFileMd5`, `date`, `attachment_file_path` FROM `attachments` WHERE `spam_id` = '" + str(spam_id) + "'"
     
@@ -81,7 +81,7 @@ def insert(spam_id):
         
         spamrecord = tempDb.fetchone()
         if spamrecord:
-            mailFields['s_id'], mailFields['ssdeep'], mailFields['to'], mailFields['from'], mailFields['text'], mailFields['html'], mailFields['subject'], mailFields['headers'], mailFields['sourceIP'], mailFields['sensorID'], mailFields['firstSeen'], mailFields['relayCounter'], mailFields['relayTime'], mailFields['count'], mailFields['len'], mailFields['shivaScore'], mailFields['spamassassinScore'], mailFields['derivedPhishingStatus'], mailFields['phishingHumanCheck'], mailFields['blacklisted'] = spamrecord
+            mailFields['s_id'], mailFields['ssdeep'], mailFields['to'], mailFields['from'], mailFields['text'], mailFields['html'], mailFields['subject'], mailFields['headers'], mailFields['sourceIP'], mailFields['sensorID'], mailFields['firstSeen'], mailFields['relayCounter'], mailFields['relayTime'], mailFields['count'], mailFields['len'], mailFields['shivaScore'], mailFields['spamassassinScore'], mailFields['derivedPhishingStatus'], mailFields['phishingHumanCheck'], mailFields['urlPhishing'] = spamrecord
             
             mailFields['date'] = str(mailFields['firstSeen']).split(' ')[0]
             # Saving 'attachments' table's data
@@ -125,7 +125,7 @@ def insert(spam_id):
             elif mailFields['derivedPhishingStatus'] == 0:
                 derivedPhishingStatus = 'FALSE'
             
-            insert_spam = "INSERT INTO `spam`(`headers`, `to`, `from`, `subject`, `textMessage`, `htmlMessage`, `totalCounter`, `id`, `ssdeep`, `length`, `shivaScore`, `spamassassinScore`, `derivedPhishingStatus`, `phishingHumanCheck`, `blacklisted`) VALUES('" + mailFields['headers'] + "', '" + mailFields['to'] + "', '" + mailFields['from'] + "', '" + mailFields['subject'] + "', '" + mailFields['text'] + "', '" + mailFields['html'] + "', '" + str(mailFields['count']) + "', '" + mailFields['s_id'] + "', '" + mailFields['ssdeep'] + "', '" + str(mailFields['len']) + "', '" + str(mailFields['shivaScore']) + "', '" + str(mailFields['spamassassinScore']) + "', " + derivedPhishingStatus + ', ' + phishingHumanCheck + ', ' + str(mailFields['blacklisted']) + ")"
+            insert_spam = "INSERT INTO `spam`(`headers`, `to`, `from`, `subject`, `textMessage`, `htmlMessage`, `totalCounter`, `id`, `ssdeep`, `length`, `shivaScore`, `spamassassinScore`, `derivedPhishingStatus`, `phishingHumanCheck`, `urlPhishing`) VALUES('" + mailFields['headers'] + "', '" + mailFields['to'] + "', '" + mailFields['from'] + "', '" + mailFields['subject'] + "', '" + mailFields['text'] + "', '" + mailFields['html'] + "', '" + str(mailFields['count']) + "', '" + mailFields['s_id'] + "', '" + mailFields['ssdeep'] + "', '" + str(mailFields['len']) + "', '" + str(mailFields['shivaScore']) + "', '" + str(mailFields['spamassassinScore']) + "', " + derivedPhishingStatus + ', ' + phishingHumanCheck + ', ' + str(mailFields['urlPhishing']) + ")"
   
             try:
                 mainDb.execute(insert_spam)

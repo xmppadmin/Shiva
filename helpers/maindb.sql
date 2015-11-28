@@ -240,7 +240,7 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
   `phishingHumanCheck` BOOL COMMENT 'messaged marked as phishing by human',
   `derivedPhishingStatus` BOOL DEFAULT NULL COMMENT 'status computed for message: NULL - not assigned, true - phishing, false - spam',
-  `blacklisted` BOOL DEFAULT FALSE COMMENT 'indicator whether email contains at least one blacklisted URL',
+  `urlPhishing` BOOL DEFAULT FALSE COMMENT 'indicator whether some form of direct URL phishing was found',
   PRIMARY KEY (`id`),
   KEY `subject` (`subject`),
   KEY `totalCounter` (`totalCounter`),
@@ -321,7 +321,7 @@ CREATE TABLE IF NOT EXISTS `learningresults` (
 -- Overview
 --
 CREATE OR REPLACE VIEW spam_overview_view AS
-SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore,sensor.sensorID,spam.derivedPhishingStatus,spam.phishingHumanCheck,spam.blacklisted
+SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore,sensor.sensorID,spam.derivedPhishingStatus,spam.phishingHumanCheck,spam.urlPhishing
 FROM spam
   INNER JOIN sdate_spam ON sdate_spam.spam_id = spam.id 
   INNER JOIN sdate ON sdate_spam.id = sdate.id 
@@ -333,7 +333,7 @@ FROM spam
 -- --------------------------------------------------------
 
 --
--- view used for statistics computations
+-- views used for statistics computations
 --
 CREATE OR REPLACE VIEW rules_overview_view AS
 SELECT r.code,SUBSTRING_INDEX(se.sensorID,',',1) as `SensorID`,sum(if(lr.result <= 0,0,1)) as result 
@@ -351,6 +351,8 @@ FROM spam s
  INNER JOIN learningresults lr on s.id = lr.spamId 
  INNER JOIN rules r on r.id = lr.ruleId 
 GROUP BY s.derivedPhishingStatus,r.code,r.description;
+
+
 -- ---------------------------------------------------------
 --
 -- view used for rule integrity checking

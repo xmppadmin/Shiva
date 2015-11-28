@@ -62,14 +62,196 @@ class TestHelperMethods(unittest.TestCase):
         
         assert phishing.one_char_typosquatting("paypal","papyal")
         assert phishing.one_char_typosquatting("paypal","payapl")
+    
+    
+    def test_x(self):
+        html="""
+        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 5.0 Transitional//EN">
+<TD style="FONT-FAMILY: Arial,Helvetica,sans-serif; COLOR: #000000; FONT-SIZE: 12px" align="center"><HTML><HEAD>
+<META content="text/html; charset=windows-1252" http-equiv="Content-Type">
+<META name="GENERATOR" content="MSHTML 8.00.7600.16535"></HEAD>
+<BODY>You have 1 new ALERT message.<BR>Please login to your Discover Online 
+Banking and visit the Message Center section in order to read the message.<BR>To 
+Login, please click the link below:<BR><BR><a href="http://218.192.248.9/email.html" rel="nofollow" target="_blank">https://www.discover.com
+</SPAN></A><BR><BR><BR>Thank you.<BR>Online Banking Security Team<BR>Discover 
+Bank<BR><BR>2014 Discover Bank, Member FDIC. All Rights Reserved.</TD> 
+</BODY></HTML>
+"""
+        mailFields = {}
+        mailFields['html'] = html
+        from phishing import RuleA1,RuleA2,RuleA3,RuleA4
+        print RuleA1().apply_rule(mailFields)
+        print RuleA2().apply_rule(mailFields)
+        print RuleA3().apply_rule(mailFields)
+        print RuleA4().apply_rule(mailFields)
         
         
-          
 
 class TestRules(unittest.TestCase):
-    def test_rule_c1(self):
-        from phishing import RuleC1
-        rule = RuleC1()
+    
+    def test_rule_a1(self):
+        from phishing import RuleA1
+        rule = RuleA1()
+        
+        mailFields = {}
+        link1 = {'raw_link' : 'aaaa.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : True}
+        link2 = {'raw_link' : 'eeee.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1,link2]
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        mailFields = {}
+        link1 = {'raw_link' : 'aaaa.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        link2 = {'raw_link' : 'eeee.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1,link2]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+    
+    def test_rule_a2(self):
+        from phishing import RuleA2
+        rule = RuleA2()
+         
+        mail_body_html = """
+        <body>
+          <a href="http://www.some.site.com">https://www.some.site.com</a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        mailFields['links'] = []
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        mail_body_html = """
+        <body>
+          <a href="http://www.some.site.com">http://www.some.site.com</a>
+        <body>
+        """
+        mailFields = {}
+        mailFields['html'] = mail_body_html
+        mailFields['links'] = []
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+    
+    def test_rule_a3(self):
+        from phishing import RuleA3
+        rule = RuleA3()        
+        
+        # should NOT match, site is on muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'rrrrrrr.aaaa.muni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        # should NOT match, site is on muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'mumi.muni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        # should NOT match, NO typosquttig for muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'muni.biz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        # should NOT match, too far from muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'rumuni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        # should match, typosqutting for muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'mumi.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        # should match, typosqutting for muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'http://mumi.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        # should match, typosqutting for muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'muni2.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        # should not match, no typosqutting
+        mailFields = {}
+        link1 = {'raw_link' : 'muni.somewhere.info', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+    
+    
+    
+    def test_rule_a4(self):
+        from phishing import RuleA4
+        rule = RuleA4()        
+        
+        # should NOT match, site is on muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'rrrrrrr.aaaa.muni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        # should NOT match, site is on muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'mumi.muni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        # should match, muni.cz -> muni.biz
+        mailFields = {}
+        link1 = {'raw_link' : 'muni.biz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        # should match, possible phising case muni.cz -> rumuni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'rumuni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        # should NOT match, typosqutting for muni.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'mumi.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert_not(rule.apply_rule(mailFields))
+         
+        # should match, possible phising case muni.cz -> muni2.cz
+        mailFields = {}
+        link1 = {'raw_link' : 'muni2.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+
+
+        # should match, possible phising case muni.cz -> muni.somewhere.info
+        mailFields = {}
+        link1 = {'raw_link' : 'muni.somewhere.info', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        # should match, possible phising case muni.cz -> muni.somewhere.info
+        mailFields = {}
+        link1 = {'raw_link' : 'muni.somewhere.info', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+
+        # should match, possible phising case muni found in query part
+        mailFields = {}
+        link1 = {'raw_link' : 'muni.somewhere.info/something/muni/abc.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        # should match, possible phising case muni found in query part
+        mailFields = {}
+        link1 = {'raw_link' : 'somewhere.info/something/muni/abc.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
+        mailFields['links'] = [link1]
+        self.rule_assert(rule.apply_rule(mailFields))
+    
+    def test_rule_r2(self):
+        from phishing import RuleR2
+        rule = RuleR2()
      
         mail_body_html = """
         <body>
@@ -116,9 +298,9 @@ class TestRules(unittest.TestCase):
         self.rule_assert(rule.apply_rule(mailFields))
          
                  
-    def test_rule_c2(self):
-        from phishing import RuleC2
-        rule = RuleC2()
+    def test_rule_r3(self):
+        from phishing import RuleR3
+        rule = RuleR3()
          
         mail_body_html = """
         <body>
@@ -142,9 +324,9 @@ class TestRules(unittest.TestCase):
         mailFields['html'] = mail_body_html
         self.rule_assert_not(rule.apply_rule(mailFields))    
         
-    def test_rule_c4(self):
-        from phishing import RuleC4
-        rule = RuleC4()
+    def test_rule_r5(self):
+        from phishing import RuleR5
+        rule = RuleR5()
         
         mail_body_html = """
         <body>
@@ -190,9 +372,9 @@ class TestRules(unittest.TestCase):
         mailFields['html'] = mail_body_html
         self.rule_assert(rule.apply_rule(mailFields))
          
-    def test_rule_c5(self):
-        from phishing import RuleC5
-        rule = RuleC5()
+    def test_rule_r6(self):
+        from phishing import RuleR6
+        rule = RuleR6()
          
         mailFields = {}
         mailFields['from'] = 'sender@bbb.com'
@@ -208,9 +390,9 @@ class TestRules(unittest.TestCase):
         self.rule_assert(rule.apply_rule(mailFields))
  
      
-    def test_rule_c6(self):
-        from phishing import RuleC6
-        rule = RuleC6()
+    def test_rule_r7(self):
+        from phishing import RuleR7
+        rule = RuleR7()
          
         mail_body_html = """
         <body>
@@ -236,9 +418,9 @@ class TestRules(unittest.TestCase):
         mailFields['links'] = [link1,link2]
         self.rule_assert(rule.apply_rule(mailFields))
           
-    def test_rule_c7(self):
-        from phishing import RuleC7
-        rule = RuleC7()
+    def test_rule_r8(self):
+        from phishing import RuleR8
+        rule = RuleR8()
          
         mail_body_html = """
         <body>
@@ -259,9 +441,9 @@ class TestRules(unittest.TestCase):
         self.rule_assert_not(rule.apply_rule(mailFields))
          
      
-    def test_rule_c8(self):
-        from phishing import RuleC8
-        rule = RuleC8()
+    def test_rule_r9(self):
+        from phishing import RuleR9
+        rule = RuleR9()
          
         mail_body_html = """
         <body>
@@ -298,12 +480,11 @@ class TestRules(unittest.TestCase):
         mailFields['html'] = ''
         link1 = {'raw_link' : 'wwww.asdf.qwer.edu:/lkqewr/qwer/qwer/?eer=324&bbbb.ggggg.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
         mailFields['links'] = [link1]
-        rule = RuleC8()
         self.rule_assert(rule.apply_rule(mailFields))
          
-    def test_rule_c9(self):
-        from phishing import RuleC9
-        rule = RuleC9()
+    def test_rule_R10(self):
+        from phishing import RuleR10
+        rule = RuleR10()
          
         mail_body_html = """
         <body>
@@ -329,7 +510,6 @@ class TestRules(unittest.TestCase):
         mailFields['html'] = ''
         link1 = {'raw_link' : 'http://www.aaaa.aaaa.eee.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
         mailFields['links'] = [link1]
-        rule = RuleC9()
         self.rule_assert_not(rule.apply_rule(mailFields))
          
         mailFields = {}
@@ -339,9 +519,9 @@ class TestRules(unittest.TestCase):
         assert rule.apply_rule(mailFields)
          
      
-    def test_rule_c10(self):
-        from phishing import RuleC10
-        rule = RuleC10()
+    def test_rule_r11(self):
+        from phishing import RuleR11
+        rule = RuleR11()
          
         mail_body_html = """
         <body>
@@ -366,9 +546,9 @@ class TestRules(unittest.TestCase):
         assert rule.apply_rule(mailFields)
     
     
-    def test_rule_c11(self):
-        from phishing import RuleC11
-        rule = RuleC11()
+    def test_rule_R12(self):
+        from phishing import RuleR12
+        rule = RuleR12()
         
         mail_body_html = """
         <body>
@@ -389,36 +569,11 @@ class TestRules(unittest.TestCase):
         mailFields['html'] = mail_body_html
         mailFields['links'] = []
         self.rule_assert(rule.apply_rule(mailFields))
-        
-        
-    def test_rule_a1(self):
-        from phishing import RuleA1
-        rule = RuleA1()
-         
-        mail_body_html = """
-        <body>
-          <a href="http://www.some.site.com">https://www.some.site.com</a>
-        <body>
-        """
-        mailFields = {}
-        mailFields['html'] = mail_body_html
-        mailFields['links'] = []
-        self.rule_assert(rule.apply_rule(mailFields))
-        
-        mail_body_html = """
-        <body>
-          <a href="http://www.some.site.com">http://www.some.site.com</a>
-        <body>
-        """
-        mailFields = {}
-        mailFields['html'] = mail_body_html
-        mailFields['links'] = []
-        self.rule_assert_not(rule.apply_rule(mailFields))
 
         
-    def test_rule_a2(self):
-        from phishing import RuleA2
-        rule = RuleA2()
+    def test_rule_r13(self):
+        from phishing import RuleR13
+        rule = RuleR13()
          
         mail_body_html = """
         <body>
@@ -464,9 +619,9 @@ class TestRules(unittest.TestCase):
         mailFields['links'] = []
         self.rule_assert_not(rule.apply_rule(mailFields))
         
-    def test_rule_a3(self):
-        from phishing import RuleA3
-        rule = RuleA3()
+    def test_rule_r14(self):
+        from phishing import RuleR14
+        rule = RuleR14()
         
         headers = """
         (Content-Type, multipart/alternative; charset="UTF-8";
@@ -561,9 +716,9 @@ class TestRules(unittest.TestCase):
         
         
         
-    def test_rule_a4(self):
-        from phishing import RuleA4
-        rule = RuleA4()
+    def test_rule_r15(self):
+        from phishing import RuleR15
+        rule = RuleR15()
         
         subject = 'PayPal Notification: Account Review'
         mailFields = {}
@@ -605,10 +760,27 @@ class TestRules(unittest.TestCase):
         mailFields['subject'] = subject
         self.rule_assert_not(rule.apply_rule(mailFields))
         
+    def test_rule_r16(self):
+        from phishing import RuleR16
+        rule = RuleR16()
         
-    def test_rule_a5(self):
-        from phishing import RuleA5
-        rule = RuleA5()
+        mailFields = {'text':'prosim overte vas ucet'}
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        mailFields = {'text':'please verify your account'}
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        mailFields = {'text':'buy our super viagra'}
+        self.rule_assert_not(rule.apply_rule(mailFields))
+        
+        mailFields = {}
+        mailFields = {'html':'<p>please <b> verify </b> your account</p>'}
+        self.rule_assert(rule.apply_rule(mailFields))
+        
+        
+    def test_rule_r17(self):
+        from phishing import RuleR17
+        rule = RuleR17()
         
         subject = 'PayPal Notification: Account Review'
         mailFields = {}
@@ -656,9 +828,9 @@ class TestRules(unittest.TestCase):
         self.rule_assert(rule.apply_rule(mailFields))
         
         
-    def test_rule_a6(self):
-        from phishing import RuleA6
-        rule = RuleA6()
+    def test_rule_R18(self):
+        from phishing import RuleR18
+        rule = RuleR18()
         
         mailFields = {}
         link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
@@ -670,9 +842,9 @@ class TestRules(unittest.TestCase):
         mailFields['links'] = [link1]
         self.rule_assert(rule.apply_rule(mailFields)) 
         
-    def test_rule_a7(self):
-        from phishing import RuleA7
-        rule = RuleA7()
+    def test_rule_r19(self):
+        from phishing import RuleR19
+        rule = RuleR19()
         
         mailFields = {}
         link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 10, 'InPhishTank' : False}
@@ -686,9 +858,9 @@ class TestRules(unittest.TestCase):
         mailFields['links'] = [link1,link2]
         self.rule_assert_not(rule.apply_rule(mailFields)) 
 
-    def test_rule_a8(self):
-        from phishing import RuleA8
-        rule = RuleA8()
+    def test_rule_r20(self):
+        from phishing import RuleR20
+        rule = RuleR20()
         
         
         headers = """
@@ -746,125 +918,7 @@ class TestRules(unittest.TestCase):
         self.rule_assert_not(rule.apply_rule(mailFields))
         
         
-    def test_rule_a9(self):
-        from phishing import RuleA9
-        rule = RuleA9()        
-        
-        # should NOT match, site is on muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'rrrrrrr.aaaa.muni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert_not(rule.apply_rule(mailFields))
-        
-        # should NOT match, site is on muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'mumi.muni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert_not(rule.apply_rule(mailFields))
-        
-        # should NOT match, NO typosquttig for muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'muni.biz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert_not(rule.apply_rule(mailFields))
-        
-        # should NOT match, too far from muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'rumuni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert_not(rule.apply_rule(mailFields))
-        
-        # should match, typosqutting for muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'mumi.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-        
-        # should match, typosqutting for muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'http://mumi.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-        
-        # should match, typosqutting for muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'muni2.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-        
-        # should not match, no typosqutting
-        mailFields = {}
-        link1 = {'raw_link' : 'muni.somewhere.info', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert_not(rule.apply_rule(mailFields))
-        
-        
-        
-    def test_rule_a10(self):
-        from phishing import RuleA10
-        rule = RuleA10()        
-        
-        # should NOT match, site is on muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'rrrrrrr.aaaa.muni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert_not(rule.apply_rule(mailFields))
-        
-        # should NOT match, site is on muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'mumi.muni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert_not(rule.apply_rule(mailFields))
-        
-        # should match, muni.cz -> muni.biz
-        mailFields = {}
-        link1 = {'raw_link' : 'muni.biz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-        
-        # should match, possible phising case muni.cz -> rumuni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'rumuni.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-        
-        # should NOT match, typosqutting for muni.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'mumi.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert_not(rule.apply_rule(mailFields))
          
-        # should match, possible phising case muni.cz -> muni2.cz
-        mailFields = {}
-        link1 = {'raw_link' : 'muni2.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-
-
-        # should match, possible phising case muni.cz -> muni.somewhere.info
-        mailFields = {}
-        link1 = {'raw_link' : 'muni.somewhere.info', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-        
-        # should match, possible phising case muni.cz -> muni.somewhere.info
-        mailFields = {}
-        link1 = {'raw_link' : 'muni.somewhere.info', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-
-        # should match, possible phising case muni found in query part
-        mailFields = {}
-        link1 = {'raw_link' : 'muni.somewhere.info/something/muni/abc.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-        
-        # should match, possible phising case muni found in query part
-        mailFields = {}
-        link1 = {'raw_link' : 'somewhere.info/something/muni/abc.cz', 'LongUrl' : '', 'RedirectCount' : 0, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
-        mailFields['links'] = [link1]
-        self.rule_assert(rule.apply_rule(mailFields))
-    
         
     def rule_assert(self,result):
         assert result > 0

@@ -73,13 +73,19 @@ class WebServer():
     @cherrypy.expose
     def relearn(self):
         learning.learn()
-        raise cherrypy.HTTPRedirect("/learning")
+        raise cherrypy.HTTPRedirect("/stats")
     
     @cherrypy.expose
     def stats(self):
-        statistics.generate_rules_graph(backend_operations.get_global_results_for_statistics())
-        statistics.generate_rules_graph(backend_operations.get_rule_results_for_statistics())
+        statistics.generate_rules_graph(backend_operations.get_global_results_for_statistics(),
+                                        title='Statistics of rules matching by email class',
+                                        filename='global_rules_graph.png')
+        statistics.generate_rules_graph(backend_operations.get_rule_results_for_statistics(),
+                                        title='Statistics of rules matching by source of email',
+                                        filename='source_rules_graph.png'
+                                        )
         statistics.generate_roc_graph((backend_operations.get_data_for_roc_curves())) 
+        raise cherrypy.HTTPRedirect("/learning")
     
 
 

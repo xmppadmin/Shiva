@@ -85,6 +85,6 @@ CREATE TABLE IF NOT EXISTS `spam` (
   `spamassassinScore` float DEFAULT -1.0 NOT NULL COMMENT 'spamassassin Bayes phishing score',
   `phishingHumanCheck` BOOL COMMENT 'messaged marked as phishing by human',
   `derivedPhishingStatus` BOOL DEFAULT NULL COMMENT 'status computed for message: NULL - not assigned, true - phishing, false - spam',
-  `blacklisted` BOOL DEFAULT FALSE COMMENT 'indicator whether email contains at least one blacklisted URL',
+  `urlPhishing` BOOL DEFAULT FALSE COMMENT 'indicator whether some form of direct URL phishing was found',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci;

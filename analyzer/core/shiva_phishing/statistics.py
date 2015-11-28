@@ -77,9 +77,10 @@ def prepare_matrix():
             
     return matrix
 
-def generate_rules_graph(data={}):
+def generate_rules_graph(data={}, title='', filename=''):
     """
     generate graph of rule matching percentage based on email sensors 
+    for input format description, see 
     """
     
     color_list = 'rgbcmyk'
@@ -112,9 +113,19 @@ def generate_rules_graph(data={}):
     plot.grid(True)
     plot.xlabel('Rules',fontsize=18)
     plot.ylabel('Percentage of matching rules',fontsize=18)
-    plot.title("Statistics of rules matching by source of email\n", fontsize=20)
     
-    plot.savefig('../../../web/images/rules_graph.png', bbox_inches='tight')
+    final_title = 'Statistics of rules matching by source of email\n'
+    if title:
+        final_title = title + "\n"
+    plot.title(final_title, fontsize=20)
+    
+    final_filename = 'rules_graph.png'
+    if filename:
+        final_filename = filename
+        
+    fig = plot.gcf()
+    fig.set_size_inches(15, 8)
+    plot.savefig('../../../web/images/' + final_filename, bbox_inches='tight')
     plot.close()
     
 def generate_roc_graph(data=[]):
@@ -129,10 +140,6 @@ def generate_roc_graph(data=[]):
     shiva_score_probs = map(lambda a: a[0], data)
     spamass_score_probs = map(lambda a: a[1], data) 
     derived_results = map(lambda a: a[2], data)
-
-    logging.info(shiva_score_probs)
-    logging.info(spamass_score_probs)
-    logging.info(derived_results)
 
     fpr_shiva, tpr_shiva, _ = metrics.roc_curve(derived_results, shiva_score_probs, pos_label=1)
     fpr_spamass, tpr_spamass, _= metrics.roc_curve(derived_results, spamass_score_probs, pos_label=1)

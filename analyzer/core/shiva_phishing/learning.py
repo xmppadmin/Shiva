@@ -8,13 +8,12 @@ import pickle
 import logging
 import os
 
-from sklearn.neighbors import KNeighborsClassifier
-
 import lamson.server
 import backend_operations
 import statistics
 
-from lamson.shiva_phishing.phishing import has_blacklisted_url
+from phishing import check_url_phishing
+
 
 # files used by module
 CLASSIFIER_PKL = 'run/classifier.pkl'
@@ -109,6 +108,7 @@ def __learn_classifier():
     
     # create classifier and fit it with sampels
     from sklearn import tree
+#     classifier = tree.DecisionTreeClassifier(max_features=10)
     classifier = tree.DecisionTreeClassifier(max_features=10)
     classifier.fit(sample_vectors, result_vector)
     
@@ -207,7 +207,7 @@ def check_mail(mailFields):
     
     dict {
       verdict: True/False
-      blacklisted: True/False
+      urlPhishing: True/False
       shiva_prob: float
       sa_prob: float
     }
@@ -226,10 +226,12 @@ def check_mail(mailFields):
     shiva_prob = global_classifier.predict_proba(mailVector)[0][1]
     sa_prob = get_spamassassin_bayes_score(mailFields)
     
-    is_blacklisted = has_blacklisted_url(mailFields)
     
-    result = {'verdict' : is_blacklisted or shiva_prob >= global_shiva_threshold or sa_prob >= global_sa_threshold,
-              'blacklisted' : is_blacklisted,
+    
+    url_phishing = check_url_phishing(mailFields)
+    
+    result = {'verdict' : url_phishing or shiva_prob >= global_shiva_threshold or sa_prob >= global_sa_threshold,
+              'urlPhishing' : url_phishing,
               'shiva_prob' : shiva_prob,
               'sa_prob' : sa_prob }
     logging.info('VERDICT: ' + str(result))
