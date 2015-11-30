@@ -1,9 +1,10 @@
-import cherrypy
+import cherrypy 
 import datetime
 import threading
 import time
 import subprocess
 import os
+
 
 from mako.template import Template
 from mako.lookup import TemplateLookup
@@ -186,7 +187,8 @@ class WebServer():
         return template.render(title='SHIVA honeypot: help') 
      
      
-     
+def error_page_401(status, message, traceback, version):
+    return '<html><head><meta charset="UTF-8"></head><body><h1><b>401 UNAUTHORIZED ACCESS</b></h1></body></html>'   
      
 # configuration ================================================================
 
@@ -213,14 +215,16 @@ def prepare_http_server():
     cherrypy.config.update({'server.socket_host': web_interface_address,
                         'server.socket_port': int(web_interface_port),
                        })
+    cherrypy.config.update({'error_page.401': error_page_401})
 
     checkpassword = cherrypy.lib.auth_basic.checkpassword_dict({auth_login : auth_pass,})
+    
     conf = {
         '/': {
             'tools.sessions.on': True,
             'tools.staticdir.root': staticRoot,
             'tools.auth_basic.on': True,
-            'tools.auth_basic.realm': auth_login,
+            'tools.auth_basic.realm': 'web interface',
             'tools.auth_basic.checkpassword': checkpassword,
         },
         '/static': {
