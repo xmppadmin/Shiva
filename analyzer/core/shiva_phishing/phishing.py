@@ -65,34 +65,30 @@ URL_DOMAIN_PATTERN = re.compile(ur'[a-z0-9.\-]+[.][a-z]{2,4}')
 
 # list of common phishing subject regexes
 PHISHING_SUBJECT_REGEX_LIST = []
-plain_regex = []
-plain_regex.append('(?i)account')
-plain_regex.append('(?i)update')
-plain_regex.append('(?i)security')
-plain_regex.append('(?i)secure')
-plain_regex.append('(?i)ebay')
-plain_regex.append('(?i)card')
-plain_regex.append('(?i)bank')
-plain_regex.append('(?i)verify')
-plain_regex.append('(?i)valid')
-plain_regex.append('(?i)visa')
-plain_regex.append('(?i)confirm')
-plain_regex.append('(?i)varovani')
-plain_regex.append('(?i)nalehav')
-plain_regex.append('(?i)dulez')
-plain_regex.append('(?i)platn')
-plain_regex.append('(?i)ukonceni')
-plain_regex.append('(?i)\bend')
-plain_regex.append('(?i)podezrel')
-plain_regex.append('(?i)over')
-plain_regex.append('(?i)naleh')
-plain_regex.append('(?i)nezbyt')
-plain_regex.append('(?i)webmail')
-plain_regex.append('(?i)kone?c')
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)account'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)update'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)security'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)secure'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)ebay'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)card'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)bank'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)verify'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)valid'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)visa'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)confirm'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)varovani'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)nalehav'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)dulez'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)platn'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)ukonceni'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)\bend'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)podezrel'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)over'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)naleh'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)nezbyt'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)webmail'))
+PHISHING_SUBJECT_REGEX_LIST.append(re.compile('(?i)kone?c'))
 
-
-for current in plain_regex:
-    PHISHING_SUBJECT_REGEX_LIST.append(re.compile(current))
 
 # list of common phishing phrases
 PHISHING_PHRASES_REGEX_LIST = []
@@ -112,30 +108,26 @@ PHISHING_PHRASES_REGEX_LIST.append(re.compile('(?i)naleh'))
 
     
 
-
-
 # list of common spam regexes
 COMMON_SPAM_SUBJECT_REGEX_LIST = []
 plain_regex = []
 # returned mails
-plain_regex.append('(?i)transcript')
-plain_regex.append('(?i)return')
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)transcript'))
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)return'))
 # science, scientific, conference
-plain_regex.append('(?i)scien')
-plain_regex.append('(?i)conf\.')
-plain_regex.append('(?i)confe')
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)scien'))
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)conf\.'))
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)confe'))
 
-plain_regex.append('(?i)nauc')
-plain_regex.append('(?i)pouz')
-plain_regex.append('(?i)posil')
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)nauc'))
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)pouz'))
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)posil'))
 # inviations
-plain_regex.append('(?i)invit')
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)invit'))
 # pcb is common spam 
-plain_regex.append('(?i)pcb')
-plain_regex.append('(?i)china')
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)pcb'))
+COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile('(?i)china'))
 
-for current in plain_regex:
-    COMMON_SPAM_SUBJECT_REGEX_LIST.append(re.compile(current))
 
 
 # helper functions
@@ -1030,7 +1022,7 @@ class RuleA4(MailClassificationRule):
 # contains list of rules that will be applied on emails   
 # for statistical classification purposes
 #
-# Please note that each of rules A* should be strong enoug to identify
+# Please note that each of rules A* should be strong enough to identify
 # phishing attempt by the itself, but they are quite rare.
 # It's better to use their result as direct verdict rather then statistical feature
 rulelist = MailClassificationRuleList()
@@ -1056,26 +1048,3 @@ rulelist.add_rule(RuleR18())
 rulelist.add_rule(RuleR19())
 rulelist.add_rule(RuleR20())
 
-# rulelist.add_rule(HasShortenedUrl())
-# rulelist.add_rule(RuleC1())
-# rulelist.add_rule(RuleC2())
-# rulelist.add_rule(RuleC3())
-# rulelist.add_rule(RuleC4())
-# rulelist.add_rule(RuleC5())
-# rulelist.add_rule(RuleC6())
-# rulelist.add_rule(RuleC7())
-# rulelist.add_rule(RuleC8())
-# rulelist.add_rule(RuleC9())
-# rulelist.add_rule(RuleC10())
-# rulelist.add_rule(RuleC11())
-# rulelist.add_rule(RuleA1())
-# rulelist.add_rule(RuleA2())
-# rulelist.add_rule(RuleA3())
-# rulelist.add_rule(RuleA4())
-# rulelist.add_rule(RuleA5())
-# rulelist.add_rule(RuleA6())
-# rulelist.add_rule(RuleA7())
-# rulelist.add_rule(RuleA8())
-# rulelist.add_rule(RuleA9())
-# rulelist.add_rule(RuleA10())
-# rulelist.add_rule(RuleX1())
