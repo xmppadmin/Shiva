@@ -119,7 +119,16 @@ def get_overview(start=0,limit=10):
     
     overview_list = []
     try:
-        overview_query = "SELECT `id`,`firstSeen`,`lastSeen`,`subject`,`shivaScore`,`spamassassinScore`,`sensorID`,`derivedPhishingStatus`,`phishingHumanCheck`, `urlPhishing` from `spam_overview_view` LIMIT %s OFFSET %s "
+        overview_query = """SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore,sensor.sensorID,spam.derivedPhishingStatus,spam.phishingHumanCheck,spam.urlPhishing
+            FROM spam
+              INNER JOIN sdate_spam ON sdate_spam.spam_id = spam.id 
+              INNER JOIN sdate ON sdate_spam.id = sdate.id 
+              INNER JOIN sensor_spam ON spam.id = sensor_spam.spam_id
+              INNER JOIN sensor ON sensor_spam.sensor_id = sensor.id
+              INNER JOIN (select inner_query.first_sensor_id from (select spam_id,min(sensor_id) as first_sensor_id from sensor_spam group by spam_id) as inner_query) sid  ON
+                sid.first_sensor_id = sensor.id
+            ORDER BY sdate.lastSeen DESC
+         LIMIT %s OFFSET %s"""
         
         mainDb = lamson.shivadbconfig.dbconnectmain()
         mainDb.execute(overview_query,(int(limit),int(start),))

@@ -315,20 +315,6 @@ CREATE TABLE IF NOT EXISTS `learningresults` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 ;
 
 
--- --------------------------------------------------------
-
---
--- Overview
---
-CREATE OR REPLACE VIEW spam_overview_view AS
-SELECT spam.id,sdate.firstSeen,sdate.lastSeen,spam.subject,spam.shivaScore,spam.spamassassinScore,sensor.sensorID,spam.derivedPhishingStatus,spam.phishingHumanCheck,spam.urlPhishing
-FROM spam
-  INNER JOIN sdate_spam ON sdate_spam.spam_id = spam.id 
-  INNER JOIN sdate ON sdate_spam.id = sdate.id 
-  INNER JOIN sensor_spam ON spam.id = sensor_spam.spam_id
-  INNER JOIN sensor ON sensor_spam.sensor_id = sensor.id
-  ORDER BY sdate.lastSeen DESC;
-
 
 -- --------------------------------------------------------
 

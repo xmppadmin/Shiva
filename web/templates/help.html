@@ -227,7 +227,8 @@
 
 <br/>
 <br/>
-<h3>Rare example of multiple sensors</h3>
+<h3>Imported email is shown among new ones</h3>
+
 
 <table class="hoverTable">
   <thead>
@@ -246,56 +247,32 @@
   </thead>
   <tbody>
               
-
-  <tr class="regularRow">
+  <tr class="newRow">
  
-      <td><span class="id_link">3d4d6fb1e8488f56b5ddd09ab41d20bc</span></td>
-      <td>2015-11-23 06:27:09</td>
-      <td>invitation EXCELLENCE IN HORIZON 2020 PROJECT DESIGN AND PROPOSAL
- WRITNING</td>
-      
-      
+      <td><span class="id_link">6060ca566d4ac4ee1ee9932232face24</span></td>
+      <td>2015-11-30 12:52:22</td>
+      <td>Re:ISO qualified PCBA contract manufacturer - from China</td>
       <td>-1.000</td>
       <td>-1.000</td>
       <td><font color="black">NO</font></td>
       <td>spamImport_shiva_handfilter</td>
       <td><font color="green">SPAM</font></td>
       <td>
-        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('3d4d6fb1e8488f56b5ddd09ab41d20bc')"/>
-            <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing('3d4d6fb1e8488f56b5ddd09ab41d20bc')" />
+        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('6060ca566d4ac4ee1ee9932232face24')"/>
+            <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing('6060ca566d4ac4ee1ee9932232face24')" />
       </td>
       <td>
           <img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>
       </td>
-    </tr>                    
-   
-
-
-  <tr class="regularRow">
- 
-      <td><span class="id_link">3d4d6fb1e8488f56b5ddd09ab41d20bc</span></td>
-      <td>2015-11-23 06:27:09</td>
-      <td>invitation EXCELLENCE IN HORIZON 2020 PROJECT DESIGN AND PROPOSAL
- WRITNING</td>
-      
-      
-      <td>-1.000</td>
-      <td>-1.000</td>
-      <td><font color="black">NO</font></td>
-      <td>shiva</td>
-      <td><font color="green">SPAM</font></td>
-      <td>
-        <img src="/static/images/icons/delete.png" title="Delete email from honeypot." onclick="delete_email('3d4d6fb1e8488f56b5ddd09ab41d20bc')"/>
-            <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing('3d4d6fb1e8488f56b5ddd09ab41d20bc')" />
-      </td>
-      <td>
-          <img src="/static/images/icons/small_marked_by_user.png" title="Marked by human."/>
-      </td>
-    </tr>  
-<table>
-<p>This is example of very rare situation: honeypot caught the same email that is already presented 
-    in learning data. In this case new email has still score -1,-1 and both are displayed. In case of phishing,
-    no report is sent. This is very rare situation whith minimal probability of  </p>
+    </tr> 
+</table>
+<p>
+Email from imported data is shown as new one. This may happen. Honeypot uses fyzzy hashing in order to indetify uniqe emails.</br>
+If new email is the same or similar enough to existing one, only timestamp of existing mail is updated. This is  the reason why old email is displayed as new.
+</p>
+<p>
+Incomming emails are sometimes malformed or they're missing subject/text part. In this case, this malformed email may be matched to existing malformed email.
+</p>
 
 
 <%include file="parts/footer.html" />
