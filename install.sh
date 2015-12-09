@@ -157,7 +157,7 @@ analyzer () {
     printf "\n[*] Installing required python modules for analyzer:\n"
     pip install numpy==1.9.2
     pip install scipy==0.16.0
-    pip install scikit-learn==0.16.1
+    pip install scikit-learn==0.17
     pip install matplotlib==1.4.3
     easy_install -U distribute
     pip install cython==0.20.2
