@@ -316,6 +316,7 @@ class GoogleSafeBrowsingAPI(RankProvider):
     
     def __init__(self, host="", proxy=None, timeout=30):
         api_key = lamson.server.shivaconf.get('analyzer','google_safe_browsing_api_key')
+        self.api_key = api_key
         self.client = SafebrowsinglookupClient(key=api_key)
         super(GoogleSafeBrowsingAPI, self).__init__(host, proxy, timeout)
         
