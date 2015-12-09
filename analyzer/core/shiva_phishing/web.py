@@ -85,7 +85,7 @@ class WebServer():
                                         title='Statistics of rules matching by source of email',
                                         filename='source_rules_graph.png'
                                         )
-        statistics.generate_roc_graph((backend_operations.get_data_for_roc_curves())) 
+#         statistics.generate_roc_graph((backend_operations.get_data_for_roc_curves())) 
         raise cherrypy.HTTPRedirect("/learning")
     
 

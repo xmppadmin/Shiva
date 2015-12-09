@@ -16,10 +16,9 @@ def prepare_matrix():
     
     Method should be called  when database is in consistent state.
     
-    Produced matrix has format [M + 2, N + 1]
+    Produced matrix has format [M + 1, N + 1]
     
-    M is count of emails in database, first two rows contains rule codes and 
-    boost factor, respectivly.
+    M is count of emails in database, first two rows contains rule codes.
     Firs column of each of M rows contains derived status (1 for phishing, 0 for spam)
     
     
@@ -29,7 +28,6 @@ def prepare_matrix():
     
     
     [ '_code'         , code1          , code2           ... codeN           ]
-    [ '_boost'        , boost1         , boost2          ...  boostN         ]
     [ derived_status1 , rule_1_1_result, rule_1_2_result ... rule_1_N_result ]
     [ derived_status2 , rule_2_1_result, rule_2_2_result ... rule_2_N_result ]
     .                   .                .                   .
@@ -50,15 +48,12 @@ def prepare_matrix():
             #sort rules to ensure same order in all rows of matrix
             sorted_rules = sorted(email_result['rules'],key=lambda a: a['code'])
             
-            #add first two rows into matrix (codes and boost) during first walkthrough
+            #add first row into matrix (codes) during first walkthrough
             if first_loop:
                 first_row = ['_derived_result']
                 first_row.extend(map(lambda a: a['code'], sorted_rules))
-                second_row = ['_boost']     
-                second_row.extend(map(lambda a: a['boost'], sorted_rules))
                 
                 matrix.append(first_row)
-                matrix.append(second_row)
                 first_loop = False
             
             

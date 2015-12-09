@@ -262,24 +262,23 @@ class MailClassificationRuleList(object):
     Class represents list of MailClassificationRules to be
        applied on mail
     """    
-    weight = 1
     
     def __init__(self):
         self.rulelist = list()
-    
-    """
-    Add rule to list
-    rule - instance of MailClassificationRules
-    """ 
+     
     def add_rule(self, rule):
+        """
+        Add rule to list
+        rule - instance of MailClassificationRules
+        """
         if isinstance(rule, MailClassificationRule):
             self.rulelist.append(rule)
     
-    """
-    Apply all rules on given mailFields
-    return - list of results
-    """
     def apply_rules(self, mailFields):
+        """
+        Apply all rules on given mailFields
+        return - list of results
+        """
         result = []
         for rule in self.rulelist:
             result.append(rule.apply_rule(mailFields))
@@ -288,22 +287,15 @@ class MailClassificationRuleList(object):
     def get_rules(self):
         return self.rulelist
     
-    """
-    retrieve names of all rules
-    """
     def get_rule_names(self):
+        """
+        retrieve names of all rules
+        """
         result = []
         for rule in self.rulelist:
             result.append(rule.get_rule_description())
         return result
-    """
-    retrive vector of weights for rules in list
-    """
-    def get_vector_weigths(self):
-        result = []
-        for rule in self.rulelist:
-            result.append(rule.weight)
-        return result;
+
     
     
 
@@ -335,72 +327,22 @@ class MailClassificationRule(object):
         """ 
         return 1 if email mathes rule, -1 otherwise
         """
-        return -1
+        raise NotImplementedError("Implement this method")
     
 
 
-# RULE DEFINITIONS
-
-class ContainsUrlRule(MailClassificationRule):
-    def __init__(self):
-        self.code = 'R1'
-        self.description = "Email contains URL"
-        self.weight = 1
-        
-    def apply_rule(self, mailFields):
-        return 1 if len(mailFields['links']) > 0  else -1
-
-
-class ContainsImageAttachmentRule(MailClassificationRule):
-    def __init__(self):
-        self.code = 'R2'
-        self.description = "Email contains image"
-        self.weight = 1
-        
-    def apply_rule(self, mailFields):
-        if not mailFields.get('attachmentFileType'):
-            return -1
-        
-        for suffix in mailFields['attachmentFileType']:
-            if re.match(r".*(jpg|jpeg|png|gif|swf)$", suffix, re.IGNORECASE):
-                return 1
-        return -1
-
-class ContainsExecutableAttachmentRule(MailClassificationRule):
-    def __init__(self):
-        self.code = 'R3'
-        self.description = "Email contains executable attachment"
-        self.weight = 1
-        
-    def apply_rule(self, mailFields):
-        if not mailFields.get('attachmentFileType'):
-            return -1
-        for suffix in mailFields['attachmentFileType']:
-            if re.match(r".*(sh|exe)$", suffix, re.IGNORECASE):
-                return 1
-        return -1
-
-class ContainsDocumentAttachmentRule(MailClassificationRule):
-    def __init__(self):
-        self.code = 'R4'
-        self.description = "Email contains document(doc,pdf)"
-        self.weight = 1
-        
-    def apply_rule(self, mailFields):
-        if not mailFields.get('attachmentFileType'):
-            return -1
-        for suffix in mailFields['attachmentFileType']:
-            if re.match(r".*(doc|docx|pdf)$", suffix, re.IGNORECASE):
-                return 1
-        return -1
+# =============================================================
+# Here starts definitions of phishing rules
+# =============================================================
 
 class RuleR1(MailClassificationRule):
     def __init__(self):
         self.code = 'R1'
         self.description = "At least one URL is shortened"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
+        if not 'links' in mailFields:
+            return -1
         for url_info in mailFields['links']:
             if url_info['LongUrl']:
                 return 1
@@ -410,7 +352,6 @@ class RuleR2(MailClassificationRule):
     def __init__(self):
         self.code = 'R2'
         self.description = "Hyperlink with visible URL, pointing to different URL"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -431,7 +372,6 @@ class RuleR3(MailClassificationRule):
     def __init__(self):
         self.code = 'R3'
         self.description = "Hyperlink with visible text pointing to IP based URL"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -451,7 +391,6 @@ class RuleR4(MailClassificationRule):
     def __init__(self):
         self.code = 'R4'
         self.description = "Email body in HTML format"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         return 1 if mailFields['html'] else -1
@@ -460,7 +399,6 @@ class RuleR5(MailClassificationRule):
     def __init__(self):
         self.code = 'R5'
         self.description = "Too complicated URL"
-        self.weight = 1
     
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
@@ -490,7 +428,6 @@ class RuleR6(MailClassificationRule):
     def __init__(self):
         self.code = 'R6'
         self.description = "Sender domain different from some URL in message body"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'from' in mailFields or not 'links' in mailFields:
@@ -515,7 +452,6 @@ class RuleR7(MailClassificationRule):
     def __init__(self):
         self.code = 'R7'
         self.description = "Image with external domain different from URLs in email body"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields or not 'links' in mailFields:
@@ -535,7 +471,6 @@ class RuleR8(MailClassificationRule):
     def __init__(self):
         self.code = 'R8'
         self.description = "Image source is IP address"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -551,7 +486,6 @@ class RuleR9(MailClassificationRule):
     def __init__(self):
         self.code = 'R9'
         self.description = "More than one domain in URL"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if 'html' in mailFields:
@@ -571,7 +505,6 @@ class RuleR10(MailClassificationRule):
     def __init__(self):
         self.code = 'R10'
         self.description = "More than three subdomains in URL"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if 'html' in mailFields:
@@ -592,7 +525,6 @@ class RuleR11(MailClassificationRule):
     def __init__(self):
         self.code = 'R11'
         self.description = "Hyperlink with image insted of visible text, image source is IP address"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -608,7 +540,6 @@ class RuleR12(MailClassificationRule):
     def __init__(self):
         self.code = 'R12'
         self.description = "Visible text in hyperlink contains no information about destination"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -632,7 +563,6 @@ class RuleR13(MailClassificationRule):
     def __init__(self):
         self.code = 'R13'
         self.description = "URL contains username"
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if 'links' in mailFields:
@@ -661,7 +591,6 @@ class RuleR14(MailClassificationRule):
     def __init__(self):
         self.code = 'R14'
         self.description = 'Presence of suspicious headers'
-        self.weight = 1
         
     def apply_rule(self, mailFields):
         if 'headers' not in mailFields:
@@ -685,7 +614,6 @@ class RuleR14(MailClassificationRule):
 class RuleR15(MailClassificationRule):
     def __init__(self):
         self.code = 'R15'
-        self.weight = 1
         self.description = 'Common phishing keywords in subject '
         
     def apply_rule(self, mailFields):
@@ -701,7 +629,6 @@ class RuleR15(MailClassificationRule):
 class RuleR16(MailClassificationRule):
     def __init__(self):
         self.code = 'R16'
-        self.weight = 1
         self.description = 'Common phishing phrases in email body'
         
     def apply_rule(self, mailFields):
@@ -720,7 +647,6 @@ class RuleR16(MailClassificationRule):
 class RuleR17(MailClassificationRule):
     def __init__(self):
         self.code = 'R17'
-        self.weight = 1
         self.description = 'Common spam keywords in subject'
          
     def apply_rule(self, mailFields):
@@ -736,7 +662,6 @@ class RuleR17(MailClassificationRule):
 class RuleR18(MailClassificationRule):
     def __init__(self):
         self.code = 'R18'
-        self.weight = 1
         self.description = 'Suspicious amount of redirections'
          
     def apply_rule(self, mailFields):
@@ -751,7 +676,6 @@ class RuleR18(MailClassificationRule):
 class RuleR19(MailClassificationRule):
     def __init__(self):
         self.code = 'R19'
-        self.weight = 1
         self.description = 'Suspicious Alexa ranks in links'
          
     def apply_rule(self, mailFields):
@@ -773,7 +697,6 @@ class RuleR19(MailClassificationRule):
 class RuleR20(MailClassificationRule):  
     def __init__(self):
         self.code = 'R20'
-        self.weight = 1
         self.description = 'Reply to header leads to different domain than sender'
             
     def apply_rule(self, mailFields):
@@ -800,30 +723,27 @@ class RuleR20(MailClassificationRule):
 
     
 
-
-
-
-
-
-
 class RuleA1(MailClassificationRule):
     def __init__(self):
         self.code = 'A1'
         self.description = "At least one URL found on blacklist"
-        self.weight = 1
 
     def apply_rule(self,mailFields):    
         if 'links' not in mailFields:
             return -1
     
-        return 1 if any(map(lambda a: a['InPhishTank'] if 'InPhishTank' in a else False, mailFields['links'])) else -1
+        if any(map(lambda a: a['GoogleSafeBrowsingAPI'] if 'GoogleSafeBrowsingAPI' in a else False, mailFields['links'])):
+            return 1
+        
+        if any(map(lambda a: a['InPhishTank'] if 'InPhishTank' in a else False, mailFields['links'])):
+            return 1
+        return -1
 
     
 class RuleA2(MailClassificationRule):
     def __init__(self):
         self.code = 'A2'
         self.description = "HTTPS in visible link, HTTP in real destination"
-        self.weight = 1
     
     def apply_rule(self, mailFields):
         if not 'html' in mailFields:
@@ -907,7 +827,6 @@ class RuleA3(MailClassificationRule):
         
     def __init__(self):
         self.code = 'A3'
-        self.weight = 1
         self.description = 'Common phishing targets one character typosqutting'
     
     
@@ -956,7 +875,6 @@ class RuleA4(MailClassificationRule):
         
     def __init__(self):
         self.code = 'A4'
-        self.weight = 1
         self.description = 'Common phishing site reference in URL'
     
     

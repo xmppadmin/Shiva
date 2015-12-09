@@ -8,6 +8,9 @@ import pickle
 import logging
 import os
 
+from sklearn import tree
+from sklearn.metrics import f1_score
+
 import lamson.server
 import backend_operations
 import statistics
@@ -17,7 +20,6 @@ from phishing import check_url_phishing
 
 # files used by module
 CLASSIFIER_PKL = 'run/classifier.pkl'
-BOOST_VECTOR_PKL = 'run/local_boost_vector.pkl'
 LEARNING_LOCK = 'run/learning.lock'
 
 
@@ -99,17 +101,15 @@ def __learn_classifier():
     learning_matrix = statistics.prepare_matrix()
     
     # see statistics.prepare_matrix()
-    sample_vectors = map(lambda a: a[1:], learning_matrix[2:])
-    result_vector = map(lambda a: a[0], learning_matrix[2:])
+    sample_vectors = map(lambda a: a[1:], learning_matrix[1:])
+    result_vector = map(lambda a: a[0], learning_matrix[1:])
 
     if not sample_vectors or not result_vector:
         #nothing to - no mails database?
         return True
     
-    # create classifier and fit it with sampels
-    from sklearn import tree
-#     classifier = tree.DecisionTreeClassifier(max_features=10)
-    classifier = tree.DecisionTreeClassifier(max_features=10)
+    # create classifier and fit it with samples
+    classifier = tree.DecisionTreeClassifier(min_samples_leaf=10,max_depth=8,class_weight='balanced',criterion='gini')
     classifier.fit(sample_vectors, result_vector)
     
     global global_classifier
@@ -222,8 +222,7 @@ def check_mail(mailFields):
     mailVector = process_single_record(mailFields)
     logging.critical(mailVector)
     
-    
-    shiva_prob = global_classifier.predict_proba(mailVector)[0][1]
+    shiva_prob = global_classifier.predict_proba((mailVector,))[0][1]
     sa_prob = get_spamassassin_bayes_score(mailFields)
     
     
@@ -251,15 +250,10 @@ def process_single_record(mailFields):
     for rule in rulelist.get_rules():
         rule_result = rule.apply_rule(mailFields)
         rule_code = rule.get_rule_code()
-        result.append({'code': rule_code, 'result': rule_result, 'boost':1})
-        used_rules.append({'code': rule_code, 'boost': 1, 'description': rule.get_rule_description()})
+        result.append({'code': rule_code, 'result': rule_result})
+        used_rules.append({'code': rule_code, 'description': rule.get_rule_description()})
         
         db_result = rule_result
-#         if rule_result > 1 or rule_result < -1:
-#             # if score does't belong to interval (-1,1)
-#             # it was boosted for sure and therefore rule passed
-#             # this solves problems with negative boosting  
-#             db_result = 1
         
         
         computed_results.append({'spamId': mailFields['s_id'], 'code': rule.code ,'result': db_result})
@@ -305,49 +299,7 @@ def __check_learning_and_lock():
         return False
     
     open(LEARNING_LOCK, 'a').close()
-    return True
-
-def __compute_new_chi2_boost_vector(sample_vectors=[],result_vector=[],former_boost_vector=[]):
-    """
-    compute chi2 boost vector for next learning
-    
-    sample_vectors = list of lists of samples
-    result_vectors = list of results
-    former_boost_vector = list of boost factors
-    
-    It must hold:
-    len(sample_vectors[i]) == len(former_boost_vector)
-    len(sample_vectors == len(results)
-    
-    if condition doesn't hold or other problem occurs, former_boost_vector is returned
-    """
-    
-    from sklearn.feature_selection import chi2
-    from math import ceil,isnan
-    from operator import and_
-    
-    required_len = len(former_boost_vector)
-    
-    # every vector of samples must have exactly same length as vector of results
-    if not reduce(and_, map(lambda a: len(a) == required_len, sample_vectors)):
-        return former_boost_vector
-    
-    if not len(result_vector) == len(sample_vectors):
-        return former_boost_vector
-    
-    score = chi2(map(lambda a: map(lambda b: b if b > 0 else 0, a),sample_vectors), result_vector)
-    
-    chi2_boost_vector = []
-    for i in range(0,len(score[0])):
-        current_chi2_score = ceil(score[0][i]) if not isnan(score[0][i]) else .0
-        
-        # ensure keeping negative boost
-        if former_boost_vector[i] < 0:
-            current_chi2_score *= -1
-        chi2_boost_vector.append(current_chi2_score)
-        
-    return chi2_boost_vector
-    
+    return True    
     
 def __compute_classifier_decision_tresholds():
     """
@@ -358,7 +310,6 @@ def __compute_classifier_decision_tresholds():
     
     return tuple (shiva_threshold,spamassasin_threshold)
     """
-    from sklearn.metrics import f1_score
     classification_results = backend_operations.get_detection_results_for_thresholds()
     
     # no reason to shift shiva score when KNN classifier is used
@@ -377,15 +328,19 @@ def __compute_classifier_decision_tresholds():
         else:
             expected_results.append(1 if line[2] == 1 else 0)
     
-    best_thres_sa = 0. 
+    best_thres_sa = 0.5 
     best_score_sa = 0.
     
     try:
-        # go through possible thresholds and find best suitable threshold for ispamassassin classifier
+        # go through possible thresholds and find best suitable threshold for spamassassin classifier
         for i in range(40, 60, 1):
             current_thres =  i / 100.0
             
             sa_result = map(lambda a: 1 if a[1] > current_thres else 0, classification_results)
+            
+            # don't compute f1_score if we have all zeroes or ones
+            if all(sa_result) or not any(sa_result):
+                continue
            
             sa_score = f1_score(expected_results, sa_result, average='binary')
     
@@ -400,11 +355,7 @@ def __compute_classifier_decision_tresholds():
         
     # return default thresholds if error occurs
     return default_result
-        
 
-    
-   
-    
     
 def free_learning_lock():
     """

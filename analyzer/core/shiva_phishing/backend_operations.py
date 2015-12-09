@@ -415,7 +415,7 @@ def store_computed_results(computed_results=[],used_rules=[]):
       ]
     used_results =  
       list[
-       {'code': string , 'boost': int, 'description': string }
+       {'code': string , 'description': string }
       ]
     """
     
@@ -426,21 +426,17 @@ def store_computed_results(computed_results=[],used_rules=[]):
     try:
         mainDb = lamson.shivadbconfig.dbconnectmain()
         for i in range(0,len(computed_results)):
-            rule_query = "select `id`,`boost` from rules where `code` = %s";
+            rule_query = "select `id` from rules where `code` = %s";
             
             mainDb.execute(rule_query,(used_rules[i]['code'],))
             result = mainDb.fetchone()
             if not result:
                 # store new rule into DB
-                mainDb.execute('insert into rules(code, boost, description) values (%s, %s, %s)',(used_rules[i]['code'], used_rules[i]['boost'], used_rules[i]['description']))
+                mainDb.execute('insert into rules(code, description) values (%s, %s)',(used_rules[i]['code'], used_rules[i]['description']))
                 mainDb.execute(rule_query,(used_rules[i]['code'],))
                 rule_id = str(mainDb.fetchone()[0])
             else:
                 rule_id = str(result[0])
-                
-                # update boost in database if nescessary
-                if result[1] != used_rules[i]['boost']:
-                    mainDb.execute('update rules set boost = %s where id = %s', (result[0],int(used_rules[i]['boost'])))
 
             query1 = 'delete from learningresults where ruleId = %s and spamId = %s'
             query2 = 'insert into learningresults(ruleId,spamId,result) values(%s, %s, %s)'
@@ -572,7 +568,7 @@ def get_results_of_email(email_id=''):
      {
        derivedStatus: True/False/None,
        humanCheck: True/False/None ,
-       rules: [(code: string, description: string, result: int, boost: int)+]
+       rules: [(code: string, description: string, result: int)+]
      }
    
     array
@@ -590,12 +586,12 @@ def get_results_of_email(email_id=''):
             result['derivedStatus'] = {1: True, 0: False, None: None} [status[0]]
             result['humanCheck'] = {1: True, 0: False, None: None} [status[1]]
         
-        query = "SELECT r.code,r.description,r.boost,lr.result FROM learningresults lr INNER JOIN rules r ON lr.ruleId = r.id WHERE lr.spamId = %s ORDER BY lr.ruleId"
+        query = "SELECT r.code,r.description,lr.result FROM learningresults lr INNER JOIN rules r ON lr.ruleId = r.id WHERE lr.spamId = %s ORDER BY lr.ruleId"
         mainDb.execute(query,(email_id,))
         
         rules_resutls = []
         for current in mainDb.fetchall():
-            rules_resutls.append({'code': current[0], 'description': current[1], 'boost': current[2],'result':current[3]})
+            rules_resutls.append({'code': current[0], 'description': current[1],'result':current[2]})
         
         result['rules'] = rules_resutls
         
@@ -670,7 +666,7 @@ def get_permament_url_info(link=''):
     """    
     try:
         mainDb = lamson.shivadbconfig.dbconnectmain()
-        query = 'select longHyperLink,redirectCount,googlePageRank,alexaTrafficRank,inPhishTank from permamentlinkdetails where hyperLink = %s'
+        query = 'select longHyperLink,redirectCount,googlePageRank,alexaTrafficRank,inPhishTank,googleSafeAPI from permamentlinkdetails where hyperLink = %s'
         
         mainDb.execute(query,(link,))
         result = mainDb.fetchone();
@@ -682,7 +678,8 @@ def get_permament_url_info(link=''):
             url_data['RedirectCount'] = result[1]
             url_data['GooglePageRank'] = result[2]
             url_data['AlexaTrafficRank'] = result[3]
-            url_data['InPhishTank'] = result[4]
+            url_data['InPhishTank'] = result[4],
+            url_data['GoogleSafeBrowsingAPI'] = result[5],
             return url_data
             
     except mdb.Error, e:
@@ -726,6 +723,7 @@ def store_permament_url_info(url_data={}):
         LongUrl=''
         AlexaTrafficRank=''
         InPhishTank=''
+        GoogleSafeBrowsingAPI=''
     }
     """
     
@@ -735,14 +733,15 @@ def store_permament_url_info(url_data={}):
     try:
         mainDb = lamson.shivadbconfig.dbconnectmain()
         
-        query = 'insert into permamentlinkdetails (hyperLink,longHyperLink,redirectCount,googlePageRank,alexaTrafficRank,inPhishTank,date) values (%s , %s , %s , %s , %s , %s ,NOW())'
+        query = 'insert into permamentlinkdetails (hyperLink,longHyperLink,redirectCount,googlePageRank,alexaTrafficRank,inPhishTank,googleSafeAPI,date) values (%s , %s , %s , %s , %s , %s , %s ,NOW())'
         mainDb.execute(query,(
                               str(url_data['raw_link']).replace('|', ''),
                               str(url_data['LongUrl']) if url_data['LongUrl'] else None,
                               int(url_data['RedirectCount']),
                               int(url_data['GooglePageRank']),
                               int(url_data['AlexaTrafficRank']),
-                              '1' if url_data['InPhishTank'] else '0'
+                              '1' if url_data['InPhishTank'] else '0',
+                              '1' if url_data['GoogleSafeBrowsingAPI'] else '0',
                               ))
     except mdb.Error, e:
         logging.error(e)

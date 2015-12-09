@@ -116,6 +116,7 @@ CREATE TABLE IF NOT EXISTS `permamentlinkdetails` (
   `googlePageRank` int(3) DEFAULT -1,
   `alexaTrafficRank` int(10) DEFAULT -1,
   `inPhishTank` BOOL DEFAULT FALSE,
+  `googleSafeAPI` BOOL DEFAULT FALSE,
   PRIMARY KEY (`id`),
   KEY `hyperLink` (`hyperLink`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
@@ -292,7 +293,6 @@ CREATE TABLE IF NOT EXISTS `learningreport` (
 CREATE TABLE IF NOT EXISTS `rules` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `code` char(10) NOT NULL,
-  `boost` int(5) DEFAULT 1,
   `description`  mediumtext CHARACTER SET utf8 COLLATE utf8_unicode_ci COMMENT 'description of the rule',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=1 ;

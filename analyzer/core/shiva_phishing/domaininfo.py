@@ -14,7 +14,7 @@ import urlparse
 import requests
 
 import lamson.server
-
+from google_safe_api import SafebrowsinglookupClient
 
 class RankProvider(object):
     """Abstract class for obtaining the page rank (popularity)
@@ -285,23 +285,24 @@ class InPhishTank(RankProvider):
     """
     
     def __init__(self, host="", proxy=None, timeout=30):
+        self.api_key = lamson.server.shivaconf.get('analyzer','phishtank_api_key') 
         super(InPhishTank, self).__init__(host, proxy, timeout)
         
     def get_rank(self, url):
         """
         return True if url is in phishtank database, False otherwise
         """
+        if not url or not self.api_key:
+            return False
         
         try:
-            
-            api_key =lamson.server.shivaconf.get('analyzer','phishtankapikey')
-            
+
             req_url = 'http://checkurl.phishtank.com/checkurl/'
             params = {'format':'json',
                           'url': url if url.startswith('http') else 'http://' + url,
                            }
-            if api_key:
-                params['app_key'] = api_key
+            
+            params['app_key'] = self.api_key
             
             r = requests.post(req_url,data=params)
             response = r.json()
@@ -311,6 +312,29 @@ class InPhishTank(RankProvider):
             return False
         return False
      
+class GoogleSafeBrowsingAPI(RankProvider):
+    
+    def __init__(self, host="", proxy=None, timeout=30):
+        api_key = lamson.server.shivaconf.get('analyzer','google_safe_browsing_api_key')
+        self.client = SafebrowsinglookupClient(key=api_key)
+        super(GoogleSafeBrowsingAPI, self).__init__(host, proxy, timeout)
+        
+    def get_rank(self, url):
+        """
+        return True if given URL is considered 'phishing','malware' or 'unwanted' by Google Safe Browsing API
+        """
+        if not url or not self.api_key:
+            return False
+        
+        try:
+            for url,result in self.client.lookup(url).iteritems():
+                if  re.search('(?i)(phishing|malware|unwanted)',result):
+                    return True
+        except Exception:
+            return False
+        return False
+    
+
 
 def get_domain_info(url):
     """
@@ -322,12 +346,13 @@ def get_domain_info(url):
       GooglePageRank:
       LongUrl:
       InPhishTank:
+      GoogleSafeBrowsingAPI:
     }
     """
     domain = re.sub('https?://', '', url)
     result = {}
     result['raw_link'] = url
-    providers = (AlexaTrafficRank(), RedirectCount(), GooglePageRank(), LongUrl(), InPhishTank())
+    providers = (AlexaTrafficRank(), RedirectCount(), GooglePageRank(), LongUrl(), InPhishTank(), GoogleSafeBrowsingAPI())
     for p in providers:
         result[p.__class__.__name__] = p.get_rank(domain)
     return result

@@ -62,28 +62,6 @@ class TestHelperMethods(unittest.TestCase):
         
         assert phishing.one_char_typosquatting("paypal","papyal")
         assert phishing.one_char_typosquatting("paypal","payapl")
-    
-    
-    def test_x(self):
-        html="""
-        <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 5.0 Transitional//EN">
-<TD style="FONT-FAMILY: Arial,Helvetica,sans-serif; COLOR: #000000; FONT-SIZE: 12px" align="center"><HTML><HEAD>
-<META content="text/html; charset=windows-1252" http-equiv="Content-Type">
-<META name="GENERATOR" content="MSHTML 8.00.7600.16535"></HEAD>
-<BODY>You have 1 new ALERT message.<BR>Please login to your Discover Online 
-Banking and visit the Message Center section in order to read the message.<BR>To 
-Login, please click the link below:<BR><BR><a href="http://218.192.248.9/email.html" rel="nofollow" target="_blank">https://www.discover.com
-</SPAN></A><BR><BR><BR>Thank you.<BR>Online Banking Security Team<BR>Discover 
-Bank<BR><BR>2014 Discover Bank, Member FDIC. All Rights Reserved.</TD> 
-</BODY></HTML>
-"""
-        mailFields = {}
-        mailFields['html'] = html
-        from phishing import RuleA1,RuleA2,RuleA3,RuleA4
-        print RuleA1().apply_rule(mailFields)
-        print RuleA2().apply_rule(mailFields)
-        print RuleA3().apply_rule(mailFields)
-        print RuleA4().apply_rule(mailFields)
         
         
 
@@ -104,6 +82,14 @@ class TestRules(unittest.TestCase):
         link2 = {'raw_link' : 'eeee.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
         mailFields['links'] = [link1,link2]
         self.rule_assert_not(rule.apply_rule(mailFields))
+
+
+        mailFields = {}
+        link1 = {'raw_link' : 'aaaa.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False, 'GoogleSafeBrowsingAPI' : True}
+        link2 = {'raw_link' : 'eeee.bbb.com', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False, 'GoogleSafeBrowsingAPI' : False}
+        mailFields['links'] = [link1,link2]
+        self.rule_assert(rule.apply_rule(mailFields))        
+        
     
     def test_rule_a2(self):
         from phishing import RuleA2
@@ -917,8 +903,6 @@ class TestRules(unittest.TestCase):
         mailFields['headers'] = headers
         self.rule_assert_not(rule.apply_rule(mailFields))
         
-        
-         
         
     def rule_assert(self,result):
         assert result > 0
