@@ -2,8 +2,11 @@
 
 # init script for honeypot startup and shutdown
 #
-# if listen_interface and web_interface are given, ip on inerfaces is detected and stored into 'shiva.conf'
+# if listen_interface and web_interface are given, ip on interfaces is detected and stored into 'shiva.conf'
 #
+listen_interface=""
+web_interface=""
+
 
 if [ "$UID" == "0" ] || [ "$EUID" == "0" ]
 then
@@ -14,9 +17,6 @@ fi
 base_dir=INSTALL_PATH/shiva
 reciever_dir=$base_dir/shivaReceiver/receiver
 analyzer_dir=$base_dir/shivaAnalyzer/analyzer
-
-listen_interface=""
-web_interface=""
 
 listen_address=""
 web_address=""

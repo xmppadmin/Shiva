@@ -8,7 +8,7 @@ import logging
 import ssdeep
 import MySQLdb as mdb
 
-from shiva_phishing.report import send_phishing_report
+from trishula.report import send_phishing_report
 
 def main():
     

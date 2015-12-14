@@ -34,6 +34,17 @@ span.id_link {
   font-family: "Courier New", Courier, monospace;
 }
 
+td {
+  vertical-align: top;
+}
+
 td.subject_td {
   width: 50em;
 }
+
+iframe {
+  border-color: black;
+  border-width: 3px;
+}
+
+

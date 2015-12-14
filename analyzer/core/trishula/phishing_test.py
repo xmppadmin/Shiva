@@ -236,8 +236,8 @@ class TestRules(unittest.TestCase):
         self.rule_assert(rule.apply_rule(mailFields))
     
     def test_rule_r2(self):
-        from phishing import RuleR2
-        rule = RuleR2()
+        from phishing import RuleB2
+        rule = RuleB2()
      
         mail_body_html = """
         <body>
@@ -285,8 +285,8 @@ class TestRules(unittest.TestCase):
          
                  
     def test_rule_r3(self):
-        from phishing import RuleR3
-        rule = RuleR3()
+        from phishing import RuleB3
+        rule = RuleB3()
          
         mail_body_html = """
         <body>
@@ -311,8 +311,8 @@ class TestRules(unittest.TestCase):
         self.rule_assert_not(rule.apply_rule(mailFields))    
         
     def test_rule_r5(self):
-        from phishing import RuleR5
-        rule = RuleR5()
+        from phishing import RuleB5
+        rule = RuleB5()
         
         mail_body_html = """
         <body>
@@ -359,8 +359,8 @@ class TestRules(unittest.TestCase):
         self.rule_assert(rule.apply_rule(mailFields))
          
     def test_rule_r6(self):
-        from phishing import RuleR6
-        rule = RuleR6()
+        from phishing import RuleB6
+        rule = RuleB6()
          
         mailFields = {}
         mailFields['from'] = 'sender@bbb.com'
@@ -377,8 +377,8 @@ class TestRules(unittest.TestCase):
  
      
     def test_rule_r7(self):
-        from phishing import RuleR7
-        rule = RuleR7()
+        from phishing import RuleB7
+        rule = RuleB7()
          
         mail_body_html = """
         <body>
@@ -405,8 +405,8 @@ class TestRules(unittest.TestCase):
         self.rule_assert(rule.apply_rule(mailFields))
           
     def test_rule_r8(self):
-        from phishing import RuleR8
-        rule = RuleR8()
+        from phishing import RuleB8
+        rule = RuleB8()
          
         mail_body_html = """
         <body>
@@ -428,8 +428,8 @@ class TestRules(unittest.TestCase):
          
      
     def test_rule_r9(self):
-        from phishing import RuleR9
-        rule = RuleR9()
+        from phishing import RuleB9
+        rule = RuleB9()
          
         mail_body_html = """
         <body>
@@ -469,8 +469,8 @@ class TestRules(unittest.TestCase):
         self.rule_assert(rule.apply_rule(mailFields))
          
     def test_rule_R10(self):
-        from phishing import RuleR10
-        rule = RuleR10()
+        from phishing import RuleB10
+        rule = RuleB10()
          
         mail_body_html = """
         <body>
@@ -506,8 +506,8 @@ class TestRules(unittest.TestCase):
          
      
     def test_rule_r11(self):
-        from phishing import RuleR11
-        rule = RuleR11()
+        from phishing import RuleB11
+        rule = RuleB11()
          
         mail_body_html = """
         <body>
@@ -533,8 +533,8 @@ class TestRules(unittest.TestCase):
     
     
     def test_rule_R12(self):
-        from phishing import RuleR12
-        rule = RuleR12()
+        from phishing import RuleB12
+        rule = RuleB12()
         
         mail_body_html = """
         <body>
@@ -558,8 +558,8 @@ class TestRules(unittest.TestCase):
 
         
     def test_rule_r13(self):
-        from phishing import RuleR13
-        rule = RuleR13()
+        from phishing import RuleB13
+        rule = RuleB13()
          
         mail_body_html = """
         <body>
@@ -606,8 +606,8 @@ class TestRules(unittest.TestCase):
         self.rule_assert_not(rule.apply_rule(mailFields))
         
     def test_rule_r14(self):
-        from phishing import RuleR14
-        rule = RuleR14()
+        from phishing import RuleB14
+        rule = RuleB14()
         
         headers = """
         (Content-Type, multipart/alternative; charset="UTF-8";
@@ -703,8 +703,8 @@ class TestRules(unittest.TestCase):
         
         
     def test_rule_r15(self):
-        from phishing import RuleR15
-        rule = RuleR15()
+        from phishing import RuleB15
+        rule = RuleB15()
         
         subject = 'PayPal Notification: Account Review'
         mailFields = {}
@@ -747,8 +747,8 @@ class TestRules(unittest.TestCase):
         self.rule_assert_not(rule.apply_rule(mailFields))
         
     def test_rule_r16(self):
-        from phishing import RuleR16
-        rule = RuleR16()
+        from phishing import RuleB16
+        rule = RuleB16()
         
         mailFields = {'text':'prosim overte vas ucet'}
         self.rule_assert(rule.apply_rule(mailFields))
@@ -765,8 +765,8 @@ class TestRules(unittest.TestCase):
         
         
     def test_rule_r17(self):
-        from phishing import RuleR17
-        rule = RuleR17()
+        from phishing import RuleB17
+        rule = RuleB17()
         
         subject = 'PayPal Notification: Account Review'
         mailFields = {}
@@ -815,8 +815,8 @@ class TestRules(unittest.TestCase):
         
         
     def test_rule_R18(self):
-        from phishing import RuleR18
-        rule = RuleR18()
+        from phishing import RuleB18
+        rule = RuleB18()
         
         mailFields = {}
         link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : -1, 'InPhishTank' : False}
@@ -829,8 +829,8 @@ class TestRules(unittest.TestCase):
         self.rule_assert(rule.apply_rule(mailFields)) 
         
     def test_rule_r19(self):
-        from phishing import RuleR19
-        rule = RuleR19()
+        from phishing import RuleB19
+        rule = RuleB19()
         
         mailFields = {}
         link1 = {'raw_link' : 'http://aaaaa.asdf.sdf.org', 'LongUrl' : '', 'RedirectCount' : -1, 'AlexaTrafficRank' : 10, 'InPhishTank' : False}
@@ -845,8 +845,8 @@ class TestRules(unittest.TestCase):
         self.rule_assert_not(rule.apply_rule(mailFields)) 
 
     def test_rule_r20(self):
-        from phishing import RuleR20
-        rule = RuleR20()
+        from phishing import RuleB20
+        rule = RuleB20()
         
         
         headers = """
@@ -900,6 +900,25 @@ class TestRules(unittest.TestCase):
         """
         mailFields = {}
         mailFields['from'] = 'aaaa@domain.com'
+        mailFields['headers'] = headers
+        self.rule_assert_not(rule.apply_rule(mailFields))
+
+
+        headers = """
+        (Content-Type, multipart/alternative; charset="UTF-8";)
+        (MIME-Version, 1.0)
+        (Date, Thu, 15 Oct 2015 14:41:48 +0300)
+        (From, "International Scientific Events" <aaaa@domain.com>)
+        (Message-Id, <0000000000000000000000000@mail.rrrrrrrrrrrrrr.oooo>)
+        (Received, from rrrrrrrrrrrrrr.oooo (rrrrrrrrrrrrrr.oooo [1.2.3.4])
+         by zzzz.xxx.yyyy.cz (8.14.4/8.14.4/Debian-4) with ESMTP id t9FDw1Rm047553
+         for <xxx@xxx.yyyy.cz>; Thu, 15 Oct 2015 15:59:05 +0200)
+        (From, "eBay" <aw-confirm@ebay.com>)
+        (Reply-To, "eBay" <aw-confirm@ebay.com>)
+        (To, xxx@xxx.yyy.cz)
+        """
+        mailFields = {}
+        mailFields['from'] = 'aw-confirm@ebay.com'
         mailFields['headers'] = headers
         self.rule_assert_not(rule.apply_rule(mailFields))
         

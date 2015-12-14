@@ -21,8 +21,8 @@ import shivaconclude
 import shivanotifyerrors
 import server
 
-from shiva_phishing import backend_operations
-from shiva_phishing import domaininfo
+from trishula import backend_operations
+from trishula import domaininfo
 
 # Global dictionary to store parsed fields of spam
 mailFields = {'headers':'', 'to':'', 'from':'', 'subject':'', 'date':'', 'firstSeen':'', 'lastSeen':'', 'firstRelayed':'', 'lastRelayed':'', 'sourceIP':'', 'sensorID':'', 'text':'', 'html':'', 'inlineFileName':[], 'inlineFile':[], 'inlineFileMd5':[], 'attachmentFileName':[], 'attachmentFile':[], 'attachmentFileMd5':[], 'links':[], 'ssdeep':'', 's_id':'', 'len':''}
@@ -42,8 +42,7 @@ def linkparser(input_body):
     """Returns a list tuples (URL, re-shorten version of URL according to longurl.org).
     """
     
-    
-    URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]|\(([^\s()<>]|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:"?\xab\xbb\u201c\u201d\u2018\u2019]))')
+    URL_REGEX_PATTERN = re.compile(ur'(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<\">]|\(([^\s()<>]|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<]|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:\"?\xab\xbb\u201c\u201d\u2018\u2019]))')
     url_list = set([mgroups[0] for mgroups in URL_REGEX_PATTERN.findall(input_body)])
     
     url_list = list(set(url_list))
@@ -53,6 +52,10 @@ def linkparser(input_body):
         
         # prevent rare error with unknown bytes in URL
         link = filter(lambda x: x in string.printable, link)
+        
+        # prevent occasional bug with '<'
+        if link.endswith('<'):
+            link = link[:-1]
         
         # check whether whether is link already in database
         persistent_link_info = backend_operations.get_permament_url_info(link);

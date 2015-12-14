@@ -296,7 +296,7 @@ class InPhishTank(RankProvider):
             return False
         
         try:
-
+            
             req_url = 'http://checkurl.phishtank.com/checkurl/'
             params = {'format':'json',
                           'url': url if url.startswith('http') else 'http://' + url,
@@ -316,15 +316,19 @@ class GoogleSafeBrowsingAPI(RankProvider):
     
     def __init__(self, host="", proxy=None, timeout=30):
         api_key = lamson.server.shivaconf.get('analyzer','google_safe_browsing_api_key')
-        self.api_key = api_key
-        self.client = SafebrowsinglookupClient(key=api_key)
+        
+        try:
+            self.api_key = api_key
+            self.client = SafebrowsinglookupClient(key=api_key)
+        except Exception:
+            pass
         super(GoogleSafeBrowsingAPI, self).__init__(host, proxy, timeout)
         
     def get_rank(self, url):
         """
         return True if given URL is considered 'phishing','malware' or 'unwanted' by Google Safe Browsing API
         """
-        if not url or not self.api_key:
+        if not url or not self.client:
             return False
         
         try:

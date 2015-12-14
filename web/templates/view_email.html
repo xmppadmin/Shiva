@@ -19,35 +19,23 @@
     <td>${mailFields['subject']|h}</td>
   </tr>
   
-  <tr>
-    <td><b>From</b></td>
-    <td>${mailFields['from']|h}</td>
-  </tr>
-  
-  <tr>
-    <td><b>To</b></td>
-    <td>${mailFields['to']|h}</td>
-  </tr>
-  
-  <tr>
-    <td><b>Shiva score</b></td>
-    <td>${mailFields['shivaScore']|h}</td>
-  </tr>
-  
-  <tr>
-    <td><b>Spamassassin score</b></td>
-    <td>${mailFields['spamassassinScore']|h}</td>
-  </tr>
-        
-           
   % if 'derivedStatus' in email_result:
     <%
       verdict_str = {True: 'PHISHING',False:'SPAM',None:''} [email_result['derivedStatus']]
     %>
-    <tr>
-      <td><b>Status</b></td>
-      <td>${verdict_str|h}</td>
-    </tr>
+    % if verdict_str == 'PHISHING':
+      <tr>
+        <td><b>Status</b></td>
+        <td>${verdict_str|h} &nbsp; <img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."  onclick="mark_as_spam('${email_id|h}')" /></td>
+      </tr>
+    % endif
+     % if verdict_str == 'SPAM':
+      <tr>
+        <td><b>Status</b></td>
+        <td>${verdict_str|h} &nbsp; <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing." onclick="mark_as_phishing('${email_id|h}')" /></td>
+      </tr>
+    % endif
+    
   % endif
   
   % if 'humanCheck' in email_result and email_result['humanCheck'] != None:
@@ -59,42 +47,95 @@
       <td>Manualy marked as ${human_check_str|h}</td>
     </tr>
   % endif
+  
+  <tr>
+    <td><b>From</b></td>
+    <td>${mailFields['from']|h}</td>
+  </tr>
+  
+  <tr>
+    <td><b>To</b></td>
+    <td>${mailFields['to']|h}</td>
+  </tr>
+  
+  <tr>
+    <td><b>Classifier prob.</b></td>
+    <td>${mailFields['shivaScore']|h}</td>
+  </tr>
+  
+  <tr>
+    <td><b>Bayes prob.</b></td>
+    <td>${mailFields['spamassassinScore']|h}</td>
+  </tr>
+  
+  % if 'headers' in mailFields and mailFields['headers']:
+  <tr>
+  	<td>
+  	  <b>Headers</b>&nbsp;
+  	  <div id="headers_id_button" />
+  	</td>
+  	<td>
+  	  <div id="headers_id">
+      % for current_header in mailFields['headers'].split('\n'):
+        <div>${current_header|h}</div>
+      % endfor
+      </div>
+    </td>
+  </tr>
+  % endif
+  
+  <tr>
+  	<td>
+  	  <b>Links</b>
+  	  <div id="links_id_button" />
+  	</td>
+  	<td>
+    	<div id="links_id">
+    	<table>
+      % for current_link_info in mailFields['links']:
+        <tr>
+          <% print current_link_info %>
+          <td><a href="${current_link_info['raw_link']|h}">${current_link_info['raw_link']|h}</a><td>
+          % if current_link_info['InPhishTank']:
+            <td><font title="URL is DANGEROUS" color="red">Phishtank</font><td>
+          % else:
+            <td><font title="URL is OK" color="green">Phishtank</font><td>
+          % endif
+          % if current_link_info['GoogleSafeBrowsingAPI']:
+            <td><font title="URL is DANGEROUS" color="red">Google Safe Browsing API</font><td>
+          % else:
+            <td><font title="URL is OK" color="green">Google Safe Browsing API</font><td>
+          % endif
+        </tr>
+      % endfor
+      </table>
+      </div>
+    </td>
+  </tr>
+        
+  
+
         
         
         
   % if 'rules' in email_result:
-    <% 
-      firstRule = True 
-    %>
-    % for rule in email_result['rules']:
-      % if 'result' in rule and rule['result'] == True:
-        <% 
-          row_name_str = 'Matching rules' if firstRule else ''
-          firstRule = False
-        %>
-          <tr>
-            <td><b>${row_name_str|h}</b></td>
-            <td>${rule['code']}&nbsp;${rule['description']}</td>
-          </tr>
-      % endif
-    %endfor
+    <td>
+  	  <b>Matching rules</b>
+  	  <div id="rules_id_button" />
+  	</td>
+  	<td>
+    	<div id="rules_id">
+        % for rule in email_result['rules']:
+          % if 'result' in rule and rule['result'] == True:
+            <div>
+              ${rule['code']}&nbsp;${rule['description']}
+            </div>
+          % endif
+        %endfor
+        </div>
+    </td>
   % endif 
-  
-  
-  % if 'links' in mailFields['links']:
-    <% firstLink = True %>
-    %for link in mailFields['links']:
-      <%
-        row_name_str = 'Links' if firstLink else '' 
-        firstLink = False
-      %>
-      <tr>
-         <td><b>${row_name_str}</b></td>
-         <td><a href="${link['raw_link']}">${link['raw_link']}</a></td>
-      </tr>
-    %endfor
-  %endif
-  
+    
   % if 'attachmentFilePath' in mailFields:
      % for i in range(0, len(mailFields['attachmentFilePath'])):
        <%
@@ -128,11 +169,37 @@
   % if 'html' in mailFields and mailFields['html'] and 's_id' in mailFields and mailFields['s_id'] and staticHtmlFile:           
       <tr>
         <td><b>Html</b></td>
-        <td><iframe  width="800" height="800" style="border-width=5px;border-color=black" src="/raw_html/${email_id|h}" sandbox="allow-forms"></iframe></td>
+        <td><iframe  width="800" height="800" frameborder="1" src="/raw_html/${email_id|h}" sandbox="allow-forms"></iframe></td>
       </tr>
   % endif
    
         
 </table>
+
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		hide_element("headers_id");
+		hide_element("links_id");
+		hide_element("rules_id");
+	});
+	
+	
+	function hide_element(element_id) {
+		var element=document.getElementById(element_id);
+		var button = document.getElementById(element_id.concat("_button"));
+		element.style.display='none';
+		button.style.display='inline';
+		button.innerHTML='<img src="/static/images/icons/icon_plus.png" onclick=show_element("' + element_id + '") title="Show" />';
+	}
+	
+	function show_element(element_id) {
+		var element=document.getElementById(element_id);
+		var button = document.getElementById(element_id.concat("_button"));
+		element.style.display='block';
+		button.style.display='inline';
+		button.innerHTML='<img src="/static/images/icons/icon_minus.png" onclick=hide_element("' + element_id + '") title="Hide" />';
+	}
+</script>
 
 <%include file="parts/footer.html"/>

@@ -308,8 +308,6 @@ class MailClassificationRule(object):
     def __init__(self):
         # readable rule description
         self.description = "base_rule"
-        # int rule weight for legacy reasons, has no meaning now
-        self.weight = 1
     
     def get_rule_description(self):
         """
@@ -319,9 +317,6 @@ class MailClassificationRule(object):
     
     def get_rule_code(self):
         return self.code
-    
-    def get_rule_boost_factor(self):
-        return self.weight
     
     def apply_rule(self, mailFields):
         """ 
@@ -335,9 +330,9 @@ class MailClassificationRule(object):
 # Here starts definitions of phishing rules
 # =============================================================
 
-class RuleR1(MailClassificationRule):
+class RuleB1(MailClassificationRule):
     def __init__(self):
-        self.code = 'R1'
+        self.code = 'B1'
         self.description = "At least one URL is shortened"
         
     def apply_rule(self, mailFields):
@@ -348,9 +343,9 @@ class RuleR1(MailClassificationRule):
                 return 1
         return -1
         
-class RuleR2(MailClassificationRule):
+class RuleB2(MailClassificationRule):
     def __init__(self):
-        self.code = 'R2'
+        self.code = 'B2'
         self.description = "Hyperlink with visible URL, pointing to different URL"
         
     def apply_rule(self, mailFields):
@@ -368,9 +363,9 @@ class RuleR2(MailClassificationRule):
                 return 1 
         return -1
     
-class RuleR3(MailClassificationRule):
+class RuleB3(MailClassificationRule):
     def __init__(self):
-        self.code = 'R3'
+        self.code = 'B3'
         self.description = "Hyperlink with visible text pointing to IP based URL"
         
     def apply_rule(self, mailFields):
@@ -387,17 +382,17 @@ class RuleR3(MailClassificationRule):
               
         return -1
     
-class RuleR4(MailClassificationRule):
+class RuleB4(MailClassificationRule):
     def __init__(self):
-        self.code = 'R4'
+        self.code = 'B4'
         self.description = "Email body in HTML format"
         
     def apply_rule(self, mailFields):
         return 1 if mailFields['html'] else -1
     
-class RuleR5(MailClassificationRule):
+class RuleB5(MailClassificationRule):
     def __init__(self):
-        self.code = 'R5'
+        self.code = 'B5'
         self.description = "Too complicated URL"
     
     def apply_rule(self, mailFields):
@@ -424,9 +419,9 @@ class RuleR5(MailClassificationRule):
         
         
 
-class RuleR6(MailClassificationRule):
+class RuleB6(MailClassificationRule):
     def __init__(self):
-        self.code = 'R6'
+        self.code = 'B6'
         self.description = "Sender domain different from some URL in message body"
         
     def apply_rule(self, mailFields):
@@ -448,9 +443,9 @@ class RuleR6(MailClassificationRule):
                 return 1
         return -1
 
-class RuleR7(MailClassificationRule):
+class RuleB7(MailClassificationRule):
     def __init__(self):
-        self.code = 'R7'
+        self.code = 'B7'
         self.description = "Image with external domain different from URLs in email body"
         
     def apply_rule(self, mailFields):
@@ -467,9 +462,9 @@ class RuleR7(MailClassificationRule):
                         return 1
         return -1
 
-class RuleR8(MailClassificationRule):
+class RuleB8(MailClassificationRule):
     def __init__(self):
-        self.code = 'R8'
+        self.code = 'B8'
         self.description = "Image source is IP address"
         
     def apply_rule(self, mailFields):
@@ -482,9 +477,9 @@ class RuleR8(MailClassificationRule):
                 return 1
         return -1
     
-class RuleR9(MailClassificationRule):
+class RuleB9(MailClassificationRule):
     def __init__(self):
-        self.code = 'R9'
+        self.code = 'B9'
         self.description = "More than one domain in URL"
         
     def apply_rule(self, mailFields):
@@ -501,9 +496,9 @@ class RuleR9(MailClassificationRule):
                
         return -1
             
-class RuleR10(MailClassificationRule):
+class RuleB10(MailClassificationRule):
     def __init__(self):
-        self.code = 'R10'
+        self.code = 'B10'
         self.description = "More than three subdomains in URL"
         
     def apply_rule(self, mailFields):
@@ -521,9 +516,9 @@ class RuleR10(MailClassificationRule):
         
         return -1
 
-class RuleR11(MailClassificationRule):
+class RuleB11(MailClassificationRule):
     def __init__(self):
-        self.code = 'R11'
+        self.code = 'B11'
         self.description = "Hyperlink with image insted of visible text, image source is IP address"
         
     def apply_rule(self, mailFields):
@@ -536,9 +531,9 @@ class RuleR11(MailClassificationRule):
                     return 1
         return -1
 
-class RuleR12(MailClassificationRule):
+class RuleB12(MailClassificationRule):
     def __init__(self):
-        self.code = 'R12'
+        self.code = 'B12'
         self.description = "Visible text in hyperlink contains no information about destination"
         
     def apply_rule(self, mailFields):
@@ -559,9 +554,9 @@ class RuleR12(MailClassificationRule):
 
 
 
-class RuleR13(MailClassificationRule):
+class RuleB13(MailClassificationRule):
     def __init__(self):
-        self.code = 'R13'
+        self.code = 'B13'
         self.description = "URL contains username"
         
     def apply_rule(self, mailFields):
@@ -587,9 +582,9 @@ class RuleR13(MailClassificationRule):
         return -1
     
     
-class RuleR14(MailClassificationRule):
+class RuleB14(MailClassificationRule):
     def __init__(self):
-        self.code = 'R14'
+        self.code = 'B14'
         self.description = 'Presence of suspicious headers'
         
     def apply_rule(self, mailFields):
@@ -611,9 +606,9 @@ class RuleR14(MailClassificationRule):
         
         return -1
     
-class RuleR15(MailClassificationRule):
+class RuleB15(MailClassificationRule):
     def __init__(self):
-        self.code = 'R15'
+        self.code = 'B15'
         self.description = 'Common phishing keywords in subject '
         
     def apply_rule(self, mailFields):
@@ -626,9 +621,9 @@ class RuleR15(MailClassificationRule):
                 return 1
         return -1
 
-class RuleR16(MailClassificationRule):
+class RuleB16(MailClassificationRule):
     def __init__(self):
-        self.code = 'R16'
+        self.code = 'B16'
         self.description = 'Common phishing phrases in email body'
         
     def apply_rule(self, mailFields):
@@ -644,9 +639,9 @@ class RuleR16(MailClassificationRule):
 
         return -1
 
-class RuleR17(MailClassificationRule):
+class RuleB17(MailClassificationRule):
     def __init__(self):
-        self.code = 'R17'
+        self.code = 'B17'
         self.description = 'Common spam keywords in subject'
          
     def apply_rule(self, mailFields):
@@ -659,9 +654,9 @@ class RuleR17(MailClassificationRule):
                 return 1
         return -1
     
-class RuleR18(MailClassificationRule):
+class RuleB18(MailClassificationRule):
     def __init__(self):
-        self.code = 'R18'
+        self.code = 'B18'
         self.description = 'Suspicious amount of redirections'
          
     def apply_rule(self, mailFields):
@@ -673,9 +668,9 @@ class RuleR18(MailClassificationRule):
                 return 1
         return -1        
     
-class RuleR19(MailClassificationRule):
+class RuleB19(MailClassificationRule):
     def __init__(self):
-        self.code = 'R19'
+        self.code = 'B19'
         self.description = 'Suspicious Alexa ranks in links'
          
     def apply_rule(self, mailFields):
@@ -694,9 +689,9 @@ class RuleR19(MailClassificationRule):
             
         return -1
           
-class RuleR20(MailClassificationRule):  
+class RuleB20(MailClassificationRule):  
     def __init__(self):
-        self.code = 'R20'
+        self.code = 'B20'
         self.description = 'Reply to header leads to different domain than sender'
             
     def apply_rule(self, mailFields):
@@ -714,7 +709,7 @@ class RuleR20(MailClassificationRule):
         reply_to_header_regex = re.compile('(?i)\(reply-to[^)]+')
         reply_to_headers = reply_to_header_regex.findall(mailFields['headers'])
         for current_reply_to in reply_to_headers:
-            reply_to_domain = current_reply_to.partition('@')[2] 
+            reply_to_domain = extractdomain(current_reply_to.partition('@')[2]) 
             if not reply_to_domain:
                 continue
             if not samedomain(from_domain,reply_to_domain):
@@ -945,24 +940,24 @@ class RuleA4(MailClassificationRule):
 # It's better to use their result as direct verdict rather then statistical feature
 rulelist = MailClassificationRuleList()
 
-rulelist.add_rule(RuleR1())
-rulelist.add_rule(RuleR2())
-rulelist.add_rule(RuleR3())
-rulelist.add_rule(RuleR4())
-rulelist.add_rule(RuleR5())
-rulelist.add_rule(RuleR6())
-rulelist.add_rule(RuleR7())
-rulelist.add_rule(RuleR8())
-rulelist.add_rule(RuleR9())
-rulelist.add_rule(RuleR10())
-rulelist.add_rule(RuleR11())
-rulelist.add_rule(RuleR12())
-rulelist.add_rule(RuleR13())
-rulelist.add_rule(RuleR14())
-rulelist.add_rule(RuleR15())
-rulelist.add_rule(RuleR16())
-rulelist.add_rule(RuleR17())
-rulelist.add_rule(RuleR18())
-rulelist.add_rule(RuleR19())
-rulelist.add_rule(RuleR20())
+rulelist.add_rule(RuleB1())
+rulelist.add_rule(RuleB2())
+rulelist.add_rule(RuleB3())
+rulelist.add_rule(RuleB4())
+rulelist.add_rule(RuleB5())
+rulelist.add_rule(RuleB6())
+rulelist.add_rule(RuleB7())
+rulelist.add_rule(RuleB8())
+rulelist.add_rule(RuleB9())
+rulelist.add_rule(RuleB10())
+rulelist.add_rule(RuleB11())
+rulelist.add_rule(RuleB12())
+rulelist.add_rule(RuleB13())
+rulelist.add_rule(RuleB14())
+rulelist.add_rule(RuleB15())
+rulelist.add_rule(RuleB16())
+rulelist.add_rule(RuleB17())
+rulelist.add_rule(RuleB18())
+rulelist.add_rule(RuleB19())
+rulelist.add_rule(RuleB20())
 

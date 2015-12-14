@@ -3,7 +3,7 @@
 <h1>SHIVA honeypot: HELP</h1>
 
  <h2>How to work with honeypot</h2>
- <p> On the main page is presented overview of last emails caught by honeypot. It's score and classification result is also presented.<p>
+ <p> On the main page is presented overview of last e-mails caught by honeypot. Two probabilities (Bayes and built-in classifier ) and classification result are also presented.<p>
  <p> You can view details of email by clicking on it's id, delete it from honeypot 
     by clicking on the <img src="/static/images/icons/delete.png" title="Delete email from honeypot."/>
     or mark is as spam/phishing by clicking on <img src="/static/images/icons/small_change_to_spam.png" title="Manually mark as spam."/> or <img src="/static/images/icons/small_change_to_phishing.png" title="Manually mark as phishing."/>
@@ -35,22 +35,21 @@
   </tbody>
  </table>
 
- <h2>Scores</h2>
-   <p>Honeypot computes two scores. Each score represents probability that email is phishing.<br/></p>
-   <p></p><i>Shiva score</i> is result of phishing detection technique implemented in honeypot.<br/>
-   <i>Spamassassin score</i> is result of Bayes classifier in Spamassassin.</p>
+ <h2>Phishing probabilities</h2>
+   <p>Honeypot computes two probabilities. Each score represents probability that email is phishing.<br/></p>
+   <p></p><i>Classifier probability</i> is result of phishing detection technique implemented in honeypot.<br/>
+   <i>Bayes probability</i> is result of Bayes classifier in Spamassassin.</p>
    <p><b>IMPORTANT</b> imported emails (sensors .*spamImport.*,.*phishingImport.*) have always default score -1, they are used as learning data only</p>
-
 <br/>
 
 <h2>Learning honeypot</h2>
-<p> After instalation, hoenypot is learnt on the provided data samples. This process is described in package readme.txt file<p>
+<p> After instalation, hoenypot is learnt on the provided data samples. This process is described in provided package documentation.<p>
 <p> When honeypot catches emails, it's possible to manually relearn it. It will take into considerations cought emails as well. <p>
-<p> By default, spammassassin boundary for for marking email is 0.5. This boundary can be shifted by re-learning to number ininterval <0.4,0.6> <p>
+<p> By default, Bayes classifier  boundary for for marking email is 0.5. This boundary can be shifted by re-learning to number ininterval <0.4,0.6> <p>
 
  <h2>URL phishing</h2>
-   <p>Several techniques for detecting phishing by URL is implemented (blacklists,typosquatting,HTTPS->HTTP,kknown domain name in other part of URL).<br/>
-      If at least one if found in email, it's automaticaly marked as phishing.
+   <p>Several techniques for detecting phishing by URL is implemented (blacklists,typosquatting,HTTPS->HTTP,known domain name in other part of URL).<br/>
+      If at least one if found in email, it's automatically marked as phishing.
   </p>
 
 <br/>
@@ -65,8 +64,8 @@
       <td>Id</td>
       <td>Last seen</td>
       <td class="subject_td">Subject</td>
-      <td>Shiva score</td>
-      <td>Spamassassin score</td>
+      <td>Classif. prob.</td>
+      <td>Bayes prob.</td>
       <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
@@ -104,8 +103,8 @@
       <td>Id</td>
       <td>Last seen</td>
       <td class="subject_td">Subject</td>
-      <td>Shiva score</td>
-      <td>Spamassassin score</td>
+      <td>Classif. prob.</td>
+      <td>Bayes prob.</td>
       <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
@@ -149,8 +148,8 @@
       <td>Id</td>
       <td>Last seen</td>
       <td class="subject_td">Subject</td>
-      <td>Shiva score</td>
-      <td>Spamassassin score</td>
+      <td>Classif. prob.</td>
+      <td>Bayes prob.</td>
       <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
@@ -190,8 +189,8 @@
       <td>Id</td>
       <td>Last seen</td>
       <td class="subject_td">Subject</td>
-      <td>Shiva score</td>
-      <td>Spamassassin score</td>
+      <td>Classif. prob.</td>
+      <td>Bayes prob.</td>
       <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
@@ -236,8 +235,8 @@
       <td>Id</td>
       <td>Last seen</td>
       <td class="subject_td">Subject</td>
-      <td>Shiva score</td>
-      <td>Spamassassin score</td>
+      <td>Classif. prob.</td>
+      <td>Bayes prob.</td>
       <td>URL phishing</td>
       <td>SensorID</td>
       <td>Status</td>
@@ -248,7 +247,6 @@
   <tbody>
               
   <tr class="newRow">
- 
       <td><span class="id_link">6060ca566d4ac4ee1ee9932232face24</span></td>
       <td>2015-11-30 12:52:22</td>
       <td>Re:ISO qualified PCBA contract manufacturer - from China</td>

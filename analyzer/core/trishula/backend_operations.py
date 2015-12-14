@@ -678,8 +678,8 @@ def get_permament_url_info(link=''):
             url_data['RedirectCount'] = result[1]
             url_data['GooglePageRank'] = result[2]
             url_data['AlexaTrafficRank'] = result[3]
-            url_data['InPhishTank'] = result[4],
-            url_data['GoogleSafeBrowsingAPI'] = result[5],
+            url_data['InPhishTank'] = True if result[4] > 0 else False
+            url_data['GoogleSafeBrowsingAPI'] = True if result[5] > 0 else False
             return url_data
             
     except mdb.Error, e:

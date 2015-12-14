@@ -9,7 +9,7 @@ import server
 import shutil
 import re
 
-from shiva_phishing.learning import check_mail
+from trishula.learning import check_mail
 
 def main(mailFields, key, msgMailRequest):
     """Main function. 
