@@ -321,6 +321,7 @@ class GoogleSafeBrowsingAPI(RankProvider):
             self.api_key = api_key
             self.client = SafebrowsinglookupClient(key=api_key)
         except Exception:
+            self.client = None
             pass
         super(GoogleSafeBrowsingAPI, self).__init__(host, proxy, timeout)
         
