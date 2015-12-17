@@ -787,3 +787,26 @@ def get_current_detection_thresholds():
         
     return (0.5,0.5,)
 
+def get_last_seen_date(email_id=''):
+    """
+    return last seen date for given email
+    """
+    if not email_id:
+        return 
+    
+    try:
+        query = 'select sdate.lastSeen FROM sdate_spam INNER JOIN sdate ON sdate_spam.id = sdate.id where sdate_spam.spam_id = %s order by lastSeen desc limit 1'
+        
+        mainDb = lamson.shivadbconfig.dbconnectmain()
+        mainDb.execute(query,(email_id,))
+        
+        result = mainDb.fetchone()
+        if result:
+            return result[0]
+        
+    except mdb.Error, e:
+        logging.error(e)
+        
+    return 
+    
+

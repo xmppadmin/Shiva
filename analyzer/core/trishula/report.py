@@ -11,6 +11,7 @@ from email import message_from_file
 
 import lamson.server
 import backend_operations
+from time import strftime
 
 
 from mako.template import Template
@@ -52,13 +53,20 @@ def send_phishing_report(mailFields):
     
     links = backend_operations.get_permament_url_info_for_email(mailFields['s_id'])
     
-    has_phishtank = any(map(lambda a: True if a['InPhishTank'] else False ,links))
+    has_phishtank = any(map(lambda a: a['InPhishTank'],links))
     has_googlesba = any(map(lambda a: a['GoogleSafeBrowsingAPI'],links))
+
+    detected = backend_operations.get_last_seen_date(mailFields['s_id'])
+    if detected:
+        detected_str = detected.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        detected_str = 'unknown'
 
     template_str = """
 SHIVA honeypot: suspicious email was caught
 
 Overview:
+  Timestamp: ${detected_timestamp|h}
   Subject: ${phishing_subject}
   Sender: ${phishing_from}
   Recipient: ${phishing_to}
@@ -93,7 +101,8 @@ Overview:
                                 email_id=mailFields['s_id'],
                                 in_phishtank=has_phishtank,
                                 in_googlesba=has_googlesba,
-                                links_info=links)
+                                links_info=links,
+                                detected_timestamp=detected_str)
      
 
     textpart = MIMEText(text_message, 'plain', 'utf-8')
