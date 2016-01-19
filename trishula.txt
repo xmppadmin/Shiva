@@ -1,0 +1,405 @@
++-------------------------------------------------------+
+| README - SHIVA Honeypot with Trishula phishing module |
++-------------------------------------------------------+
+
+
+Version 1.0.0 - Stable release
+
+Shiva honeypot is email spambot. This extended version
+forked from https://github.com/shiva-spampot/shiva
+
+This version contains built-in phishing detection mechanism,
+which is able to classify incoming emails as spam or phishing.
+This classification is done by built-in machine learning classifier
+and also uses local Spamassassin instance for Bayes classification.
+
+Content:
+
+ 0. Structure of package
+ 1. Honeypot overview
+ 2. System requirenments
+ 3. Instalation and configuration
+ 4. Preparing honeypot for first start
+ 5. Running honeypot
+ 6. Uninstalling honeypot
+ 7. Maintanance and further develepment notes
+
+
+========================================================
+0. Structure of package
+========================================================
+
+  /analyzer  - source codes of analyzer module, Trishula is also presented there
+  /helpers   - stubs of helper files
+  /hpfeeds   - hpfeeds module, used by Shiva
+  /receiver  - source codes of receiver module
+  /shiva_doc - documentation of the raw Shiva honeypot, licence information
+  /web       - files used by Trishula web interface
+
+========================================================
+1. Honeypot overview
+========================================================
+
+  Shiva is designed to act as an open relay SMTP server. However
+  this modified version is intended to be used as email black hole.
+  
+  1.1. Receiver
+        Receiver is part of honeypot exposed to the network. 
+        Every email, which is captured by receiver is pushed into common MailDir
+        as file in eml format.
+        
+        Name of every file stored in common MailDir MUST have following format
+        
+        IDENTIFIER-SOURCE_IP-SENSOR
+        
+        IDENTIFIER - string, no special meaning
+        SOURCE_IP - ip address of email sender
+        SENSOR - string identifying source
+        
+        sensor is important part of the name. Based on id analyzer decides
+        what to do with email.
+        
+  1.2. Analyzer
+        Analyzer periodically reads emails in common MailDir, classifies them as 
+        phishing or spam, stores them into database and sends reports about
+        detected phishing emails.
+        
+  1.3. Schema
+                                       _______________________________________________________
+                                       |                      Honeypot                       |
+       ______________                  |                                                     |
+       |            |                  |  _____________      -----------       ____________  |
+       |  Internet  | -->  SPAM  -------> | Reciever  | ---->| MailDir | ----> | Analzyer | ------> PHISHING REPORT
+       |____________|                  |  |___________|      -----------       |__________|  |
+                                       |_____________________________________________________|
+                                       
+
+========================================================
+2. System requirements:
+========================================================
+  Debian 8 (Jessie) or higher, 2 GB of RAM recommended
+  
+  Required debian packages:
+    python
+    g++
+    python-dev
+    python-virtualenv
+    exim4-daemon-light
+    libmysqlclient-dev
+    make
+    libffi-dev
+    libfuzzy-dev
+    automake
+    autoconf
+    libpng12-dev
+    libfreetype6-dev
+    libxft-dev
+    libblas-dev
+    liblapack-dev
+    gfortran
+    spamassassin
+    mysql-server
+    mysql-client
+
+    # apt-get install python g++ python-dev python-virtualenv exim4-daemon-light libmysqlclient-dev make libffi-dev libfuzzy-dev automake  autoconf libpng12-dev libfreetype6-dev libxft-dev libblas-dev liblapack-dev gfortran spamassassin mysql-server mysql-client
+
+========================================================
+3. Instalation  and configuration
+========================================================
+
+  3.1. BASIC INSTALLATION
+  
+    To install honeypot, unpack the tarbal to desired location, 
+    then run script 'install.sh' in root folder and follow the instructions
+    
+    Folder 'shiva' was created during installation, it will be referenced as WORK_PATH.
+    In this folder are created two python virtual environments in folders $WORK_PATH/shivaReceiver
+    and $WORK_PATH/shivaAnalyzer. During installation are downloaded and compiled dependencies,
+    whole process can take up to one hour.
+    
+  3.2. DATABASE SETUP
+    
+    3.2.1 create database user for honeypot and grant rights to work with databases 'Shiva','ShivaTemp'
+    
+      $ mysql -u root -p -e "CREATE USER 'shiva'@'localhost' IDENTIFIED BY 'shiva';"
+      $ mysql -u root -p -e "GRANT ALL PRIVILEGES ON Shiva.* TO 'shiva'@'%';"
+      $ mysql -u root -p -e "GRANT ALL PRIVILEGES ON ShivaTemp.* TO 'shiva'@'%';"
+    
+    3.2.2 insert connection details and credentials to configuration file $WORK_PATH/shiva.conf 
+    
+       [database] 
+         localdb : True
+         host : 127.0.0.1
+         user : shiva
+         password : shiva
+         
+    3.2.3 run python script $WORK_PATH/dbcreate.py
+       
+        $ python $WORK_PATH/dbcreate.py
+        
+        
+  3.3. BASIC CONFIGURATION
+  
+       All configurations presented here are done in file $WORK_PATH/shiva.conf
+       
+       Note that honeypot is not intended to be started with root privileges. If you
+       want to listen on well known port, use port redirection, i.e.
+       
+       # iptables -A PREROUTING -p tcp -m tcp --dport 25 -j REDIRECT --to-ports 2525
+  
+    3.3.1 configure reciever
+            - This part of honeypot is SMPT server collection emails for further analysis 
+            
+            [reciever]
+              listenhost : 192.168.0.1 (address can be assigned automatically, see 3.4)
+              listenport : 2525
+              
+            - optionally, SMTP authentication can be enabled, see rest of [reciever] section in configuration file
+              
+    3.3.2 configure analyzer
+            This part of honeypot persists, performs classification and sends reports.
+            
+            [analyzer]
+            
+              - !!! IMPORTANT !!! this options have to be set to 'False' if you want use honeypot as black hole. Setting it to 'True' causes relaying of emails.
+              
+              relay : False                 
+              
+              - application key for phishtank API. Not required but recommended, phishtank can limit amount of request without key.
+              
+              phishtankapikey : 7040a8150761bfaaccb6d18a8c90677b3ebf3a788c7eb977543d99ddf308b02d
+
+
+              - !!! IMPORTANT !!!
+              - scheduler time parameter sets period (in minutes) of pushing spam to main 
+                database (and also phishing report sending). Deafult shiva value is 120 minutes,
+              - can be dercerased to 10-15 minutes, but read carefully section 4.
+              
+              schedulertime : 120
+
+              - setup phishing reports sending (requires setting up relayhost,relayport)
+               
+              send_phishing_report : True
+              phishing_report_from : shiva@honeypot
+              phishing_report_to :  someone@muni.cz
+              
+              - if you want to send phishing reports, local exim server must be configured.
+                Run $WORK_PATH/setup_exim4.sh as root
+                
+              # $WORK_PATH/setup_exim4.sh
+              
+              
+    3.3.3 configure web interface
+    
+           configure section [web] in config file. Web interface will be started on 
+           given addres,port and basic auth with given credentials. 
+    
+           [web]
+              address : 192.168.0.1:8080  (address can be assigned automatically, see 3.4)              
+              username : shiva
+              password : password
+           
+  
+       
+  3.4. systemd integration (optional)
+       
+       if you want to use systemd service to operate honeypot, do following
+       
+       # cp $WORK_PATH/honeypot.service /lib/systemd/system/
+       # systemctl daemon-reload
+       
+       honeypot can automaticaly bind it's listening address and web interface address 
+       to ip address detected on network interface
+       if you want to use this feature, specify interfaces in $WORK_PATH/honeypot.sh
+       
+       honeypot can be operated via systemctl
+       
+       # systemctl start|stop|restart honeypot.service
+       
+       if you want to start honeypot automatically, enable the service. Spamassasin must be 
+       enabled as well.
+       
+       # systemctl enable honeypot.service
+       # systemctl enable spamassassin.service
+
+        
+
+========================================================
+4. Preparing honeypot for first start
+========================================================
+
+  Before honeypot can analyze emails, it must be learned on existing data.
+  In order to use all phishing detection features, you should provide at 
+  least 200 unique phishing emails a 200 uniqe spam emails.
+  
+
+  4.1  Prepare your datasets. Your emails should be in eml format, each file
+       has to respect name convention:
+       
+           identifier-IP_address-(spamImport|phishingImport).*
+           
+       Examples of filenames:
+           00001-127.0.0.1-spamImport_sampleMailbox
+           00099-192.168.0.1-phishingImport_phishing_dataset1
+  
+  4.2. Copy your emails to honeypot
+  
+    Copy emails from all folders in 'data' into common Maildir located
+    into $WORK_DIR/queue/new
+  
+  4.3 Setup scheduler time
+    
+    In config file $WORK_PATH/shiva.conf setup schedulertime to 120 minutes
+    
+    [Analyzer]
+      schedulertime : 120
+      
+  4.4 Run Analyzer
+  
+    make sure you have correct ip addres for the web interface in config
+    file $WORK_PATH/shiva.conf   [web] -> address
+    
+    make sure your local spamassassin instance is running
+  
+    Activate virtual environment for analyzer
+  
+    $ source $WORK_PATH/shivaAnalyzer/bin/activate
+    
+    switch to to folder $WORK_PATH/shivaAnalyzer/analyzer
+    
+    (shivaAnalyzer)$ cd $WORK_PATH/shivaAnalyzer/analyzer
+    
+    run Analyzer
+    
+    (shivaAnalyzer)$ lamson start
+    
+    
+    Analyzer started processing sample data. In 15 minutes will start 
+    pushing them to the database and emails will be presented in 
+    web interface. 
+    
+    When you can see all emails in web interface (there should be about 470),
+    click on 'Relearn honeypot now'. Wait several minutes, honeypot will
+    initialize classifier and redirect you to 'Learning site'.
+    
+    You can find logs in folder $WORK_PATH/shivaAnalyzer/analyzer/logs
+    
+    turn off the Analyzer
+    
+    (shivaAnalyzer)$ cd $WORK_PATH/shivaAnalyzer/analyzer
+    (shivaAnalyzer)$ lamson stop
+    
+    
+    deactivate python virtual environment
+    
+    (shivaAnalyzer)$ deactivate
+    
+    
+    
+    Congratulations, your honeypot is ready to use.
+    
+    
+========================================================
+5. Running the honeypot
+========================================================
+
+  There are three ways how to start honeypot
+
+    5.1. Running honepot manually
+      
+      In order to run each part of honeypot (reciever,analyzer),
+      you need activate it's virtual environment, switch to it's folder
+      and run it.
+      
+      Make sure your local spamassassin instance is running.
+      
+      $ source $WORK_PATH/shivaAnalyzer/bin/activate
+      (shivaAnalyzer)$ cd $WORK_PATH/shivaAnalyzer/analyzer
+      (shivaAnalyzer)$ lamson start
+      (shivaAnalyzer)$ lamson stop
+      
+      $ source $WORK_PATH/shivaReceiver/bin/activate
+      (shivaReceiver)$ cd $WORK_PATH/shivaReceiver/receiver
+      (shivaReceiver)$ lamson start 
+      (shivaReceiver)$ lamson stop      
+
+      log files can be found in folders
+      $WORK_PATH/shivaAnalyzer/analyzer/logs
+      $WORK_PATH/shivaReciever/reciever/logs
+
+
+      
+      
+    5.2. Running honeypot via provided script
+      
+      You can start, stop and restart honeypot via provided script
+      
+      $ $WORK_PATH/honeypot.sh start
+      $ $WORK_PATH/honeypot.sh stop
+      $ $WORK_PATH/honeypot.sh restart
+     
+      
+    5.2. Running honeypot via systemctl
+    
+      If you followed instructions in point 3.4, you can start honeypot
+      easily via systemctl
+      
+      # systemctl start honeypot.service
+      # systemctl stop honeypot.service
+      # systemctl restart honeypot.service
+      
+
+========================================================
+6. Uninstalling honeypot
+========================================================
+  
+  In order to uninstall honeypot, drop both databases 
+  and remove honeypot folder.
+
+  $ mysql -u root -p -e "drop database ShivaTemp;drop database Shiva;"
+
+
+
+========================================================
+7. Maintaining honeypot
+========================================================
+  
+  All caught emails can be found in folders $WORK_PATH/rawspams/spam and $WORK_PATH/rawspams/phishing
+
+  If you want to manipulate Trishula classifier, you can do it in two ways:
+    
+    a) Manipulation of rules B*:
+         In module 'phishing', you can implement your own rules and register them 
+         into list at the end of module. To aply changes you must:
+
+             1) Stop honeypot
+
+                $ $WORK_PATH/honeypot.sh stop
+                 
+             2) Update honeypot packages
+
+                $ $WORK_PATH/update_shiva_packages.sh
+
+             3) Truncate database tables with stored rules and results
+
+                 $ mysql -u shiva -p Shiva "truncate table learningresults; truncate table rules;"
+
+             4) Start honeypot
+
+                 $ $WORK_PATH/honeypot.sh stop
+
+
+    b) Manipulation of classifier algorithm
+
+        You can modify properties of decision tree or even change the classification algorithm 
+        according to your needs in module 'learning'. In this case, you need to do exactly same
+        steps as in a) and relearn honeypot.
+
+
+  If you want to change behaviour of URL phishing, you can manipulate list of common phishing target domains
+  in module 'phishin, you need to do exactly same
+        steps as in a) and relearn honeypot.
+
+
+  If you want to change behaviour of URL phishing, you can manipulate list of common phishing target domains
+  in module 'phishing'. Phishing keywords and phrases can be also edited there.
