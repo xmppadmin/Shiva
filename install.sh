@@ -183,7 +183,7 @@ analyzer () {
 
     
     mkdir -p $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/shiva_phishing/     
-    cp -v $WORK_PATH/analyzer/core/shiva_phishing/*.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/shiva_phishing/
+    cp -v $WORK_PATH/analyzer/core/trishula/*.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/trishula/
 
     mkdir -p $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/hpfeeds/
     cp -rv $WORK_PATH/hpfeeds/sendfiles.py $INSTALL_PATH/shivaAnalyzer/lib/python2.7/site-packages/lamson/hpfeeds/
@@ -194,7 +194,7 @@ analyzer () {
     
     cp -v $WORK_PATH/helpers/clearlogs.sh $INSTALL_PATH/shivaAnalyzer/analyzer/logs/
     
-    cp -v $WORK_PATH/helpers/generate_stats.sh $INSTALL_PATH/shivaAnalyzer/bin/
+#    cp -v $WORK_PATH/helpers/generate_stats.sh $INSTALL_PATH/shivaAnalyzer/bin/
     
     printf "\n[+] Setting up Shiva Analyzer done!\n"
     deactivate
